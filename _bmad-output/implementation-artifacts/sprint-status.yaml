@@ -1,0 +1,88 @@
+# generated: 2026-01-28
+# project: co-founder
+# project_key: co-founder
+# tracking_system: file-system
+# story_location: d:\projets\co-founder\_bmad-output\implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-28
+project: co-founder
+project_key: co-founder
+tracking_system: file-system
+story_location: d:\projets\co-founder\_bmad-output\implementation-artifacts
+
+development_status:
+  # Epic 0: Project Initialization & Infrastructure
+  epic-0: in-progress
+  0-1-initialize-turborepo-monorepo: review
+  0-2-configure-docker-infrastructure: backlog
+  0-3-setup-shared-types-dtos: backlog
+  0-4-configure-swagger-openapi-generator: backlog
+  epic-0-retrospective: optional
+
+  # Epic 1: Users, Identity & Onboarding
+  epic-1: backlog
+  1-1-authentication-via-nextauth-nestjs: backlog
+  1-2-role-selection-profile-initialization: backlog
+  1-3-linkedin-profile-import-candidate: backlog
+  1-4-conversational-onboarding-founder: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Core Platform Utilities
+  epic-2: backlog
+  2-1-cloudflare-r2-integration-nestjs: backlog
+  2-2-media-upload-component-frontend: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Discovery & Matching Engine
+  epic-3: backlog
+  3-1-public-feed-with-filters: backlog
+  3-2-privacy-wall-implementation-backend-interceptor: backlog
+  3-3-profile-view-privacy-ui: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Trust & Safety (AI Moderation)
+  epic-4: backlog
+  4-1-async-moderation-queue-setup: backlog
+  4-2-ai-content-validation-worker: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Monetization & Payments
+  epic-5: backlog
+  5-1-payment-initiation-unlock-contact: backlog
+  5-2-secure-webhook-handler: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Administration & Oversight
+  epic-6: backlog
+  6-1-admin-dashboard-kpis: backlog
+  6-2-manual-moderation-queue: backlog
+  epic-6-retrospective: optional
