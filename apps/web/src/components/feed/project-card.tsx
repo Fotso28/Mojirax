@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal, MapPin, Briefcase, Calendar } from 'lucide-react';
+import { MoreHorizontal, MapPin, Briefcase, Calendar, Eye } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 interface ProjectCardProps {
@@ -18,6 +18,7 @@ interface ProjectCardProps {
         };
         tags: string[];
         postedAt: string;
+        views: number;
     };
 }
 
@@ -61,6 +62,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100">
                     <MapPin className="w-3.5 h-3.5 text-gray-400" />
                     <span>{project.location}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-gray-400">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{project.views} vues</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-gray-400">
                     <Calendar className="w-3.5 h-3.5" />

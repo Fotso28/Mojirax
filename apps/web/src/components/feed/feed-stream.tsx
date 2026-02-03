@@ -23,7 +23,8 @@ const MOCK_PROJECTS = Array.from({ length: 15 }).map((_, i) => ({
         image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`
     },
     tags: ["React Native", "Node.js", "Marketing", "Sales"],
-    postedAt: "Il y a 2h"
+    postedAt: "Il y a 2h",
+    views: Math.floor(Math.random() * 500) + 50
 }));
 
 export function FeedStream() {
