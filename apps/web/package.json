@@ -6,10 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "api:generate": "orval",
+    "api:watch": "orval --watch"
   },
   "dependencies": {
     "@co-founder/types": "^1.0.0",
+    "axios": "^1.7.9",
+    "caniuse-lite": "^1.0.30001766",
+    "firebase": "^10.7.1",
+    "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -21,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "orval": "^7.3.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

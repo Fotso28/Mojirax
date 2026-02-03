@@ -4,7 +4,7 @@
 **Projet :** CoMatch
 **Type :** Application Web (Next.js) + PWA
 **Version :** 1.1
-**Architecture :** Next.js (Front) + NestJS (Back) + PostgreSQL + MinIO
+**Architecture :** Next.js (Front) + NestJS (Back) + PostgreSQL
 **Hébergement :** VPS Local (Cameroun)
 
 **Vision :** Créer une plateforme web responsive facilitant la rencontre entre Porteurs de Projets et Candidats Co-founders au Cameroun.

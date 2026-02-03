@@ -1,6 +1,6 @@
 # Story 0.1: Initialize Turborepo Monorepo
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -80,6 +80,39 @@ Antigravity (Google DeepMind)
 - apps/web/
 - apps/api/
 - packages/types/
+- packages/tsconfig/ (NEW - shared TypeScript config)
 - package.json
 - turbo.json
 - .gitignore
+- README.md (NEW)
+- scripts/verify-monorepo.sh (NEW - health check script)
+- docker-compose.yml
+- apps/api/Dockerfile
+- apps/web/Dockerfile
+- start-dev.sh
+- DEV-SETUP.md
+
+### Code Review Fixes Applied
+
+**Date:** 2026-02-02
+
+#### HIGH Priority Fixes
+1. ✅ **Next.js Version:** Kept Next.js 16 per user decision
+2. ✅ **File List Updated:** All missing files documented above
+3. ✅ **Shared Types Usage:** Added `API_VERSION` import in both apps
+   - `apps/api/src/app.service.ts` - Uses `@co-founder/types`
+   - `apps/web/src/app/page.tsx` - Uses `@co-founder/types`
+4. ✅ **Integration Tests:** Created tests verifying monorepo integration
+   - `apps/api/src/app.service.spec.ts` - Tests shared types in backend
+   - `apps/web/tests/monorepo-integration.spec.ts` - Tests shared types in frontend
+
+#### MEDIUM Priority Fixes
+5. ✅ **Turbo Configuration:** Added `test` and `format` tasks to `turbo.json`
+6. ✅ **Health Check Script:** Created `scripts/verify-monorepo.sh` with `npm run verify`
+7. ✅ **GitIgnore Completed:** Added `*.tsbuildinfo`, `*.log`, env files
+8. ✅ **Root Dependencies:** Added `typescript`, `@types/node`, `eslint` to root
+9. ✅ **README Created:** Comprehensive `README.md` with quick start guide
+10. ✅ **Shared TypeScript Config:** Created `packages/tsconfig/base.json`
+
+**Review Status:** All HIGH and MEDIUM issues resolved
+**Story Status:** Ready for final validation

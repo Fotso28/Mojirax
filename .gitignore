@@ -9,11 +9,14 @@ node_modules
 dist
 .next
 build
+*.tsbuildinfo
 
 # Env
 .env
 .env.local
 .env.*.local
+.env.test
+.env.production
 
 # IDEs
 .vscode
@@ -24,3 +27,14 @@ build
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# API Generated Files
+apps/web/src/api/generated/
+apps/web/openapi.json
+.orval

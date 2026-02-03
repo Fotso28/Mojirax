@@ -10,11 +10,16 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "test": "turbo test",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "verify": "bash scripts/verify-monorepo.sh"
   },
   "devDependencies": {
     "prettier": "latest",
-    "turbo": "^2.7.6"
+    "turbo": "^2.7.6",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.7",
+    "eslint": "^9.18.0"
   },
   "engines": {
     "node": ">=18"

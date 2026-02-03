@@ -323,11 +323,11 @@ So that I don't have to review every single profile manually.
 
 **Acceptance Criteria:**
 
-**Given** a job in the `moderation-queue`
-**When** The Worker processes the job
-**Then** It sends the Bio/Pitch to an LLM (OpenAI/Anthropic)
-**And** If safe, updates status to `PUBLISHED`
-**And** If unsafe, updates status to `REJECTED` with a reason
+**Given** a new Candidate Profile or Project is submitted
+**When** The Backend receives it
+**Then** It sends the Bio/Pitch to an LLM (DeepSeek AI)
+**And** The AI returns a "Flagged" or "Approved" status
+**And** If flagged, the content is hidden until Admin review with a reason
 
 ## Epic 5: Monetization & Payments
 

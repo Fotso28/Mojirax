@@ -2,25 +2,42 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #001f4d;
+
+  /* Kezak Palette */
+  --kezak-brand-dark: #001f4d;
+  --kezak-brand-primary: #0066ff;
+  --kezak-brand-light: #e6f0ff;
+  --kezak-brand-accent: #3399ff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-kezak-dark: var(--kezak-brand-dark);
+  --color-kezak-primary: var(--kezak-brand-primary);
+  --color-kezak-light: var(--kezak-brand-light);
+  --color-kezak-accent: var(--kezak-brand-accent);
+
+  --font-sans: 'Inter', var(--font-geist-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer utilities {
+  .bg-grid-white {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
