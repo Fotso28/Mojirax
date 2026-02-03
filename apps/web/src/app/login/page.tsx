@@ -23,7 +23,7 @@ const LinkedInIcon = () => (
 
 const CoFounderLogo = () => (
     <div className="flex items-center gap-2">
-        <img src="/logo/logo" alt="MojiraX Logo" className="w-10 h-10 object-contain" />
+        <img src="/logo/logo.svg" alt="MojiraX Logo" className="w-10 h-10 object-contain" />
         <span className="text-xl font-bold text-kezak-dark">MojiraX</span>
     </div>
 );

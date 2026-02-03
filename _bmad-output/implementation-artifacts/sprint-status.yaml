@@ -50,10 +50,10 @@ development_status:
 
   # Epic 1: Users, Identity & Onboarding
   epic-1: in-progress
-  1-1-authentication-firebase-google: ready-for-dev
-  1-2-role-selection-profile-initialization: backlog
+  1-1-authentication-firebase-google: done
+  1-2-role-selection-profile-initialization: done
   1-3-linkedin-profile-import-candidate: backlog
-  1-4-conversational-onboarding-founder: backlog
+  1-4-conversational-onboarding-founder: done
   epic-1-retrospective: optional
 
   # Epic 2: Core Platform Utilities
@@ -63,8 +63,8 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Discovery & Matching Engine
-  epic-3: backlog
-  3-1-public-feed-with-filters: backlog
+  epic-3: in-progress
+  3-1-public-feed-with-filters: in-progress
   3-2-privacy-wall-implementation-backend-interceptor: backlog
   3-3-profile-view-privacy-ui: backlog
   epic-3-retrospective: optional

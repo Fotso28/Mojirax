@@ -40,6 +40,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (currentUser) {
                 try {
                     const token = await currentUser.getIdToken();
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('token', token);
+                    }
+
                     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                     console.log(`Syncing user with backend at ${apiUrl}/auth/sync...`);
 
@@ -60,6 +64,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
                 } catch (error) {
                     console.error("Error syncing user with backend:", error);
+                }
+            } else {
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('token');
                 }
             }
             setUser(currentUser);
@@ -105,6 +113,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         try {
             await signOut(auth);
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('token');
+            }
             router.push('/');
         } catch (error) {
             console.error("Error signing out", error);
