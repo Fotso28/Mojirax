@@ -2,7 +2,7 @@
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments: ['d:\projets\co-founder\prd.md']
 workflowType: 'architecture'
-project_name: 'co-founder'
+project_name: 'MojiraX'
 user_name: 'Oswald'
 date: '2026-01-28'
 lastStep: 8
@@ -63,6 +63,14 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 -   **Decision:** DTO Pattern in NestJS.
 -   **Rationale:** NestJS Interceptors (`ClassSerializerInterceptor`) automatically strip `@Exclude()` fields (email, phone) from the response based on user role. This is cleaner than manual filtering.
 
+**Decision 1b: Profile Page Strategy**
+-   **Structure:**
+    -   **Frontend:** `/profile` (Protected Route).
+    -   **Components:** `ProfileForm` (React Hook Form + Zod).
+    -   **State:** Local state + Optimistic UI updates.
+-   **Persistence:** `PATCH /users/profile` endpoint using DTOs.
+-   **Asset Management:** Profile pictures upload via Frontend -> Firebase Storage (or R2) -> Backend URL update.
+
 ### Storage Strategy
 
 **Decision 2: File Storage**
@@ -78,10 +86,12 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Communication Pattern
 
 **Decision 4: Frontend-Backend Auth**
--   **Decision:** JWT (Stateless).
+-   **Decision:** Firebase Authentication (Managed).
 -   **Flow:** 
-    1. Next.js creates session via NextAuth (Google/LinkedIn).
-    2. Next.js exchanges Token for a NestJS JWT.
+    1.  Next.js client authenticates with Firebase (Google/Email).
+    2.  Token passed to NestJS via Bearer Header.
+    3.  NestJS verifies token using `firebase-admin` (Passport Strategy).
+    4.  **No Session Cookies:** Pure stateless JWT flow.
 
 ## Implementation Patterns & Consistency Rules
 
@@ -101,7 +111,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 -   **Workflow:**
     1.  NestJS decorates Controllers with `@ApiProperty()`.
     2.  CI/CD generates `openapi.json`.
-    3.  Frontend generates strict TypeScript client (`orval` or `openapi-typescript`).
+    3.  Frontend generates strict TypeScript client via **Orval**.
 -   **Benefit:** Zero "magic string" API calls in the frontend.
 
 ### Error Handling Consistency

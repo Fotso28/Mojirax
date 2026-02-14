@@ -1,8 +1,8 @@
-import { InputHTMLAttributes, useState, ReactNode } from 'react';
+import { InputHTMLAttributes, useState, ReactNode, useId } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; // Assuming lucide-react is available, or use SVG
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-    label: string;
+    label?: string;
     error?: string;
     icon?: ReactNode;
 }
@@ -17,19 +17,23 @@ export function Input({
     ...props
 }: InputProps) {
     const [showPassword, setShowPassword] = useState(false);
-    const inputId = id || label.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    // Safe ID generation: prefer id, then label-based, then stable generated ID
+    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `input-${generatedId}`);
 
     const isPassword = type === 'password';
     const currentType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
     return (
         <div className={`space-y-1.5 ${className}`}>
-            <label
-                htmlFor={inputId}
-                className="block text-sm font-medium text-gray-700"
-            >
-                {label} {props.required && <span className="text-red-500">*</span>}
-            </label>
+            {label && (
+                <label
+                    htmlFor={inputId}
+                    className="block text-sm font-medium text-gray-700"
+                >
+                    {label} {props.required && <span className="text-red-500">*</span>}
+                </label>
+            )}
             <div className="relative group">
                 {icon && (
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-kezak-primary transition-colors">

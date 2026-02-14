@@ -9,6 +9,10 @@ export class UsersService {
     async findOne(firebaseUid: string) {
         return this.prisma.user.findUnique({
             where: { firebaseUid },
+            include: {
+                projects: true,
+                candidateProfile: true
+            }
         });
     }
 
@@ -19,5 +23,22 @@ export class UsersService {
                 ...dto,
             },
         });
+    }
+
+    async saveOnboardingState(firebaseUid: string, state: any) {
+        return this.prisma.user.update({
+            where: { firebaseUid },
+            data: {
+                onboardingState: state
+            }
+        });
+    }
+
+    async getOnboardingState(firebaseUid: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { onboardingState: true }
+        });
+        return user?.onboardingState || {};
     }
 }

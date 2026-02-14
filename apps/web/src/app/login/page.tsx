@@ -4,6 +4,7 @@ import { useAuth } from '@/context/auth-context';
 import { Button, Divider, Input } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import { getFirebaseErrorMessage } from '@/utils/firebase-errors';
 
 // Icons
 const GoogleIcon = () => (
@@ -111,15 +112,7 @@ export default function LoginPage() {
             router.push('/');
         } catch (err: any) {
             console.error("Login error:", err);
-            if (err.code === 'auth/invalid-email') {
-                setError('Adresse email invalide.');
-            } else if (err.code === 'auth/user-not-found') {
-                setError('Utilisateur introuvable.');
-            } else if (err.code === 'auth/wrong-password') {
-                setError('Mot de passe incorrect.');
-            } else {
-                setError(err.message || 'Échec de la connexion');
-            }
+            setError(getFirebaseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }
@@ -148,13 +141,7 @@ export default function LoginPage() {
         } catch (err: any) {
             justSignedUp.current = false; // Reset on error
             console.error("Signup error:", err);
-            if (err.code === 'auth/email-already-in-use') {
-                setError('Cette adresse email est déjà utilisée.');
-            } else if (err.code === 'auth/invalid-email') {
-                setError('Adresse email invalide.');
-            } else {
-                setError(err.message || "Échec de l'inscription");
-            }
+            setError(getFirebaseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }

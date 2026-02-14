@@ -11,9 +11,11 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
 
 interface AuthContextType {
     user: User | null;
+    dbUser: any | null; // Typed loosely for now, should be UserDTO
     loading: boolean;
     signInWithGoogle: () => Promise<void>;
     signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -23,6 +25,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
+    dbUser: null,
     loading: true,
     signInWithGoogle: async () => { },
     signInWithEmail: async () => { },
@@ -32,46 +35,69 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [dbUser, setDbUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
+        // 0. Hydrate from LocalStorage (Instant Load)
+        if (typeof window !== 'undefined') {
+            const cachedDbUser = localStorage.getItem('db_user');
+
+            if (cachedDbUser) setDbUser(JSON.parse(cachedDbUser));
+            // We DO NOT hydrate 'user' here because it's a complex Firebase object with methods (getIdToken).
+            // Restoring it from JSON makes it a plain object, causing "user.getIdToken is not a function" errors.
+        }
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
+                // Save basic info to cache
+                const userCache = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName,
+                    photoURL: currentUser.photoURL
+                };
+                localStorage.setItem('auth_user', JSON.stringify(userCache));
+                setUser(currentUser);
+
+                // 🚀 PERFORMANCE: Unblock UI immediately after Firebase check
+                // Don't wait for backend sync to show the app shell
+                setLoading(false);
+
                 try {
                     const token = await currentUser.getIdToken();
                     if (typeof window !== 'undefined') {
                         localStorage.setItem('token', token);
                     }
 
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                    console.log(`Syncing user with backend at ${apiUrl}/auth/sync...`);
+                    try {
+                        // 1. Sync
+                        await axiosInstance.post('/auth/sync');
 
-                    // Sync with backend
-                    const response = await fetch(`${apiUrl}/auth/sync`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    });
+                        // 2. Fetch Profile
+                        const { data: profileData } = await axiosInstance.get('/users/profile');
 
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        console.error("Backend sync failed:", response.status, errorData);
-                    } else {
-                        console.log("User successfully synced with backend");
+                        if (profileData) {
+                            setDbUser(profileData);
+                            localStorage.setItem('db_user', JSON.stringify(profileData)); // Cache it!
+                        }
+                    } catch (err) {
+                        console.error("Background sync failed", err);
                     }
                 } catch (error) {
-                    console.error("Error syncing user with backend:", error);
+                    console.error("Error processing auth user:", error);
                 }
             } else {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('token');
+                    localStorage.removeItem('auth_user');
+                    localStorage.removeItem('db_user');
                 }
+                setDbUser(null);
+                setUser(null);
+                setLoading(false);
             }
-            setUser(currentUser);
-            setLoading(false);
         });
 
         return () => unsubscribe();
@@ -123,7 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>
+        <AuthContext.Provider value={{ user, dbUser, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -16,6 +16,7 @@ RUN npm config set fetch-retry-maxtimeout 600000 \
     && npm config set fetch-retries 5 \
     && npm config set fetch-retry-mintimeout 20000
 RUN npm ci
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Build the API
 WORKDIR /app/apps/api

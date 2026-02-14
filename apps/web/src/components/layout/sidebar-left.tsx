@@ -7,17 +7,45 @@ import { useAuth } from '@/context/auth-context';
 
 export function SidebarLeft() {
     const pathname = usePathname();
-    const { logout } = useAuth();
+    const { logout, dbUser } = useAuth();
 
     const isActive = (path: string) => pathname === path;
 
-    const navItems = [
+    // Default ItemsCommon to everyone
+    const commonItems = [
         { icon: Home, label: 'Tableau de bord', path: '/' },
-        { icon: Rocket, label: 'Mon Projet', path: '/my-project' },
         { icon: MessageSquare, label: 'Messages', path: '/messages' },
         { icon: User, label: 'Mon Profil', path: '/profile' },
         { icon: Settings, label: 'Paramètres', path: '/settings' },
     ];
+
+    // Dynamic Item Logic
+    let dynamicItem = null;
+
+    if (dbUser?.role === 'CANDIDATE') {
+        dynamicItem = { icon: Rocket, label: 'Mes Candidatures', path: '/applications' };
+    } else {
+        // Default to Founder logic or if role is missing/loading
+        // TODO: Check specific project ID when backend returns it. 
+        // For now, simple check if they have a project relation or assumed flag.
+        // Assuming if (dbUser?.projects?.length > 0)
+
+        const hasProject = dbUser?.projects && dbUser.projects.length > 0;
+
+        if (hasProject) {
+            dynamicItem = { icon: Rocket, label: 'Mon Projet', path: '/my-project' };
+        } else {
+            // Link to onboarding or create page
+            dynamicItem = { icon: Rocket, label: 'Lancer un projet', path: '/onboarding/project' };
+        }
+    }
+
+    // Insert dynamic item after Dashboard (index 1)
+    const navItems = [
+        commonItems[0],
+        dynamicItem,
+        ...commonItems.slice(1)
+    ].filter(Boolean) as typeof commonItems;
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full flex flex-col overflow-hidden">

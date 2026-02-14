@@ -24,7 +24,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             />
 
             {/* Main Grid Layout */}
-            <div className="flex-1 max-w-[1600px] w-full mx-auto md:px-4 lg:px-6 pt-20 md:pt-24 pb-8">
+            <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 lg:px-6 pt-20 md:pt-24 pb-8">
                 <div className="grid grid-cols-1 md:grid-cols-[80px_1fr] lg:grid-cols-[280px_1fr_300px] gap-6 items-start">
 
                     {/* Left Sidebar (Nav) - Hidden on Mobile */}

@@ -10,6 +10,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "dev": "npm run start:dev",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "swagger:export": "ts-node src/swagger-export.ts",
@@ -23,7 +24,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "postinstall": "npm run prisma:generate"
   },
   "dependencies": {
     "@co-founder/types": "^1.0.0",
@@ -32,7 +34,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/passport": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/swagger": "^8.0.7",
+    "@nestjs/swagger": "^11.0.0",
     "@prisma/client": "^6.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
