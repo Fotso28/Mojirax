@@ -68,12 +68,12 @@ export class ProjectsController {
         return this.projectsService.updateLogo(req.user.uid, id, file.buffer);
     }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Get project by ID' })
+    @Get(':idOrSlug')
+    @ApiOperation({ summary: 'Get project by ID or slug' })
     @ApiResponse({ status: 200, description: 'Project details returned.' })
     @ApiResponse({ status: 404, description: 'Project not found.' })
-    async findOne(@Param('id') id: string) {
-        return this.projectsService.findOne(id);
+    async findOne(@Param('idOrSlug') idOrSlug: string) {
+        return this.projectsService.findOne(idOrSlug);
     }
 
     @Get()

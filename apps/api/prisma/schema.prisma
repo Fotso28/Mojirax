@@ -187,7 +187,8 @@ model CandidateProfile {
 model Project {
   id          String   @id @default(cuid())
   founderId   String   @map("founder_id")
-  
+  slug        String?  @unique // SEO-friendly URL slug
+
   // Content
   name        String
   pitch       String   @db.Text // Short tagline

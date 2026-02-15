@@ -5,6 +5,22 @@ import { InteractionsService } from '../interactions/interactions.service';
 import { UploadService } from '../upload/upload.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
+function slugify(text: string): string {
+    return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')     // Non-alphanumeric → dash
+        .replace(/^-+|-+$/g, '')          // Trim leading/trailing dashes
+        .substring(0, 60);                // Limit length
+}
+
+function generateSlug(name: string): string {
+    const base = slugify(name);
+    const suffix = Math.random().toString(36).substring(2, 6); // 4 random chars
+    return `${base}-${suffix}`;
+}
+
 interface ScoredProject {
     project: any;
     score: number;
@@ -293,6 +309,7 @@ export class ProjectsService {
             data: {
                 founder: { connect: { id: user.id } },
                 name: dto.name,
+                slug: generateSlug(dto.name),
                 pitch: dto.pitch,
                 country: dto.country,
                 city: dto.city,
@@ -328,9 +345,15 @@ export class ProjectsService {
         return project;
     }
 
-    async findOne(id: string) {
-        const project = await this.prisma.project.findUnique({
-            where: { id },
+    async findOne(idOrSlug: string) {
+        // Try by slug first, then fall back to id
+        const project = await this.prisma.project.findFirst({
+            where: {
+                OR: [
+                    { slug: idOrSlug },
+                    { id: idOrSlug },
+                ],
+            },
             include: {
                 founder: {
                     select: {

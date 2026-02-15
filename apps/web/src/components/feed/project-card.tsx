@@ -9,6 +9,7 @@ import Link from 'next/link';
 interface ProjectCardProps {
     project: {
         id: string;
+        slug?: string;
         name: string;
         pitch: string;
         sector?: string;
@@ -203,7 +204,7 @@ export function ProjectCard({ project, position }: ProjectCardProps) {
 
             {/* Footer Actions */}
             <div className="flex items-center justify-between gap-4 pt-4 mt-auto">
-                <Link href={`/projects/${project.id}`} onClick={handleClick} className="flex-1">
+                <Link href={`/projects/${project.slug || project.id}`} onClick={handleClick} className="flex-1">
                     <Button className="w-full rounded-xl h-11 text-base font-semibold shadow-lg shadow-blue-500/20">
                         Voir le projet
                     </Button>
