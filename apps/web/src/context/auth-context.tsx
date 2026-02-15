@@ -21,6 +21,7 @@ interface AuthContextType {
     signInWithEmail: (email: string, password: string) => Promise<void>;
     signUpWithEmail: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
+    refreshDbUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
     signInWithEmail: async () => { },
     signUpWithEmail: async () => { },
     logout: async () => { },
+    refreshDbUser: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -136,6 +138,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const refreshDbUser = async () => {
+        try {
+            const { data } = await axiosInstance.get('/users/profile');
+            if (data) {
+                setDbUser(data);
+                localStorage.setItem('db_user', JSON.stringify(data));
+            }
+        } catch (error) {
+            console.error('Failed to refresh db user', error);
+        }
+    };
+
     const logout = async () => {
         try {
             await signOut(auth);
@@ -149,7 +163,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, dbUser, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>
+        <AuthContext.Provider value={{ user, dbUser, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, refreshDbUser }}>
             {children}
         </AuthContext.Provider>
     );

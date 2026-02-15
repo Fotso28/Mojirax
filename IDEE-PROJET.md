@@ -185,9 +185,11 @@ co-founder/
 |----------------|------|--------|
 | Authentification & redirection | ✅ Fonctionnel | Redirige vers `/login` si non connecté |
 | Layout responsive 3 colonnes | ✅ Fonctionnel | Header, sidebar gauche, contenu, sidebar droite, drawers mobile |
-| Feed de projets | ⚠️ Données mock | 15 projets générés en dur (pas de requête API) |
-| Carte projet (ProjectCard) | ⚠️ UI seule | Affichage OK, mais boutons "Voir le projet" et "Sauvegarder" sans action |
-| Compteur de vues | ✅ Fonctionnel | Affiché sur chaque carte |
+| Feed de projets | ✅ Fonctionnel | Algorithme de recommandation 3 couches (Explicite 30% + Implicite 50% + Qualité 20%) via `GET /projects/feed` |
+| Carte projet (ProjectCard) | ✅ Fonctionnel | Données réelles API, tracking silencieux (VIEW + dwell time, CLICK, SAVE/UNSAVE), lien vers ProjectDeck |
+| Infinite scroll | ✅ Fonctionnel | Cursor-based pagination (7 projets/page), IntersectionObserver, skeleton loading |
+| Tracking comportemental | ✅ Fonctionnel | Table `UserProjectInteraction` : VIEW, CLICK, SAVE, UNSAVE, SHARE, SKIP avec dwell time + scroll depth |
+| Toast alerts | ✅ Fonctionnel | Système réutilisable (`useToast()`), Framer Motion, auto-dismiss 2s |
 | Publicités natives | ⚠️ Placeholder | Composant NativeAd "Lygos Pay" statique, injecté toutes les 5 publications |
 | Sidebar gauche (navigation) | ⚠️ Partiel | Navigation dynamique selon le rôle, mais routes `/messages` et `/settings` inexistantes |
 | Sidebar droite (widgets) | ⚠️ Données mock | Widget "À suivre" avec 3 utilisateurs en dur, promo Lygos Pay statique |
@@ -202,7 +204,7 @@ co-founder/
 | 4. Votre Solution | description solution, UVP, anti-scope | ✅ Fonctionnel |
 | 5. Marché & Business | type marché, modèle de revenu, concurrents | ✅ Fonctionnel (B2C/B2B/B2G, SUBSCRIPTION/COMMISSION/etc.) |
 | 6. Validation & Équipe | rôle fondateur, disponibilité, traction | ✅ Fonctionnel |
-| 7. Cofondateur & Vision | profil recherché, type collaboration, vision | ⚠️ Partiel — **soumission finale = TODO** (`console.log` seulement) |
+| 7. Cofondateur & Vision | profil recherché, type collaboration, vision | ✅ Fonctionnel (soumission via `POST /projects`) |
 
 | Fonctionnalité transversale | État | Détail |
 |-----------------------------|------|--------|
@@ -211,60 +213,69 @@ co-founder/
 | Sauvegarde auto localStorage | ✅ Fonctionnel | Persistance immédiate côté client |
 | Sauvegarde auto serveur | ✅ Fonctionnel | Sync debounced (1.5s) via `PATCH /users/creating-projet` |
 | Chargement du brouillon | ✅ Fonctionnel | Récupération au montage via `GET /users/creating-projet`, fallback localStorage |
-| Soumission finale du projet | ❌ Non implémenté | Étape 7 : `// TODO: Call actual API`, simule avec un `setTimeout` |
+| Soumission finale du projet | ✅ Fonctionnel | `POST /projects` avec tous les champs (18 colonnes), toast succès/erreur, nettoyage brouillon |
 
 #### Autres pages existantes
 | URL | État | Détail |
 |-----|------|--------|
 | `/login` | ✅ Fonctionnel | Connexion email/mot de passe + Google OAuth |
 | `/onboarding/candidate` | ✅ UI Fonctionnelle | Wizard 5 étapes (pitch, vision, expertise, conditions, disponibilité) |
-| `/(dashboard)/profile` | ⚠️ Partiel | Affichage profil OK, formulaire de modification a un bug (mauvais port API) |
-| `/(dashboard)/feed` | ⚠️ Données mock | 3 projets en dur (AgriTech, Fintech, HealthConnect) |
-| `/(dashboard)/projects/[id]` | ⚠️ Données mock | ProjectDeck avec données hardcodées, bouton "Vérifier le Match" sans action |
+| `/(dashboard)/profile` | ✅ Fonctionnel | Affichage profil + formulaire + upload/recadrage avatar (MinIO), toast succès/erreur |
+| `/(dashboard)/feed` | ✅ Fonctionnel | Feed connecté à l'API avec algorithme de recommandation + infinite scroll |
+| `/(dashboard)/projects/[id]` | ✅ Fonctionnel | ProjectDeck connecté à `GET /projects/:id`, 3 onglets (Vision/Expertise/Conditions), tracking, save/share |
+| `@modal/(.)projects/[id]` | ✅ Fonctionnel | Intercept modal avec animation Framer Motion, close Escape/overlay |
 
 ---
 
-### Phase 1 : MVP (En cours)
+### Phase 1 : MVP (En cours — ~80%)
 
 **Infrastructure & Auth**
 - [x] Schéma de base de données complet (13 tables, embeddings IA, pgvector)
-- [x] Docker Compose (PostgreSQL 15, Redis 7)
+- [x] Docker Compose (PostgreSQL 15, Redis 7, MinIO S3)
 - [x] Authentification Firebase + sync PostgreSQL (`POST /auth/sync`)
-- [x] Contexte auth frontend (token, cache localStorage, gestion 401)
+- [x] Contexte auth frontend (token, cache localStorage, gestion 401, `refreshDbUser()`)
 - [x] Instance Axios configurée (intercepteurs token + erreurs)
+- [x] Stockage fichiers MinIO (S3-compatible) — module Upload backend
 
 **Onboarding & Profils**
 - [x] Sélection de rôle (Fondateur/Candidat)
 - [x] Onboarding candidat — UI wizard 5 étapes
 - [x] Création projet — UI wizard 7 étapes avec validation
 - [x] Auto-save brouillon (localStorage + API debounced)
-- [ ] Soumission finale du projet vers l'API (étape 7 = TODO)
-- [ ] API complète pour profils candidats
-- [ ] Correction du bug port API sur le formulaire profil
+- [x] Soumission finale du projet via `POST /projects` (18 colonnes en BD, toast, nettoyage brouillon)
+- [x] Correction du bug port API sur le formulaire profil (toutes les URL centralisées via `AXIOS_INSTANCE`)
+- [x] Toast alert réutilisable (`useToast()`) — succès/erreur, Framer Motion, auto-dismiss 2s
+- [x] Upload & recadrage avatar — crop interactif (ratio 4:5), compression WebP 512×640, MinIO, drag & drop
+- [ ] API complète pour profils candidats (CRUD dédié CandidateProfile)
 
 **Feed & Découverte**
 - [x] Layout dashboard responsive (3 colonnes + drawers mobile)
-- [x] Feed de découverte — UI et composants (ProjectCard, NativeAd)
-- [x] Compteur de vues
-- [ ] Connexion du feed à l'API (actuellement 15 projets mock en dur)
-- [ ] Handlers sur les boutons "Voir le projet" et "Sauvegarder"
+- [x] Feed connecté à l'API avec algorithme de recommandation 3 couches
+- [x] Scoring : Explicite 30% (profil) + Implicite 50% (comportement) + Qualité 20% (contenu)
+- [x] Tracking comportemental silencieux (VIEW + dwell time, CLICK, SAVE/UNSAVE, SHARE, SKIP)
+- [x] Table `UserProjectInteraction` pour historique comportemental
+- [x] Infinite scroll (cursor pagination, IntersectionObserver, skeleton loading)
+- [x] ProjectCard avec données réelles, save/unsave, lien vers ProjectDeck
 - [ ] Routes manquantes : `/messages`, `/settings`
 
 **Projet & Matching**
-- [x] Vue détaillée projet (ProjectDeck) — UI avec onglets Vision/Expertise/Conditions
-- [x] Composant Privacy Wall (mur de confidentialité)
-- [ ] Connexion ProjectDeck à l'API (actuellement données mock)
-- [ ] Bouton "Vérifier le Match" sans fonctionnalité
-- [ ] Pipeline de modération IA
-- [ ] Logique de masquage backend (privacy wall)
-- [ ] Workflow de candidature complet
-- [ ] Recherche sémantique vectorielle (pgvector)
+- [x] ProjectDeck connecté à `GET /projects/:id` — hero header, 3 onglets, tracking, save/share
+- [x] Vision view — pitch, stats, problème/cible/solutions, solution/UVP, vision 3 ans, traction, concurrents
+- [x] Expertise view — profil recherché, compétences, stack, business model, marché, fondateur
+- [x] Conditions view — type collab (equity/paid/hybrid), disponibilité, engagement, remote, budget, deadline
+- [x] Modal intercept `@modal/(.)projects/[id]` avec animation Framer Motion
+- [x] Composant Privacy Wall (mur de confidentialité — UI frontend)
+- [ ] Bouton "Postuler" — workflow de candidature complet (bouton UI existe, logique manquante)
+- [ ] API candidatures (CRUD `Application` — schéma Prisma prêt, controller/service manquants)
+- [ ] Pipeline de modération IA (schéma + enums prêts, service d'appel IA manquant)
+- [ ] Logique de masquage backend (privacy wall — filtrage API des champs sensibles)
+- [ ] Recherche sémantique vectorielle (pgvector — champs embedding définis, service manquant)
 - [ ] Widgets sidebar droite (actuellement placeholders)
 
 ### Phase 2 : Monétisation
 - [ ] Intégration Lygos Pay
 - [ ] Gestion des webhooks de paiement
-- [ ] Suivi des transactions et déblocages
+- [ ] Suivi des transactions et déblocages (table `unlocks` prête en schéma)
 - [ ] Dashboard administrateur (KPIs, modération, config IA)
 - [ ] Gating des fonctionnalités premium
 
@@ -290,4 +301,4 @@ co-founder/
 
 ## 10. Résumé Exécutif
 
-**MojiraX** est une plateforme de co-founding qui connecte les porteurs de projets aux talents complémentaires grâce à l'intelligence artificielle. Construite sur une architecture moderne (monorepo Turborepo, Next.js + NestJS), elle se distingue par son système de matching sémantique basé sur des embeddings vectoriels, son modèle de monétisation "pay-to-contact" adapté au marché africain (paiements XAF via Lygos Pay), et sa modération automatique par IA. Le projet est actuellement en phase MVP avec l'authentification, l'onboarding et le feed de découverte fonctionnels, et progresse vers l'intégration complète du matching IA et du système de paiement.
+**MojiraX** est une plateforme de co-founding qui connecte les porteurs de projets aux talents complémentaires grâce à l'intelligence artificielle. Construite sur une architecture moderne (monorepo Turborepo, Next.js + NestJS), elle se distingue par son système de matching sémantique basé sur des embeddings vectoriels, son modèle de monétisation "pay-to-contact" adapté au marché africain (paiements XAF via Lygos Pay), et sa modération automatique par IA. Le projet est actuellement en phase MVP (~80%) avec l'authentification, l'onboarding, la création de projets, le feed intelligent avec algorithme de recommandation comportemental, le ProjectDeck connecté à l'API, et le système d'upload/recadrage d'avatar (MinIO) — tous fonctionnels. Prochaines étapes : workflow de candidature (API + bouton Postuler), routes messages/settings, API profils candidats, et pipeline de modération IA.

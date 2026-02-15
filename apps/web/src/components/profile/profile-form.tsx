@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Save } from 'lucide-react';
-import { useAuth } from '@/context/auth-context';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useToast } from '@/context/toast-context';
 
 // Schema matches UpdateUserProfileDto
 const profileSchema = z.object({
@@ -23,9 +24,8 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
-    const { updateUser } = useAuth(); // Assuming useAuth has this method, or we add it
     const [isSaving, setIsSaving] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const { showToast } = useToast();
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -39,33 +39,11 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
     const onSubmit = async (data: ProfileFormValues) => {
         setIsSaving(true);
-        setMessage(null);
         try {
-            // Direct API  call if useAuth doesn't expose it
-            // but ideally useAuth or separate service
-            // For now, assuming we can fetch authorized axios instance
-
-            // Simulating API Call until Orval/Axios is ready
-            // await api.users.updateProfile(data);
-
-            // Using fetch for now if no global axios
-            const token = await user.getIdToken?.(); // Firebase token
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/profile`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) throw new Error('Erreur lors de la mise à jour');
-
-            setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
-        } catch (error) {
-            console.error(error);
-            setMessage({ type: 'error', text: 'Impossible de mettre à jour le profil.' });
+            await AXIOS_INSTANCE.patch('/users/profile', data);
+            showToast('Profil mis à jour avec succès !', 'success');
+        } catch {
+            showToast('Impossible de mettre à jour le profil.', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -82,7 +60,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         <label className="text-sm font-medium text-gray-700">Prénom</label>
                         <input
                             {...form.register('firstName')}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-[52px] px-4 bg-white border border-gray-300 rounded-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200"
                             placeholder="Votre prénom"
                         />
                         {form.formState.errors.firstName && (
@@ -95,7 +73,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         <label className="text-sm font-medium text-gray-700">Nom</label>
                         <input
                             {...form.register('lastName')}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-[52px] px-4 bg-white border border-gray-300 rounded-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200"
                             placeholder="Votre nom"
                         />
                         {form.formState.errors.lastName && (
@@ -108,7 +86,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         <label className="text-sm font-medium text-gray-700">Téléphone</label>
                         <input
                             {...form.register('phone')}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-[52px] px-4 bg-white border border-gray-300 rounded-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200"
                             placeholder="+237..."
                         />
                     </div>
@@ -118,23 +96,18 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         <label className="text-sm font-medium text-gray-700">Ville / Pays</label>
                         <input
                             {...form.register('address')}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-[52px] px-4 bg-white border border-gray-300 rounded-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200"
                             placeholder="Douala, Cameroun"
                         />
                     </div>
                 </div>
 
                 {/* Submit Action */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-6">
-                    {message && (
-                        <span className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                            {message.text}
-                        </span>
-                    )}
+                <div className="flex items-center justify-end pt-4 border-t border-gray-50 mt-6">
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                        className="flex items-center gap-2 px-6 h-[52px] bg-kezak-primary text-white rounded-lg font-semibold hover:bg-kezak-dark transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-kezak-primary disabled:opacity-60 disabled:cursor-not-allowed ml-auto"
                     >
                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Enregistrer

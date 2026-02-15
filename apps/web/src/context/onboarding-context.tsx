@@ -21,6 +21,7 @@ interface OnboardingContextType extends OnboardingState {
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 import { useAuth } from './auth-context';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
 /* ... interfaces ... */
 
@@ -38,21 +39,11 @@ export function OnboardingProvider({ children, storageKey }: { children: ReactNo
 
             if (user) {
                 try {
-                    // 1. Try fetching from server
-                    const token = await user.getIdToken();
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/users/creating-projet`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (response.ok) {
-                        const serverDraft = await response.json();
-                        if (serverDraft && Object.keys(serverDraft).length > 0) {
-                            // console.log("Loaded draft from server");
-                            // Server wins
-                            setDataState(serverDraft.data || {});
-                            if (typeof serverDraft.step === 'number') setCurrentStep(serverDraft.step);
-                            loadedFromServer = true;
-                        }
+                    const { data: serverDraft } = await AXIOS_INSTANCE.get('/users/creating-projet');
+                    if (serverDraft && Object.keys(serverDraft).length > 0) {
+                        setDataState(serverDraft.data || {});
+                        if (typeof serverDraft.step === 'number') setCurrentStep(serverDraft.step);
+                        loadedFromServer = true;
                     }
                 } catch (e) {
                     console.warn("Failed to load server draft", e);
@@ -87,15 +78,7 @@ export function OnboardingProvider({ children, storageKey }: { children: ReactNo
         const timeoutId = setTimeout(async () => {
             if (!user) return;
             try {
-                const token = await user.getIdToken();
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/users/creating-projet`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(stateToSave)
-                });
+                await AXIOS_INSTANCE.patch('/users/creating-projet', stateToSave);
             } catch (e) {
                 console.warn("Auto-save failed", e);
             }

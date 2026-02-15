@@ -6,28 +6,34 @@ export class AuthService {
     constructor(private prisma: PrismaService) { }
 
     async syncUser(firebaseUser: any) {
-        // The firebaseUser object comes from verifyIdToken
         const { uid, email, name, picture } = firebaseUser;
 
         if (!email) {
             throw new Error('Email is required from Firebase Provider');
         }
 
-        // Upsert User in PostgreSQL
-        // We assume the schema has been updated to include firebaseUid
+        // Check if user already has a custom avatar (uploaded via MinIO)
+        const existing = await this.prisma.user.findUnique({
+            where: { email },
+            select: { image: true },
+        });
+
+        const hasCustomAvatar = existing?.image?.includes('/avatars/');
+
         const user = await this.prisma.user.upsert({
-            where: { email: email },
+            where: { email },
             create: {
-                email: email,
+                email,
                 firebaseUid: uid,
                 firstName: name ? name.split(' ')[0] : undefined,
                 lastName: name ? name.split(' ').slice(1).join(' ') : undefined,
                 image: picture,
-                role: 'USER', // Default role
+                role: 'USER',
             },
             update: {
-                firebaseUid: uid, // Ensure link is kept
-                image: picture,   // Keep avatar fresh
+                firebaseUid: uid,
+                // Don't overwrite custom avatar with Google photo
+                ...(hasCustomAvatar ? {} : { image: picture }),
             },
         });
 

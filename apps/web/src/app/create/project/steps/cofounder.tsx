@@ -3,27 +3,26 @@
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useToast } from '@/context/toast-context';
 
 export function ProjectCofounderStep() {
     const { data, updateData, submitForm } = useOnboarding();
-    const { user } = useAuth();
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleSubmit = async () => {
-        await submitForm(async (formData) => {
-            // TODO: Call actual API
-            // await api.post('/projects', formData);
-
-            // Simulation
-            console.log("Submitting Project Data:", formData);
-            await new Promise(r => setTimeout(r, 1500));
-
-            // Redirect to dashboard
-            router.push('/');
-        });
+        try {
+            await submitForm(async (formData) => {
+                await AXIOS_INSTANCE.post('/projects', formData);
+            });
+            showToast('Projet créé avec succès !', 'success');
+            setTimeout(() => router.push('/'), 500);
+        } catch {
+            showToast('Erreur lors de la création du projet.', 'error');
+        }
     };
 
     return (

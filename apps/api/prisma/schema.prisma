@@ -45,6 +45,7 @@ model User {
 
   // Onboarding Draft State
   onboardingState Json?   @map("onboarding_state") // Stores { step: 2, data: {...} }
+  projectDraft    Json?   @map("project_draft")    // Stores { step: 3, data: {...} } for /create/project wizard
 
   // Relations
   accounts         Account[]
@@ -60,6 +61,7 @@ model User {
   notifications    Notification[]
   adminLogs        AdminLog[]
   searchLogs       SearchLog[]
+  projectInteractions UserProjectInteraction[]
 
   @@map("users")
 }
@@ -189,23 +191,55 @@ model Project {
   // Content
   name        String
   pitch       String   @db.Text // Short tagline
-  description String   @db.Text // Full AI-analyzed text
+  description String?  @db.Text // Full AI-analyzed text (optional, generated later)
   sector      String?  // Fintech, Health, etc.
   stage       String?  // Idea, MVP, Growth
   logoUrl     String?  @map("logo_url")
   
-  // Project Details
+  // Identity (Step 1)
+  country       String?
+  city          String?
+  location      String?   // Computed: "city, country"
+
+  // Details (Step 2)
+  scope         String?   // LOCAL, DIASPORA, HYBRID
+
+  // Problem (Step 3)
+  problem          String?   @db.Text
+  target           String?   // Persona
+  solutionCurrent  String?   @map("solution_current") @db.Text
+
+  // Solution (Step 4)
+  solutionDesc  String?   @map("solution_desc") @db.Text
+  uvp           String?   // Unique Value Proposition
+  antiScope     String?   @map("anti_scope") @db.Text
+
+  // Market (Step 5)
+  marketType      String?   @map("market_type")    // B2C, B2B, B2G, MARKETPLACE
+  businessModel   String?   @map("business_model") // SUBSCRIPTION, COMMISSION, SALES, FREEMIUM, ADS
+  competitors     String?   @db.Text
+
+  // Traction (Step 6)
+  founderRole       String?   @map("founder_role")       // CEO, CTO, CPO, CMO, COO
+  timeAvailability  String?   @map("time_availability")  // 2-5H, 5-10H, 10-20H, FULLTIME
+  traction          String?   @db.Text
+
+  // Cofounder (Step 7)
+  lookingForRole  String?   @map("looking_for_role") // TECH, BIZ, PRODUCT, FINANCE
+  collabType      String?   @map("collab_type")      // EQUITY, PAID, HYBRID
+  vision          String?   @db.Text
+
+  // Project Details (legacy)
   teamSize      Int?      @map("team_size")
   fundingStatus String?   @map("funding_status") // "BOOTSTRAPPED", "SEED", "SERIES_A"
   techStack     String[]  @default([]) @map("tech_stack") // ["React", "Node.js"]
   websiteUrl    String?   @map("website_url")
   demoUrl       String?   @map("demo_url")
   deadline      DateTime? // Recruitment deadline
-  
-  // Requirements
+
+  // Requirements (legacy)
   requiredSkills    String[]  @default([]) @map("required_skills")
   niceToHaveSkills  String[]  @default([]) @map("nice_to_have_skills")
-  location          String?
   commitment        String?   // "FULL_TIME", "PART_TIME", "FREELANCE"
   budget            Json?     @db.JsonB // {min: 500000, max: 2000000, currency: "XAF"}
   isRemote          Boolean   @default(false) @map("is_remote")
@@ -232,6 +266,7 @@ model Project {
   unlocks        Unlock[]
   applications   Application[]
   matchScores    MatchScore[]
+  userInteractions UserProjectInteraction[]
 
   @@map("projects")
   @@index([status])
@@ -474,4 +509,37 @@ model Notification {
 
   @@index([userId, isRead])
   @@map("notifications")
+}
+
+// --------------------------------------
+// 8. User Behavior Tracking
+// --------------------------------------
+
+model UserProjectInteraction {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  projectId   String   @map("project_id")
+
+  // Action type
+  action      String   // VIEW, CLICK, SAVE, UNSAVE, APPLY, SKIP, SHARE, UNLOCK
+
+  // Engagement depth
+  dwellTimeMs Int?     @map("dwell_time_ms")  // Time spent in ms
+  scrollDepth Float?   @map("scroll_depth")    // 0.0 to 1.0
+
+  // Context
+  source      String?  // FEED, SEARCH, DIRECT, NOTIFICATION
+  position    Int?     // Position in feed when seen
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("user_project_interactions")
+  @@index([userId, action])
+  @@index([userId, projectId])
+  @@index([projectId, action])
+  @@index([createdAt])
 }

@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
+import { InteractionsModule } from './interactions/interactions.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ProjectsModule } from './projects/projects.module';
     FirebaseModule,
     UsersModule,
     ProjectsModule,
+    InteractionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

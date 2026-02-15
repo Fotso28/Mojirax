@@ -1,37 +1,126 @@
-import { motion } from 'framer-motion';
+import { Target, Lightbulb, AlertTriangle, Rocket } from 'lucide-react';
+
+const SCOPE_LABELS: Record<string, string> = {
+    LOCAL: 'Local', DIASPORA: 'Diaspora', HYBRID: 'Hybride',
+};
+const MARKET_LABELS: Record<string, string> = {
+    B2C: 'B2C (Grand Public)', B2B: 'B2B (Entreprises)',
+    B2G: 'B2G (Gouvernement)', MARKETPLACE: 'Marketplace',
+};
+
+function Section({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-kezak-light flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-kezak-primary" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{label}</h3>
+            </div>
+            {children}
+        </div>
+    );
+}
 
 export function VisionView({ project }: { project: any }) {
     return (
-        <div className="space-y-8 py-4">
-            <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-900">{project.title}</h2>
-                <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
-                    <h3 className="text-sm font-semibold text-blue-900 uppercase tracking-wide mb-2">
-                        Le Pitch
-                    </h3>
-                    <p className="text-lg text-blue-950 leading-relaxed">
-                        {project.pitch}
-                    </p>
-                </div>
+        <div className="space-y-8 py-2">
+            {/* Pitch */}
+            <div className="p-6 bg-kezak-light/50 rounded-2xl border border-kezak-primary/10">
+                <h3 className="text-sm font-semibold text-kezak-dark uppercase tracking-wide mb-2">Le Pitch</h3>
+                <p className="text-lg text-kezak-dark leading-relaxed font-medium">{project.pitch}</p>
             </div>
 
-            <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">La Vision</h3>
-                <p className="text-gray-600 leading-relaxed">
-                    {/* Mock long description */}
-                    Nous construisons le futur de l'agriculture en Afrique. En utilisant des capteurs IoT low-cost et une IA optimisée pour le edge computing, nous permettons aux petits exploitants de doubler leurs rendements.
-                </p>
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <div className="text-sm text-gray-500 mb-1">Stade actuel</div>
-                        <div className="font-medium text-gray-900">{project.stage}</div>
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {project.sector && (
+                    <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div className="text-xs text-gray-500 mb-1">Secteur</div>
+                        <div className="font-semibold text-gray-900 text-sm">{project.sector}</div>
                     </div>
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <div className="text-sm text-gray-500 mb-1">Marché cible</div>
-                        <div className="font-medium text-gray-900">Cameroun & CEMAC</div>
+                )}
+                {project.stage && (
+                    <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div className="text-xs text-gray-500 mb-1">Stade</div>
+                        <div className="font-semibold text-gray-900 text-sm">
+                            {{ IDEA: 'Idée', PROTOTYPE: 'Prototype', MVP_BUILD: 'MVP en cours', MVP_LIVE: 'MVP lancé', TRACTION: 'Traction', SCALE: 'Scale' }[project.stage as string] || project.stage}
+                        </div>
                     </div>
-                </div>
+                )}
+                {project.scope && (
+                    <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div className="text-xs text-gray-500 mb-1">Périmètre</div>
+                        <div className="font-semibold text-gray-900 text-sm">{SCOPE_LABELS[project.scope] || project.scope}</div>
+                    </div>
+                )}
+                {project.marketType && (
+                    <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div className="text-xs text-gray-500 mb-1">Marché</div>
+                        <div className="font-semibold text-gray-900 text-sm">{MARKET_LABELS[project.marketType] || project.marketType}</div>
+                    </div>
+                )}
             </div>
+
+            {/* Problem */}
+            {project.problem && (
+                <Section icon={AlertTriangle} label="Le Problème">
+                    <p className="text-gray-600 leading-relaxed">{project.problem}</p>
+                    {project.target && (
+                        <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-100">
+                            <span className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Cible : </span>
+                            <span className="text-sm text-orange-900">{project.target}</span>
+                        </div>
+                    )}
+                    {project.solutionCurrent && (
+                        <div className="mt-2">
+                            <p className="text-xs font-medium text-gray-500 mb-1">Solutions actuelles utilisées :</p>
+                            <p className="text-sm text-gray-600">{project.solutionCurrent}</p>
+                        </div>
+                    )}
+                </Section>
+            )}
+
+            {/* Solution */}
+            {project.solutionDesc && (
+                <Section icon={Lightbulb} label="La Solution">
+                    <p className="text-gray-600 leading-relaxed">{project.solutionDesc}</p>
+                    {project.uvp && (
+                        <div className="mt-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide block mb-1">Proposition de valeur unique</span>
+                            <p className="text-sm text-emerald-900 font-medium">{project.uvp}</p>
+                        </div>
+                    )}
+                    {project.antiScope && (
+                        <div className="mt-2">
+                            <p className="text-xs font-medium text-gray-500 mb-1">Ce qu'on ne fait pas :</p>
+                            <p className="text-sm text-gray-500 italic">{project.antiScope}</p>
+                        </div>
+                    )}
+                </Section>
+            )}
+
+            {/* Vision */}
+            {project.vision && (
+                <Section icon={Rocket} label="Vision à 3 ans">
+                    <p className="text-gray-600 leading-relaxed">{project.vision}</p>
+                </Section>
+            )}
+
+            {/* Traction */}
+            {project.traction && (
+                <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Preuves de traction</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">{project.traction}</p>
+                </div>
+            )}
+
+            {/* Competitors */}
+            {project.competitors && (
+                <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Concurrents / Alternatives</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">{project.competitors}</p>
+                </div>
+            )}
         </div>
     );
 }

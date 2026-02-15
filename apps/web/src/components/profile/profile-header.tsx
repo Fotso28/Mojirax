@@ -1,23 +1,25 @@
 'use client';
 
-// import { UserRole } from '@/api/generated/users.schemas'; // REMOVED: Orval generation failed
-import { CheckCircle2, Pencil } from 'lucide-react';
-import Image from 'next/image';
+import { CheckCircle2 } from 'lucide-react';
+import { ImageUploader } from '@/components/ui/image-uploader';
+import { useToast } from '@/context/toast-context';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
-// Temporary interface until Orval works or we use shared types
 export interface ProfileHeaderProps {
     user: {
         firstName?: string;
         lastName?: string;
-        role?: string; // UserRole
+        role?: string;
         image?: string;
         email?: string;
-        isVerified?: boolean; // Not in DTO yet but in design
+        isVerified?: boolean;
     };
-    onEditAvatar?: () => void;
+    onAvatarUploaded?: (data: any) => void;
 }
 
-export function ProfileHeader({ user, onEditAvatar }: ProfileHeaderProps) {
+export function ProfileHeader({ user, onAvatarUploaded }: ProfileHeaderProps) {
+    const { showToast } = useToast();
+
     const displayName = user.firstName && user.lastName
         ? `${user.firstName} ${user.lastName}`
         : user.email?.split('@')[0] || 'Utilisateur';
@@ -35,32 +37,26 @@ export function ProfileHeader({ user, onEditAvatar }: ProfileHeaderProps) {
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-50 to-indigo-50 -z-10" />
 
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 pt-10">
-                {/* Avatar */}
-                <div className="relative group">
-                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                        {user.image ? (
-                            <Image
-                                src={user.image}
-                                alt={displayName}
-                                width={128}
-                                height={128}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-3xl font-bold text-gray-300">
-                                {displayName.charAt(0).toUpperCase()}
-                            </span>
-                        )}
-                    </div>
-                    {onEditAvatar && (
-                        <button
-                            onClick={onEditAvatar}
-                            className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-gray-600 hover:text-blue-600 transition-colors"
-                        >
-                            <Pencil className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
+                {/* Avatar via ImageUploader */}
+                <ImageUploader
+                    preset="avatar"
+                    uploadEndpoint="/users/avatar"
+                    currentImageUrl={user.image}
+                    onUploadComplete={async (url) => {
+                        // L'API retourne l'objet user complet, on le fetch
+                        try {
+                            const { data } = await AXIOS_INSTANCE.get('/users/profile');
+                            onAvatarUploaded?.(data);
+                        } catch {
+                            // Fallback: on passe juste l'URL
+                            onAvatarUploaded?.({ ...user, image: url });
+                        }
+                    }}
+                    onError={(msg) => showToast(msg, 'error')}
+                    variant="avatar"
+                    size="lg"
+                    placeholder={displayName}
+                />
 
                 {/* Identity */}
                 <div className="flex-1 text-center sm:text-left mb-2">
@@ -82,11 +78,6 @@ export function ProfileHeader({ user, onEditAvatar }: ProfileHeaderProps) {
                         </span>
                     </div>
                 </div>
-
-                {/* Actions (Placeholder) */}
-                {/* <div className="flex items-center gap-3">
-                    <Button variant="outline">Voir le profil public</Button>
-                </div> */}
             </div>
         </div>
     );
