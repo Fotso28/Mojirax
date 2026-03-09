@@ -31,6 +31,14 @@ export interface LegalityCheckResult {
     reason?: string;
 }
 
+export interface CandidateValidationResult {
+    isValid: boolean;
+    qualityScore: number;
+    legitimacyScore: number;
+    completenessScore: number;
+    reason?: string;
+}
+
 // ─── Prompts ────────────────────────────────────────────
 
 const EXTRACTION_PROMPT = `Tu es un expert en analyse de dossiers de projets entrepreneuriaux en Afrique.
@@ -161,6 +169,48 @@ Règles :
 - Sois vigilant mais pas excessivement restrictif — la plupart des projets entrepreneuriaux sont légitimes`;
 }
 
+function buildCandidateValidationPrompt(profileData: Record<string, any>): string {
+    return `Tu es un modérateur BIENVEILLANT de plateforme de co-fondateurs au Cameroun et en Afrique.
+Ton rôle est de vérifier que le profil est LÉGITIME (pas du spam), pas de juger la qualité littéraire.
+
+Profil :
+- Titre : ${profileData.title || 'Non renseigné'}
+- Bio : ${profileData.bio || 'Non renseigné'}
+- Compétences : ${(profileData.skills || []).join(', ') || 'Non renseigné'}
+- Expérience : ${profileData.yearsOfExperience || 'Non renseigné'} ans
+- Localisation : ${profileData.location || 'Non renseigné'}
+- Pitch : ${profileData.shortPitch || 'Non renseigné'}
+- Vision : ${profileData.vision || 'Non renseigné'}
+- Rôle recherché : ${profileData.roleType || 'Non renseigné'}
+
+Évalue sur 2 axes (score 0-100 chacun) :
+
+1. QUALITÉ : Le profil a-t-il un minimum de sens ? Le titre et la bio sont-ils compréhensibles ?
+   Un profil court mais clair mérite 70+. Un profil détaillé et cohérent mérite 85+.
+   Seul un profil vide, incohérent ou copié-collé de Lorem ipsum mérite en dessous de 50.
+
+2. LÉGITIMITÉ : Le profil est-il authentique ?
+   Pas de spam, pas de contenu offensant, pas de données manifestement fausses ?
+   Un profil normal et honnête = 90+. Seul du spam évident = en dessous de 70.
+
+IMPORTANT : Réponds UNIQUEMENT avec le JSON, sans markdown, sans backticks, sans texte avant ou après.
+
+{
+  "qualityScore": number,
+  "legitimacyScore": number,
+  "completenessScore": number,
+  "isValid": boolean,
+  "reason": "string (explication courte si rejeté)"
+}
+
+Règles :
+- isValid = legitimacyScore >= 60 AND qualityScore >= 40
+- Sois INDULGENT : la plupart des profils sont de vraies personnes qui cherchent des opportunités
+- Un profil incomplet n'est PAS un profil invalide — il est juste incomplet
+- Ne rejette QUE le spam évident, le contenu offensant ou les profils manifestement faux
+- completenessScore : laisse-le à 0, il est calculé séparément`;
+}
+
 function buildValidationPrompt(projectData: Record<string, any>): string {
     return `Tu es un mentor expert en entrepreneuriat africain et en startup studio.
 
@@ -232,6 +282,17 @@ export class AiService {
             });
             this.providers.push({ name: 'deepseek', available: true });
             this.logger.log('AI Provider: DeepSeek ✓');
+
+        }
+
+        // Embeddings : Jina AI (gratuit) comme fallback si OpenAI non configuré
+        const jinaKey = this.config.get<string>('JINA_API_KEY');
+        if (!this.embeddingClient && jinaKey) {
+            this.embeddingClient = new OpenAI({
+                apiKey: jinaKey,
+                baseURL: 'https://api.jina.ai/v1',
+            });
+            this.logger.log('AI Provider: Embeddings (Jina AI) ✓');
         }
 
         if (this.providers.length === 0) {
@@ -445,6 +506,45 @@ export class AiService {
         return { isLegal: true, confidence: 1.0 };
     }
 
+    // ─── Candidate Profile Validation ────────────────────
+
+    async validateCandidateProfile(profileData: Record<string, any>): Promise<CandidateValidationResult> {
+        if (this.providers.length === 0) {
+            this.logger.warn('Aucun provider IA disponible pour la validation candidat — profil considéré comme valide par défaut');
+            return { isValid: true, qualityScore: 70, legitimacyScore: 100, completenessScore: 50 };
+        }
+
+        const prompt = buildCandidateValidationPrompt(profileData);
+
+        for (const provider of this.providers) {
+            try {
+                this.logger.log(`Validation candidat via ${provider.name}...`);
+                const result = await this.promptProvider(provider.name, prompt);
+                const parsed = this.parseJsonResponse(result) as CandidateValidationResult;
+
+                // Vérifier la structure
+                if (typeof parsed.qualityScore !== 'number' || typeof parsed.legitimacyScore !== 'number') {
+                    throw new Error('Structure de réponse invalide pour la validation candidat');
+                }
+
+                // Recalculer isValid selon les règles
+                parsed.isValid = parsed.legitimacyScore >= 60 && parsed.qualityScore >= 40;
+
+                this.logger.log(
+                    `Validation candidat via ${provider.name} — quality: ${parsed.qualityScore}, legitimacy: ${parsed.legitimacyScore}, valid: ${parsed.isValid}`,
+                );
+                return parsed;
+            } catch (error) {
+                this.logger.warn(`${provider.name} candidate validation failed: ${error.message}`);
+                continue;
+            }
+        }
+
+        // Si tous les providers échouent, considérer le profil comme valide par défaut
+        this.logger.warn('Tous les providers IA ont échoué pour la validation candidat — profil considéré comme valide par défaut');
+        return { isValid: true, qualityScore: 70, legitimacyScore: 100, completenessScore: 50 };
+    }
+
     // ─── Generic Provider Call ───────────────────────────
 
     private async promptProvider(provider: AiProvider, prompt: string): Promise<string> {
@@ -486,21 +586,31 @@ export class AiService {
 
     async getEmbedding(text: string): Promise<number[]> {
         if (!this.embeddingClient) {
-            throw new BadRequestException('Le service d\'embeddings OpenAI n\'est pas configuré.');
+            throw new BadRequestException('Aucun service d\'embeddings configuré (OpenAI ou DeepSeek requis).');
         }
 
+        const model = this.getEmbeddingModel();
+        const isJina = model === 'jina-embeddings-v3';
+
         try {
+            this.logger.log(`Génération embedding via ${model}...`);
             const response = await this.embeddingClient.embeddings.create({
-                model: 'text-embedding-3-small',
+                model,
                 input: text.replace(/\n/g, ' '),
                 encoding_format: 'float',
             });
 
             return response.data[0].embedding;
         } catch (error) {
-            this.logger.error(`Erreur lors de la génération de l'embedding: ${error.message}`);
+            this.logger.error(`Erreur embedding (${model}): ${error.message}`);
             throw new BadRequestException('Erreur lors de la génération de l\'embedding sémantique.');
         }
+    }
+
+    getEmbeddingModel(): string {
+        if (!this.embeddingClient) return 'none';
+        if (this.embeddingClient === this.openai) return 'text-embedding-3-small';
+        return 'jina-embeddings-v3';
     }
 
     // ─── Summary Blocks (6 blocs) ─────────────────────
@@ -653,10 +763,10 @@ export class AiService {
 
         try {
             const parsed = JSON.parse(jsonText);
-            // Filtrer les null
+            // Filtrer les null/undefined (conserver 0, false, et chaînes vides)
             const cleaned: Record<string, any> = {};
             for (const [key, value] of Object.entries(parsed)) {
-                if (value !== null && value !== undefined && value !== '') {
+                if (value !== null && value !== undefined) {
                     cleaned[key] = value;
                 }
             }

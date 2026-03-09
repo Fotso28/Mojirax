@@ -1,9 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { AiService } from '../projects/ai.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
+import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -20,7 +21,7 @@ export class UsersService {
             where: { firebaseUid },
             include: {
                 projects: true,
-                candidateProfile: true
+                candidateProfile: true,
             }
         });
     }
@@ -133,13 +134,124 @@ export class UsersService {
         });
     }
 
+    /**
+     * Crée un CandidateProfile à partir des données du wizard d'onboarding.
+     */
+    async createCandidateProfile(firebaseUid: string, dto: CreateCandidateProfileDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { id: true, candidateProfile: { select: { id: true } } },
+        });
+
+        if (!user) {
+            throw new NotFoundException('Utilisateur non trouvé');
+        }
+
+        if (user.candidateProfile) {
+            throw new ConflictException('Vous avez déjà un profil candidat');
+        }
+
+        // Mapper les champs du DTO vers CandidateProfile
+        const yearsMap: Record<string, number> = { '0-2': 1, '3-5': 4, '6-10': 8, '10+': 12 };
+
+        const bio = [dto.shortPitch, dto.longPitch, dto.vision, dto.achievements]
+            .filter(Boolean)
+            .join('\n\n');
+
+        const profile = await this.prisma.candidateProfile.create({
+            data: {
+                userId: user.id,
+                title: dto.title,
+                bio: bio || '',
+                skills: dto.mainCompetence ? [dto.mainCompetence] : [],
+                yearsOfExperience: dto.yearsExp ? (yearsMap[dto.yearsExp] ?? 0) : null,
+                remoteOnly: dto.locationPref === 'REMOTE',
+                desiredSectors: dto.projectPref ? [dto.projectPref] : [],
+                availability: dto.availability || null,
+                shortPitch: dto.shortPitch || null,
+                longPitch: dto.longPitch || null,
+                vision: dto.vision || null,
+                roleType: dto.roleType || null,
+                commitmentType: dto.commitmentType || null,
+                collabPref: dto.collabPref || null,
+                locationPref: dto.locationPref || null,
+                hasCofounded: dto.hasCofounded || null,
+                status: 'ANALYZING',
+            },
+            select: { id: true, status: true },
+        });
+
+        // Effacer le brouillon
+        await this.prisma.user.update({
+            where: { firebaseUid },
+            data: { projectDraft: Prisma.JsonNull },
+        });
+
+        this.logger.log(`Candidate profile created: ${profile.id} for user ${user.id}`);
+
+        return profile;
+    }
+
+    /**
+     * Met à jour un CandidateProfile existant et relance la modération.
+     */
+    async updateCandidateProfile(firebaseUid: string, dto: CreateCandidateProfileDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { id: true, candidateProfile: { select: { id: true } } },
+        });
+
+        if (!user) {
+            throw new NotFoundException('Utilisateur non trouvé');
+        }
+
+        if (!user.candidateProfile) {
+            throw new NotFoundException('Profil candidat introuvable');
+        }
+
+        const yearsMap: Record<string, number> = { '0-2': 1, '3-5': 4, '6-10': 8, '10+': 12 };
+
+        const updateData: Record<string, any> = { status: 'ANALYZING' };
+
+        if (dto.title) updateData.title = dto.title;
+        if (dto.shortPitch || dto.longPitch || dto.vision || dto.achievements) {
+            updateData.bio = [dto.shortPitch, dto.longPitch, dto.vision, dto.achievements]
+                .filter(Boolean)
+                .join('\n\n');
+        }
+        if (dto.mainCompetence) updateData.skills = [dto.mainCompetence];
+        if (dto.yearsExp) updateData.yearsOfExperience = yearsMap[dto.yearsExp] ?? 0;
+        if (dto.locationPref) updateData.remoteOnly = dto.locationPref === 'REMOTE';
+        if (dto.projectPref) updateData.desiredSectors = [dto.projectPref];
+        if (dto.availability) updateData.availability = dto.availability;
+        // Wizard-sourced fields
+        if (dto.shortPitch !== undefined) updateData.shortPitch = dto.shortPitch || null;
+        if (dto.longPitch !== undefined) updateData.longPitch = dto.longPitch || null;
+        if (dto.vision !== undefined) updateData.vision = dto.vision || null;
+        if (dto.roleType !== undefined) updateData.roleType = dto.roleType || null;
+        if (dto.commitmentType !== undefined) updateData.commitmentType = dto.commitmentType || null;
+        if (dto.collabPref !== undefined) updateData.collabPref = dto.collabPref || null;
+        if (dto.locationPref !== undefined) updateData.locationPref = dto.locationPref || null;
+        if (dto.hasCofounded !== undefined) updateData.hasCofounded = dto.hasCofounded || null;
+
+        const profile = await this.prisma.candidateProfile.update({
+            where: { id: user.candidateProfile.id },
+            data: updateData,
+            select: { id: true, status: true },
+        });
+
+        this.logger.log(`Candidate profile updated: ${profile.id} → ANALYZING`);
+
+        return profile;
+    }
+
     async getCandidatesFeed(
         firebaseUid: string | null,
         cursor: string | null,
         limit: number = 7,
         filters?: { city?: string; skills?: string[]; sector?: string },
     ) {
-        const take = Math.min(limit, 100);
+        const take = Math.min(limit, 20);
 
         const where: Prisma.CandidateProfileWhereInput = {
             status: 'PUBLISHED',
@@ -159,7 +271,24 @@ export class UsersService {
             take: take + 1,
             cursor: cursor ? { id: cursor } : undefined,
             skip: cursor ? 1 : 0,
-            include: {
+            select: {
+                id: true,
+                title: true,
+                bio: true,
+                skills: true,
+                location: true,
+                yearsOfExperience: true,
+                availability: true,
+                shortPitch: true,
+                roleType: true,
+                commitmentType: true,
+                collabPref: true,
+                locationPref: true,
+                desiredSectors: true,
+                remoteOnly: true,
+                qualityScore: true,
+                profileCompleteness: true,
+                createdAt: true,
                 user: {
                     select: {
                         id: true,
@@ -197,10 +326,11 @@ export class UsersService {
         if (bioText.length >= 10) {
             const bioEmbedding = await this.aiService.getEmbedding(bioText);
             const bioVector = `[${bioEmbedding.join(',')}]`;
+            const embeddingModel = this.aiService.getEmbeddingModel();
             await this.prisma.$executeRaw`
                 UPDATE candidate_profiles
                 SET bio_embedding = ${bioVector}::vector,
-                    embedding_model = 'text-embedding-3-small',
+                    embedding_model = ${embeddingModel},
                     last_embedded_at = NOW()
                 WHERE id = ${candidateProfileId}
             `;

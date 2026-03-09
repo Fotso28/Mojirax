@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "NotificationType" ADD VALUE 'PROFILE_PUBLISHED';
+ALTER TYPE "NotificationType" ADD VALUE 'PROFILE_REVIEW';

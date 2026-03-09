@@ -5,15 +5,22 @@ import {
     ForbiddenException,
     BadRequestException,
     ConflictException,
+    Inject,
+    forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { CandidateModerationService } from '../users/candidate-moderation.service';
 
 @Injectable()
 export class ApplicationsService {
     private readonly logger = new Logger(ApplicationsService.name);
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        @Inject(forwardRef(() => CandidateModerationService))
+        private candidateModerationService: CandidateModerationService,
+    ) { }
 
     async apply(firebaseUid: string, dto: CreateApplicationDto) {
         const user = await this.prisma.user.findUnique({
@@ -57,12 +64,15 @@ export class ApplicationsService {
                     title: fp.title,
                     bio: fp.bio,
                     skills: fp.skills || [],
-                    status: 'PUBLISHED',
+                    status: 'ANALYZING',
                 },
                 select: { id: true },
             });
             user.candidateProfile = profile;
             this.logger.log(`Auto-created candidate profile from founder profile for user ${user.id}`);
+
+            // Lancer la modération IA en fire-and-forget
+            this.candidateModerationService.moderateProfile(profile.id).catch(() => {});
         }
 
         const project = await this.prisma.project.findUnique({

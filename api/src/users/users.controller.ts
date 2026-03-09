@@ -1,27 +1,25 @@
 import {
     Controller, Body, Patch, Get, Post, Param, Query,
     UseGuards, UseInterceptors, Request, UploadedFile,
-    BadRequestException,
+    BadRequestException, Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
+import { CandidateModerationService } from './candidate-moderation.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
+import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) { }
+    private readonly logger = new Logger(UsersController.name);
 
-    // ─── Public ────────────────────────────────────────
-    @Get(':id/public')
-    @ApiOperation({ summary: 'Get public user profile by ID' })
-    @ApiResponse({ status: 200, description: 'Public profile returned.' })
-    @ApiResponse({ status: 404, description: 'User not found.' })
-    async getPublicProfile(@Param('id') id: string) {
-        return this.usersService.findPublicProfile(id);
-    }
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly candidateModerationService: CandidateModerationService,
+    ) { }
 
     // ─── Protected ─────────────────────────────────────
     @ApiBearerAuth()
@@ -101,6 +99,44 @@ export class UsersController {
         return this.usersService.updateAvatar(req.user.uid, file.buffer);
     }
 
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard)
+    @Post('candidate-profile')
+    @ApiOperation({ summary: 'Create candidate profile from onboarding data' })
+    @ApiResponse({ status: 201, description: 'Candidate profile created.' })
+    @ApiResponse({ status: 409, description: 'Candidate profile already exists.' })
+    async createCandidateProfile(@Request() req, @Body() dto: CreateCandidateProfileDto) {
+        const profile = await this.usersService.createCandidateProfile(req.user.uid, dto);
+
+        // Lancer la modération IA en fire-and-forget
+        this.candidateModerationService.moderateProfile(profile.id).catch((err) => {
+            this.logger.error(`Moderation failed for profile ${profile.id}: ${err.message}`);
+        });
+
+        return profile;
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard)
+    @Patch('candidate-profile')
+    @ApiOperation({ summary: 'Update candidate profile and re-run moderation' })
+    @ApiResponse({ status: 200, description: 'Candidate profile updated.' })
+    @ApiResponse({ status: 404, description: 'No candidate profile found.' })
+    async updateCandidateProfile(@Request() req, @Body() dto: CreateCandidateProfileDto) {
+        const profile = await this.usersService.updateCandidateProfile(req.user.uid, dto);
+
+        // Relancer la modération IA en fire-and-forget
+        this.candidateModerationService.moderateProfile(profile.id).catch((err) => {
+            this.logger.error(`Moderation failed for profile ${profile.id}: ${err.message}`);
+        });
+
+        return profile;
+    }
+
+    // ─── Public / Semi-public ────────────────────────────
+    // IMPORTANT: Les routes statiques doivent être AVANT :id/public
+    // pour éviter les conflits de matching NestJS.
+
     @Get('candidates/feed')
     @ApiOperation({ summary: 'Get candidate feed for founders' })
     @ApiQuery({ name: 'cursor', required: false })
@@ -124,5 +160,13 @@ export class UsersController {
             sector,
             skills: skillsArray,
         });
+    }
+
+    @Get(':id/public')
+    @ApiOperation({ summary: 'Get public user profile by ID' })
+    @ApiResponse({ status: 200, description: 'Public profile returned.' })
+    @ApiResponse({ status: 404, description: 'User not found.' })
+    async getPublicProfile(@Param('id') id: string) {
+        return this.usersService.findPublicProfile(id);
     }
 }

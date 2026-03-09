@@ -145,6 +145,16 @@ model CandidateProfile {
   portfolioUrl      String?   @map("portfolio_url")
   githubUrl         String?   @map("github_url")
   
+  // Wizard-sourced fields (stored separately for round-trip editing)
+  shortPitch        String?   @map("short_pitch") @db.Text
+  longPitch         String?   @map("long_pitch") @db.Text
+  vision            String?   @db.Text
+  roleType          String?   @map("role_type")       // TECH, PRODUCT, MARKETING, OPS, FINANCE
+  commitmentType    String?   @map("commitment_type") // SIDE, SERIOUS, FULLTIME
+  collabPref        String?   @map("collab_pref")     // EQUITY, PAID, HYBRID, DISCUSS
+  locationPref      String?   @map("location_pref")   // REMOTE, HYBRID, ONSITE
+  hasCofounded      String?   @map("has_cofounded")   // YES, NO
+
   // Matching Preferences
   desiredSectors    String[]  @default([]) @map("desired_sectors") // ["Fintech", "Health"]
   desiredStage      String[]  @default([]) @map("desired_stage")   // ["MVP", "Growth"]
@@ -162,8 +172,8 @@ model CandidateProfile {
   status      ModerationStatus @default(DRAFT)
   
   // AI Search & Scoring
-  bioEmbedding         Unsupported("vector(1536)")? @map("bio_embedding")
-  skillsEmbedding      Unsupported("vector(1536)")? @map("skills_embedding")
+  bioEmbedding         Unsupported("vector(1024)")? @map("bio_embedding")
+  skillsEmbedding      Unsupported("vector(1024)")? @map("skills_embedding")
   embeddingModel       String?   @map("embedding_model") // "text-embedding-3-small"
   embeddingVersion     String?   @map("embedding_version")
   lastEmbeddedAt       DateTime? @map("last_embedded_at")
@@ -262,7 +272,7 @@ model Project {
   status      ModerationStatus @default(DRAFT)
   
   // AI Search & Scoring
-  descriptionEmbedding Unsupported("vector(1536)")? @map("description_embedding")
+  descriptionEmbedding Unsupported("vector(1024)")? @map("description_embedding")
   embeddingModel       String?   @map("embedding_model")
   embeddingVersion     String?   @map("embedding_version")
   lastEmbeddedAt       DateTime? @map("last_embedded_at")
@@ -507,6 +517,8 @@ enum NotificationType {
   MODERATION_ALERT
   DOCUMENT_ANALYZED
   DOCUMENT_ANALYSIS_FAILED
+  PROFILE_PUBLISHED
+  PROFILE_REVIEW
 }
 
 model Notification {

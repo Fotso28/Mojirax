@@ -12,28 +12,46 @@ export class AuthService {
             throw new Error('Email is required from Firebase Provider');
         }
 
-        // Check if user already has a custom avatar (uploaded via MinIO)
-        const existing = await this.prisma.user.findUnique({
+        // Look up by firebaseUid first, then by email
+        const existingByUid = await this.prisma.user.findUnique({
+            where: { firebaseUid: uid },
+            select: { id: true, image: true, firstName: true, lastName: true, email: true },
+        });
+
+        const existing = existingByUid || await this.prisma.user.findUnique({
             where: { email },
-            select: { image: true },
+            select: { id: true, image: true, firstName: true, lastName: true, email: true },
         });
 
         const hasCustomAvatar = existing?.image?.includes('/avatars/');
 
-        const user = await this.prisma.user.upsert({
-            where: { email },
-            create: {
+        if (existing) {
+            // Update existing user
+            const user = await this.prisma.user.update({
+                where: { id: existing.id },
+                data: {
+                    firebaseUid: uid,
+                    // Update email if changed in Firebase
+                    ...(existing.email !== email ? { email } : {}),
+                    // Fill firstName/lastName if missing in DB but available from Firebase
+                    ...(name && !existing.firstName ? { firstName: name.split(' ')[0] } : {}),
+                    ...(name && !existing.lastName ? { lastName: name.split(' ').slice(1).join(' ') || undefined } : {}),
+                    // Don't overwrite custom avatar with Google photo
+                    ...(hasCustomAvatar ? {} : { image: picture }),
+                },
+            });
+            return user;
+        }
+
+        // Create new user
+        const user = await this.prisma.user.create({
+            data: {
                 email,
                 firebaseUid: uid,
                 firstName: name ? name.split(' ')[0] : undefined,
                 lastName: name ? name.split(' ').slice(1).join(' ') : undefined,
                 image: picture,
                 role: 'USER',
-            },
-            update: {
-                firebaseUid: uid,
-                // Don't overwrite custom avatar with Google photo
-                ...(hasCustomAvatar ? {} : { image: picture }),
             },
         });
 
