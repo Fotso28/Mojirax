@@ -1,0 +1,24 @@
+# Build outputs — ne jamais lire
+api/dist/
+web/.next/
+node_modules/
+
+# BMAD framework — legacy, non utilisé
+_bmad/
+_bmad-output/
+
+# OS junk
+.DS_Store
+._*
+Thumbs.db
+
+# Logs
+*.log
+tsc_output.txt
+
+# Large binaries
+logo/
+*.jpeg
+*.png
+*.ico
+*.svg

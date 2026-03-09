@@ -1,4 +1,0 @@
-apps/web/src/components/ui/input.tsx(2,29): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
-apps/web/tests/monorepo-integration.spec.ts(1,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
-apps/web/tests/monorepo-integration.spec.ts(4,67): error TS7031: Binding element 'page' implicitly has an 'any' type.
-apps/web/tests/monorepo-integration.spec.ts(12,68): error TS7031: Binding element 'page' implicitly has an 'any' type.

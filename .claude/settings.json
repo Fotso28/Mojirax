@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "Bash(*)"
+    ],
+
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(mkfs *)",
+      "Bash(dd if=*)",
+      "Bash(shutdown *)",
+      "Bash(reboot *)",
+      "Bash(format *)",
+      "Read(./.env)"
+    ]
+  }
+}

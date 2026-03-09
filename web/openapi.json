@@ -1,0 +1,279 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy and running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Health check endpoint",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/auth/sync": {
+      "post": {
+        "operationId": "AuthController_syncUser",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "User synced successfully."
+          },
+          "401": {
+            "description": "Unauthorized."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sync Firebase User with Database",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/users/profile": {
+      "patch": {
+        "operationId": "UsersController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update user profile and role",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/projects": {
+      "post": {
+        "operationId": "ProjectsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The project has been successfully created."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new project",
+        "tags": [
+          "projects"
+        ]
+      },
+      "get": {
+        "operationId": "ProjectsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List all public projects",
+        "tags": [
+          "projects"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Co-Founder API",
+    "description": "API for Co-Founder matching platform",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "auth",
+      "description": "Authentication endpoints"
+    },
+    {
+      "name": "candidates",
+      "description": "Candidate profile endpoints"
+    },
+    {
+      "name": "projects",
+      "description": "Project endpoints"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "HealthCheckDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok",
+            "description": "Health status of the API"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2024-01-01T00:00:00.000Z",
+            "description": "Current timestamp"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0",
+            "description": "API version"
+          },
+          "apiVersion": {
+            "type": "string",
+            "example": "v1",
+            "description": "API version from shared types"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp",
+          "version",
+          "apiVersion"
+        ]
+      },
+      "UpdateUserProfileDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "FOUNDER",
+              "CANDIDATE",
+              "USER"
+            ],
+            "description": "The role of the user"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the user"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of the user"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Phone number"
+          },
+          "address": {
+            "type": "string",
+            "description": "Address"
+          },
+          "image": {
+            "type": "string",
+            "description": "Profile image URL"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "CreateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the project"
+          },
+          "pitch": {
+            "type": "string",
+            "description": "Short pitch of the project"
+          },
+          "description": {
+            "type": "string",
+            "description": "Full description of the project"
+          },
+          "sector": {
+            "type": "string",
+            "description": "Sector of the project"
+          },
+          "stage": {
+            "type": "string",
+            "description": "Stage of the project"
+          },
+          "requiredSkills": {
+            "description": "Required skills",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "pitch",
+          "description"
+        ]
+      }
+    }
+  }
+}

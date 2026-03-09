@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(gh release:*)",
+      "Bash(curl:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:password@localhost:5432/co_founder_db\" npx prisma:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm list:*)",
+      "Bash(npx:*)",
+      "Bash(xargs grep:*)",
+      "Bash(claude mcp:*)",
+      "Bash(PGPASSWORD=password psql:*)",
+      "Bash(xargs head:*)",
+      "Bash(ls:*)",
+      "Bash(# Check the project's founderId vs the current user\ncurl -s http://localhost:3001/projects/cashflow-comptabilite 2>/dev/null | python3 -c \"\nimport sys, json\nd = json.load\\(sys.stdin\\)\nprint\\(f\\\\\"Project ID: {d['id']}\\\\\"\\)\nprint\\(f\\\\\"Founder ID: {d['founderId']}\\\\\"\\)\nprint\\(f\\\\\"Status: {d.get\\('status'\\)}\\\\\"\\)\n\" 2>/dev/null)",
+      "Bash(node:*)",
+      "Bash(xargs:*)"
+    ]
+  }
+}

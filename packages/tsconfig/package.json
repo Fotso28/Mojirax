@@ -1,6 +1,0 @@
-{
-    "name": "@co-founder/tsconfig",
-    "version": "1.0.0",
-    "private": true,
-    "description": "Shared TypeScript configuration for Co-Founder monorepo"
-}

@@ -26,6 +26,7 @@ build
 
 # OS
 .DS_Store
+._*
 Thumbs.db
 
 # Logs
@@ -38,3 +39,13 @@ yarn-error.log*
 apps/web/src/api/generated/
 apps/web/openapi.json
 .orval
+
+# Claude Code — MCP config (contient des credentials)
+.mcp.json
+
+# Firebase Admin SDK keys
+*firebase-adminsdk*.json
+
+# MinIO
+minio.exe
+minio-data/
