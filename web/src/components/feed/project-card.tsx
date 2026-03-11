@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { MoreHorizontal, MapPin, Briefcase, Calendar, Eye, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useToast } from '@/context/toast-context';
 import Link from 'next/link';
 
 interface ProjectCardProps {
@@ -29,6 +30,7 @@ interface ProjectCardProps {
         };
     };
     position?: number;
+    initialSaved?: boolean;
 }
 
 // Format relative time
@@ -71,10 +73,16 @@ function trackInteraction(projectId: string, action: string, extra?: Record<stri
     }).catch(() => { /* silent */ });
 }
 
-export function ProjectCard({ project, position }: ProjectCardProps) {
+export function ProjectCard({ project, position, initialSaved = false }: ProjectCardProps) {
     const cardRef = useRef<HTMLElement>(null);
     const viewStartRef = useRef<number | null>(null);
-    const [isSaved, setIsSaved] = useState(false);
+    const [isSaved, setIsSaved] = useState(initialSaved);
+    const { showToast } = useToast();
+
+    // Sync if initialSaved changes after async load
+    useEffect(() => {
+        setIsSaved(initialSaved);
+    }, [initialSaved]);
 
     const founderName = project.founder.name
         || [project.founder.firstName, project.founder.lastName].filter(Boolean).join(' ')
@@ -107,10 +115,11 @@ export function ProjectCard({ project, position }: ProjectCardProps) {
     }, [project.id, position]);
 
     const handleSave = useCallback(() => {
-        const action = isSaved ? 'UNSAVE' : 'SAVE';
-        setIsSaved(!isSaved);
-        trackInteraction(project.id, action);
-    }, [isSaved, project.id]);
+        const next = !isSaved;
+        setIsSaved(next);
+        trackInteraction(project.id, next ? 'SAVE' : 'UNSAVE');
+        showToast(next ? 'Projet sauvegardé' : 'Projet retiré', 'success');
+    }, [isSaved, project.id, showToast]);
 
     const handleClick = useCallback(() => {
         trackInteraction(project.id, 'CLICK');
@@ -157,9 +166,11 @@ export function ProjectCard({ project, position }: ProjectCardProps) {
 
             {/* Content */}
             <div className="mb-4">
-                <h2 className="text-xl font-bold text-kezak-dark mb-2 group-hover:text-kezak-primary transition-colors leading-tight">
-                    {project.name}
-                </h2>
+                <Link href={`/projects/${project.slug || project.id}`} onClick={handleClick}>
+                    <h2 className="text-xl font-bold text-kezak-dark mb-2 hover:text-kezak-primary transition-colors leading-tight">
+                        {project.name}
+                    </h2>
+                </Link>
                 <p className="text-gray-600 leading-relaxed text-base line-clamp-4">
                     {project.pitch}
                 </p>
@@ -203,21 +214,21 @@ export function ProjectCard({ project, position }: ProjectCardProps) {
             )}
 
             {/* Footer Actions */}
-            <div className="flex flex-col xs:flex-row items-center justify-between gap-4 pt-4 mt-auto">
+            <div className="flex items-center gap-3 pt-4 mt-auto">
                 <Link href={`/projects/${project.slug || project.id}`} onClick={handleClick} className="flex-1">
                     <Button className="w-full rounded-xl h-11 text-base font-semibold shadow-lg shadow-blue-500/20">
-                        Voir le projet
+                        Voir projet
                     </Button>
                 </Link>
                 <button
                     onClick={handleSave}
-                    className={`flex items-center gap-2 px-5 h-11 rounded-xl text-base font-semibold border transition-all duration-200 ${isSaved
-                        ? 'bg-kezak-primary/5 border-kezak-primary text-kezak-primary'
+                    className={`flex items-center gap-2 px-4 sm:px-5 h-11 rounded-xl text-sm sm:text-base font-semibold border transition-all duration-200 flex-shrink-0 ${isSaved
+                        ? 'bg-kezak-primary/10 border-kezak-primary text-kezak-primary saved-glow'
                         : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                         }`}
                 >
                     {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                    {isSaved ? 'Sauvé' : 'Sauver'}
+                    <span className="hidden sm:inline">{isSaved ? 'Sauvé' : 'Sauver'}</span>
                 </button>
             </div>
         </article>

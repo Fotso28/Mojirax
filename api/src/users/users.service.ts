@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, ConflictException } from '@nestj
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
-import { AiService } from '../projects/ai.service';
+import { AiService } from '../ai/ai.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 
@@ -21,7 +21,34 @@ export class UsersService {
             where: { firebaseUid },
             include: {
                 projects: true,
-                candidateProfile: true,
+                candidateProfile: {
+                    select: {
+                        id: true,
+                        title: true,
+                        bio: true,
+                        skills: true,
+                        location: true,
+                        yearsOfExperience: true,
+                        availability: true,
+                        shortPitch: true,
+                        longPitch: true,
+                        vision: true,
+                        roleType: true,
+                        commitmentType: true,
+                        collabPref: true,
+                        locationPref: true,
+                        desiredSectors: true,
+                        remoteOnly: true,
+                        linkedinUrl: true,
+                        resumeUrl: true,
+                        githubUrl: true,
+                        portfolioUrl: true,
+                        qualityScore: true,
+                        profileCompleteness: true,
+                        status: true,
+                        createdAt: true,
+                    },
+                },
             }
         });
     }
@@ -34,9 +61,39 @@ export class UsersService {
                 firstName: true,
                 lastName: true,
                 name: true,
+                email: true,
+                phone: true,
                 image: true,
                 role: true,
                 founderProfile: true,
+                candidateProfile: {
+                    select: {
+                        id: true,
+                        title: true,
+                        bio: true,
+                        skills: true,
+                        location: true,
+                        yearsOfExperience: true,
+                        availability: true,
+                        shortPitch: true,
+                        longPitch: true,
+                        vision: true,
+                        roleType: true,
+                        commitmentType: true,
+                        collabPref: true,
+                        locationPref: true,
+                        desiredSectors: true,
+                        remoteOnly: true,
+                        linkedinUrl: true,
+                        resumeUrl: true,
+                        githubUrl: true,
+                        portfolioUrl: true,
+                        qualityScore: true,
+                        profileCompleteness: true,
+                        status: true,
+                        createdAt: true,
+                    },
+                },
                 createdAt: true,
                 projects: {
                     where: { status: 'PUBLISHED' },
@@ -349,5 +406,71 @@ export class UsersService {
         }
 
         this.logger.log(`Embeddings generated for candidate ${candidateProfileId}`);
+    }
+
+    // ─── Trending Candidates ───────────────────────────
+    /**
+     * Top 5 candidats publiés classés par score composite :
+     * qualité (40%) + récence (30%) + vues profil (30%)
+     */
+    async getTrendingCandidates() {
+        const now = Date.now();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+        const candidates = await this.prisma.candidateProfile.findMany({
+            where: { status: 'PUBLISHED' },
+            select: {
+                id: true,
+                title: true,
+                skills: true,
+                qualityScore: true,
+                createdAt: true,
+                user: {
+                    select: { id: true, name: true, image: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+        });
+
+        if (candidates.length === 0) return [];
+
+        // Compter les vues de profil (interactions VIEW sur les projets des candidats n'existe pas
+        // mais on peut compter les applications reçues ou vues du profil via SearchLog clickedResultId)
+        // Pour l'instant, on utilise le nombre d'applications reçues comme proxy de popularité
+        const userIds = candidates.map((c) => c.user.id);
+
+        const applicationCounts = await this.prisma.application.groupBy({
+            by: ['candidateId'],
+            where: { candidateId: { in: userIds } },
+            _count: true,
+        });
+
+        const appMap = new Map(applicationCounts.map((a) => [a.candidateId, a._count]));
+        const maxApps = Math.max(1, ...applicationCounts.map((a) => a._count));
+
+        const scored = candidates.map((c) => {
+            const qualityNorm = (c.qualityScore || 0) / 100;
+            const ageMs = now - new Date(c.createdAt).getTime();
+            const freshnessNorm = Math.max(0, 1 - ageMs / thirtyDaysMs);
+            const popularityNorm = (appMap.get(c.user.id) || 0) / maxApps;
+
+            const score = qualityNorm * 0.4 + freshnessNorm * 0.3 + popularityNorm * 0.3;
+
+            return {
+                id: c.id,
+                userId: c.user.id,
+                name: c.user.name,
+                image: c.user.image,
+                title: c.title,
+                skills: c.skills?.slice(0, 3) || [],
+                qualityScore: c.qualityScore,
+                score,
+            };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+
+        return scored.slice(0, 5);
     }
 }

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { COUNTRIES } from '@/lib/constants/countries';
+import { PrivacyWall } from './privacy-wall';
 
 interface FounderExperience {
     company: string;
@@ -53,6 +54,7 @@ export interface FounderSidebarProps {
         address?: string | null;
         createdAt?: string | null;
         founderProfile?: FounderProfile | null;
+        _isLocked?: boolean;
     };
 }
 
@@ -64,7 +66,8 @@ export function FounderSidebar({ founder }: FounderSidebarProps) {
         [founder.firstName, founder.lastName].filter(Boolean).join(' ') ||
         'Fondateur';
 
-    const hasLinks = profile?.linkedinUrl || profile?.websiteUrl;
+    const isLocked = founder._isLocked === true;
+    const hasLinks = !isLocked && (profile?.linkedinUrl || profile?.websiteUrl);
     const locationParts = [profile?.city, profile?.country].filter(Boolean);
     const locationStr = locationParts.length > 0 ? locationParts.join(', ') : null;
     const founderCountry = profile?.country
@@ -83,9 +86,9 @@ export function FounderSidebar({ founder }: FounderSidebarProps) {
 
     return (
         <div className="space-y-0">
-            <div className="bg-white md:rounded-2xl md:border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-t-2xl md:rounded-2xl md:border border-gray-100 shadow-sm overflow-hidden">
                 {/* Photo de profil (grande) */}
-                <div className="relative w-full aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5] bg-gray-100 max-h-[500px] md:max-h-[350px] lg:max-h-none">
+                <div className="relative w-full aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5] bg-gray-100 max-h-[500px] md:max-h-[350px] lg:max-h-none rounded-t-2xl md:rounded-t-2xl overflow-hidden">
                     {founder.image ? (
                         <img
                             src={founder.image}
@@ -130,19 +133,37 @@ export function FounderSidebar({ founder }: FounderSidebarProps) {
                                 {profile.yearsOfExperience} ans d&apos;exp.
                             </span>
                         )}
-                        {founder.email && (
+                        {!isLocked && founder.email && (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500">
                                 <Mail className="w-3 h-3" />
                                 {founder.email}
                             </span>
                         )}
-                        {phoneDisplay && (
+                        {!isLocked && phoneDisplay && (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500">
                                 <Phone className="w-3 h-3" />
                                 {phoneDisplay}
                             </span>
                         )}
                     </div>
+
+                    {isLocked && (
+                        <div className="mt-3">
+                            <PrivacyWall blurIntensity="sm">
+                                <div className="space-y-1">
+                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                                        <Mail className="w-3 h-3" /> contact@example.com
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                                        <Phone className="w-3 h-3" /> +237 6XX XXX XXX
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                                        <Linkedin className="w-3 h-3" /> linkedin.com/in/...
+                                    </span>
+                                </div>
+                            </PrivacyWall>
+                        </div>
+                    )}
                 </div>
 
                 {/* Bio */}

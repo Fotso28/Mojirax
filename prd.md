@@ -3,7 +3,7 @@ title: CoMatch PRD
 status: IN_PROGRESS
 author: Oswald (Project Owner)
 date: 2026-01-27
-last_audit: 2026-02-15
+last_audit: 2026-03-10
 classification:
   domain: General
   projectType: web_app
@@ -14,7 +14,7 @@ classification:
 
 ## 1. Introduction
 **Project Name:** CoMatch
-**Version:** 1.3
+**Version:** 1.4
 **Vision:** A responsive web platform and PWA to facilitate connections between Project Founders and Candidate Co-founders in Cameroon, using a Freemium model secured by AI moderation and local infrastructure.
 
 ## 2. Goals & Objectives
@@ -117,30 +117,30 @@ classification:
 
 ---
 
-## 8. Implementation Status Matrix (Audit: 2026-02-15)
+## 8. Implementation Status Matrix (Audit: 2026-03-09)
 
 > Légende: ✅ Implémenté | 🔶 Partiel | ❌ Non commencé | 📋 Schema/DB only (table existe mais pas de code backend)
 
 ### Phase 1 — Core Platform
 
 #### 1.1 Infrastructure & DevOps
-- [x] Monorepo Turborepo (apps/api + apps/web + packages/types) ✅
-- [x] Docker Compose (PostgreSQL + MinIO + API + Web) ✅
+- [x] Monorepo Turborepo (web/ + api/ + packages/types) ✅
+- [x] Docker Compose (PostgreSQL + Redis + MinIO + API + Web) ✅
 - [x] Prisma ORM + migrations (16 tables migrées en DB) ✅
 - [x] PostgreSQL avec extension `pgvector` pour embedding ✅
-- [x] MinIO (S3) pour le stockage fichiers ✅
+- [x] MinIO (S3) pour le stockage fichiers (avatars, logos, documents) ✅
+- [x] Redis configuré (cache, futures queues BullMQ) ✅
 - [x] Package `@co-founder/types` partagé (API_VERSION) ✅
+- [x] Hosting VPS Hostinger — Node.js runtime ready ✅
 - [ ] PWA (manifest.json, service worker, offline) ❌
 - [ ] CI/CD pipeline (GitHub Actions / Docker deploy) ❌
-- [x] Hosting VPS Hostinger — Node.js runtime ready ✅
 
 #### 1.2 Authentification & Utilisateurs
-- [x] Firebase Auth (Google Sign-In) ✅ `auth.service.ts`, `firebase.strategy.ts`
+- [x] Firebase Auth (Google Sign-In + Email/Password) ✅ `auth.service.ts`, `firebase.strategy.ts`
 - [x] Sync Firebase ↔ PostgreSQL via `POST /auth/sync` ✅
 - [x] Guard Firebase JWT (`FirebaseAuthGuard`) ✅
 - [x] Sélection de rôle (Founder / Candidate) ✅ `onboarding/role/page.tsx`
-- [x] Page de login avec Google Sign-In ✅ `login/page.tsx`
-- [ ] Auth Email/Password ❌
+- [x] Page de login avec Google Sign-In + Email ✅ `login/page.tsx`
 - [ ] Auth LinkedIn ❌
 - [ ] JWT HttpOnly Cookies (actuellement Bearer Token) ❌
 
@@ -167,6 +167,7 @@ classification:
 #### 1.5 Création de Projet (Wizard complet)
 - [x] Choix de méthode (Formulaire vs Upload Document) ✅ `method-choice.tsx`
 - [x] Upload document (PDF/Word) + extraction IA ✅ `document-upload.tsx`
+- [x] Polling automatique du statut après upload (stepper animé 4 étapes, mise à jour temps réel) ✅
 - [x] Step Identité (nom, pays, ville, logo) ✅ `identity.tsx`
 - [x] Step Détails (secteur, scope, stage) ✅ `details.tsx`
 - [x] Step Problème (problème, cible, solutions actuelles) ✅ `problem.tsx`
@@ -174,49 +175,70 @@ classification:
 - [x] Step Marché (type, modèle éco, concurrents) ✅ `market.tsx`
 - [x] Step Traction (rôle fondateur, dispo, preuves) ✅ `traction.tsx`
 - [x] Step Co-fondateur (profil recherché, type collab, vision) ✅ `cofounder.tsx`
-- [x] Step AI Review (validation IA avec score + suggestions) ✅ `ai-review.tsx`
+- [x] Step AI Review (validation avec score + suggestions) ✅ `ai-review.tsx`
 - [x] Brouillon auto-save (GET/PATCH /users/creating-projet) ✅
 - [x] Upload logo projet (MinIO, 400x400) ✅ `upload.service.ts`
+- [x] Modification de projet existant ✅ `modify/project/page.tsx`
 
 #### 1.6 Service IA (Multi-Provider)
-- [x] Extraction de document PDF/DOCX via IA ✅ `ai.service.ts`
+- [x] Extraction de document PDF (pdf-parse v1.1.1) + DOCX (Mammoth) ✅ `ai.service.ts`
+- [x] Génération de blocs synthèse (problem, solution, market, traction, team, cofounder) ✅
 - [x] Validation projet avec score + feedback ✅
-- [x] Fallback automatique Claude → GPT → DeepSeek ✅
-- [x] Support natif PDF Claude + texte Word Mammoth ✅
-- [ ] Modération automatique profils (PENDING_AI → PUBLISHED/REJECTED) ❌
+- [x] Fallback automatique DeepSeek → Claude → GPT ✅
+- [x] Support natif PDF Claude + extraction texte pdf-parse pour les autres providers ✅
+- [x] Vérification de légalité automatique (`checkLegality`) ✅ `ai.service.ts`
+- [x] Auto-publication si légal (confidence ≥ 0.7 → PUBLISHED) ✅ `document-analysis.service.ts`
+- [x] Signalement pour revue manuelle si illégal → PENDING_AI ✅
 - [x] Calcul des embeddings vectoriels (pgvector) ✅ `ai.service.ts` (getEmbedding)
-- [ ] Matching IA candidat ↔ projet (MatchScore) ❌ (Calcul backend missing)
+- [x] Régénération individuelle d'un bloc synthèse ✅ `POST /projects/:id/regenerate-block`
+- [x] Modération automatique profils candidats (PENDING_AI → PUBLISHED/REJECTED) ✅ `candidate-moderation.service.ts`, multi-provider IA, notifications, fire-and-forget
+- [x] Formulaire profil candidat complet (page /profile) ✅ `candidate-profile-form.tsx`, round-trip wizard ↔ profil
+- [x] Matching IA candidat ↔ projet (MatchScore) ✅ `matching.service.ts`, 4 dimensions (skills 40%, experience 20%, location 15%, cultural fit 25%), pgvector cosine similarity, triggers auto publication
 
 #### 1.7 Feed & Découverte
 - [x] Feed de projets avec scroll infini ✅ `feed-stream.tsx`
-- [x] Carte projet riche (secteur, stage, location, rôle) ✅ `project-card.tsx`
+- [x] Feed de candidats pour les fondateurs ✅ `feed/candidates/page.tsx`, `candidate-stream.tsx`, `candidate-card.tsx`
+- [x] Carte projet riche (secteur, stage, location, rôle, bouton postuler) ✅ `project-card.tsx`
 - [x] Algorithme de recommandation 3 couches (explicite/implicite/qualité) ✅
-- [x] Tracking comportemental (VIEW, CLICK, SAVE, dwell, scroll) ✅
+- [x] Tracking comportemental (VIEW, CLICK, SAVE, APPLY, dwell, scroll) ✅
 - [x] Pénalité -30% projets déjà vus ✅
 - [x] Native ads dans le feed ✅ `native-ad.tsx`
-- [x] Page projet détaillée (3 onglets : Vision, Expertise, Conditions) ✅ `project-deck.tsx`
+- [x] Page projet détaillée (4 onglets : Vision, Expertise, Conditions, Synthèse) ✅ `project-deck.tsx`
+- [x] Onglet Synthèse document (blocs IA + téléchargement) ✅ `document-view.tsx`
 - [x] Sidebar fondateur sur la page projet ✅ `founder-sidebar.tsx`
-- [ ] Filtres (ville, skill, secteur) dans le feed ❌ (UI missing, backend ready)
-- [x] Recherche textuelle / sémantique 🔶 (Backend ✅, Page Search de base ✅)
-- [ ] Feed de candidats pour les fondateurs ❌
+- [x] URL SEO-friendly avec slugs ✅ `GET /projects/:idOrSlug`
+- [x] Rafraîchissement feed sur navigation et focus fenêtre ✅
+- [x] Filtres feed (UI + backend) ✅ `feed-filters.tsx`
+- [x] Recherche textuelle / sémantique ✅ `search.service.ts`, `feed/search/page.tsx`
+- [x] Historique des recherches ✅ `GET /search/history`
 
 #### 1.8 Privacy Wall
-- [x] Composant Privacy Wall (blur + cadenas) ✅ `privacy-wall.tsx`
-- [ ] Backend Interceptor (strip champs sensibles avant envoi) ❌
-- [ ] Vérification unlock côté serveur ❌
-- [ ] Intégration avec le système de paiement ❌
+- [x] Composant Privacy Wall (blur + cadenas + props onUnlock/lockedFieldsCount) ✅ `privacy-wall.tsx`
+- [x] Backend Interceptor (strip email, phone, linkedinUrl, websiteUrl avant envoi) ✅ `privacy.interceptor.ts`
+- [x] Service Unlock avec cache in-memory (TTL 5min) ✅ `unlock.service.ts`, `unlock.controller.ts`
+- [x] Guard optionnel Firebase (endpoints publics avec privacy) ✅ `firebase-auth-optional.guard.ts`
+- [x] Endpoint `GET /unlock/check/:targetId` ✅
+- [x] Endpoint `GET /unlock/mine` (liste paginée des profils débloqués) ✅
+- [x] Intercepteur appliqué sur 4 endpoints (projects/:idOrSlug, users/:id/public, applications/project/:id, matching/project/:id) ✅
+- [x] Frontend founder-sidebar conditionné par `_isLocked` ✅
+- [x] `createUnlockFromTransaction()` — vérification transaction PAID + ownership + anti-doublon + anti-self-unlock ✅
+- [x] `revokeUnlockOnRefund()` — suppression unlock après remboursement ✅
+- [x] `GET /projects/:id/document` protégé par FirebaseAuthGuard + ownership ✅
+- [x] Select explicite sur candidateProfile (exclut embeddings lourds) ✅
+- [ ] Intégration avec le système de paiement (createUnlock après webhook Lygos) ❌
 
 #### 1.9 Layout & UX
 - [x] Dashboard 3 colonnes (sidebar gauche + feed + sidebar droite) ✅
 - [x] Header responsive avec menu mobile ✅ `header.tsx`
-- [x] Sidebar gauche (navigation) ✅ `sidebar-left.tsx`
+- [x] Sidebar gauche (navigation dynamique selon rôle) ✅ `sidebar-left.tsx`
 - [x] Sidebar droite (widgets) ✅ `sidebar-right.tsx`
 - [x] Drawer mobile navigation ✅ `mobile-nav-drawer.tsx`
 - [x] Drawer mobile widgets ✅ `mobile-widget-drawer.tsx`
 - [x] Système de toast/notifications UI ✅ `toast-context.tsx`
 - [x] Sidebar context (hide/show) ✅ `sidebar-context.tsx`
-- [x] Page "Mes Projets" ✅ `my-project/page.tsx`
-- [x] Composants UI réutilisables (Button, Input, Select, Textarea, Modal, TagInput, CountrySelect, Divider, ImageUploader, ImageCropModal) ✅
+- [x] Page "Mes Projets" (liste, statut, actions) ✅ `my-project/page.tsx`
+- [x] Centre de notifications (dropdown dans header) ✅ `notification-dropdown.tsx`
+- [x] Composants UI réutilisables (Button, Input, Select, Textarea, Modal, TagInput, CountrySelect, Divider, ImageUploader, ImageCropModal, DeleteBottomSheet) ✅
 
 ---
 
@@ -232,32 +254,44 @@ classification:
 - [ ] Logs d'audit paiement ❌
 
 #### 2.2 Candidatures / Applications
-- 📋 Table DB créée : `applications` (status PENDING/ACCEPTED/REJECTED/IGNORED)
-- [ ] Module NestJS `ApplicationsModule` ❌
-- [ ] Endpoint candidature (`POST /applications`) ❌
-- [ ] Dashboard fondateur — gérer les candidatures reçues ❌
-- [ ] Dashboard candidat — "Mes Candidatures" ❌
-- [ ] Bouton "Postuler" fonctionnel sur page projet ❌
+- [x] Module NestJS `ApplicationsModule` ✅ `applications.module.ts`
+- [x] `POST /applications` — Postuler à un projet ✅
+- [x] `GET /applications/mine` — Mes candidatures (candidat) ✅
+- [x] `GET /applications/project/:projectId` — Candidatures reçues (fondateur) ✅
+- [x] `PATCH /applications/:id/status` — Accepter/Rejeter (fondateur) ✅
+- [x] `GET /applications/check/:projectId` — Vérifier si déjà postulé ✅
+- [x] Page "Mes Candidatures" (candidat + fondateur) ✅ `applications/page.tsx`
+- [x] Page gestion candidatures reçues ✅ `my-project/[slug]/applications/page.tsx`
+- [x] Modal de candidature (bouton postuler + message) ✅ `apply-modal.tsx`
+- [x] Noms candidats cliquables → profil public ✅
+- [x] Confirmation avant rejet ✅
+- [x] Navigation "Mes Candidatures" dans sidebar pour tous les utilisateurs ✅
 
 #### 2.3 Notifications
-- 📋 Table DB créée : `notifications` (types : SYSTEM, APPLICATION_*, MODERATION_ALERT)
-- [ ] Module NestJS `NotificationsModule` ❌
-- [ ] Service de notifications (création, lecture, mark as read) ❌
-- [ ] Centre de notifications frontend ❌
-- [ ] Notifications push (PWA) ❌
+- [x] Module NestJS `NotificationsModule` ✅ `notifications.module.ts`
+- [x] `GET /notifications` — Liste paginée des notifications ✅
+- [x] `GET /notifications/unread-count` — Compteur non-lues ✅
+- [x] `PATCH /notifications/:id/read` — Marquer comme lue ✅
+- [x] `PATCH /notifications/read-all` — Marquer toutes comme lues ✅
+- [x] Dropdown notifications dans le header ✅ `notification-dropdown.tsx`
+- [x] Notifications créées automatiquement (candidature, modération, publication) ✅
+- [ ] Notifications push (PWA / Web Push) ❌
+- [ ] Notifications email ❌
 
 #### 2.4 Administration
 - 📋 Table DB créée : `admin_logs`
 - [ ] Module NestJS `AdminModule` ❌
 - [ ] Dashboard admin (KPIs, users, revenue) ❌
-- [ ] File de modération (profils PENDING_AI) ❌
+- [ ] File de modération (profils/projets PENDING_AI) ❌
 - [ ] Configuration IA (prompts, seuils) ❌
 - [ ] Gestion transactions manuelles ❌
 
-#### 2.5 Recherche Avancée (Optimisation)
+#### 2.5 Recherche Avancée
 - [x] Recherche sémantique via pgvector ✅ `search.service.ts`
 - [x] Logging des recherches ✅ `search_logs` table
 - [x] Historique des recherches utilisateur ✅ `GET /search/history`
+- [x] Suppression de l'historique ✅ `DELETE /search/history`
+- [x] Page de résultats de recherche ✅ `feed/search/page.tsx`
 
 ---
 
@@ -271,14 +305,18 @@ classification:
 - [ ] Couverture de code > 70% ❌
 
 #### 3.2 Sécurité
-- [ ] Audit npm complet (fix 11 critiques côté web) ❌
-- [ ] Rate limiting API ❌
-- [ ] Validation input (class-validator sur tous les DTOs) 🔶
-- [ ] CORS stricte (actuellement wildcard probable) ❌
+- [ ] Audit npm complet ❌
+- [ ] Rate limiting API (@nestjs/throttler) ❌
+- [x] Validation input (class-validator + DTOs typés) 🔶 (la plupart des endpoints, quelques `any` restants)
+- [ ] CORS stricte en production ❌
 - [ ] Helmet.js (headers de sécurité) ❌
 - [ ] CSRF protection ❌
+- [x] FirebaseAuthGuard sur tous les endpoints mutants ✅
+- [x] Ownership vérifié via `req.user.uid` ✅
+- [x] Swagger désactivé en production ✅
 
 #### 3.3 Performance & SEO
+- [x] URLs SEO-friendly (slugs projet) ✅
 - [ ] Server-Side Rendering (SSR) pour les pages publiques ❌
 - [ ] Sitemap.xml + robots.txt ❌
 - [ ] Meta tags SEO dynamiques ❌
@@ -286,31 +324,50 @@ classification:
 - [ ] CDN pour les assets statiques ❌
 
 #### 3.4 Monitoring & Observabilité
-- [ ] Logging structuré (Winston/Pino) ❌
-- [ ] Health check avancé (DB, MinIO, Firebase) 🔶 (`/health` basique)
+- [x] Logger NestJS (pas de console.log) ✅
+- [x] Health check basique (`/health`) ✅
+- [ ] Health check avancé (DB, MinIO, Firebase) ❌
 - [ ] Analytics (Google Analytics / Mixpanel) ❌
 - [ ] Error tracking (Sentry) ❌
 
 ---
 
-### Résumé Statistique (Audit 2026-02-16)
+### Résumé Statistique (Audit 2026-03-10)
 
 | Métrique | Valeur |
 |---|---|
-| **Phase 1 complétude** | ~85% |
-| **Phase 2 complétude** | ~10% |
-| **Phase 3 complétude** | ~15% |
-| **Complétude globale** | **~45%** |
+| **Phase 1 complétude** | ~97% |
+| **Phase 2 complétude** | ~55% |
+| **Phase 3 complétude** | ~20% |
+| **Complétude globale** | **~62%** |
 
-## 9. 10-Agent Code Audit Findings
+### Modules NestJS actifs (13/16)
 
-1.  **Backend Architect**: `AppModule` confirms 7/14 modules active. Missing: `Applications`, `Payments`, `Notifications`.
-2.  **Frontend Engineer**: UI is highly modular. `SearchPage` is functional but lacks filtering UI and advanced suggestions.
-3.  **Database Specialist**: `schema.prisma` is 100% aligned with high-end requirements (vector, interactions, audit logs).
-4.  **Security Expert**: Basic hardening done (Helmet, CORS). Missing: Rate limiting and sensitive field interceptors.
-5.  **Auth Specialist**: Firebase sync logic in `AuthService` handles avatar conflicts (Firebase vs MinIO) correctly.
-6.  **Search & AI Engineer**: `SearchService.search` implements high-quality vector similarity logic.
-7.  **QA Engineer**: `Amelia Self-Review` loop is the current main quality driver.
-8.  **Infrastructure Analyst**: Multistage Docker builds optimized for monorepo deployments.
-9.  **Performance Analyst**: Indexing on `SearchLog` is proactive and correct.
-10. **PM Alignment**: Immediate priorities: `ApplicationsModule` and `Search UI` polish.
+| Module | Statut |
+|---|---|
+| AuthModule | ✅ |
+| FirebaseModule | ✅ |
+| UsersModule | ✅ |
+| ProjectsModule | ✅ |
+| ApplicationsModule | ✅ |
+| SearchModule | ✅ |
+| InteractionsModule | ✅ |
+| NotificationsModule | ✅ |
+| DocumentsModule | ✅ |
+| MatchingModule | ✅ |
+| UnlockModule | ✅ |
+| HealthModule | ✅ |
+| PrismaModule | ✅ |
+| PaymentsModule | ❌ |
+| AdminModule | ❌ |
+| MessagingModule | ❌ |
+
+## 9. Priorités Immédiates
+
+1. **PaymentsModule** — Intégration Lygos Pay pour le modèle freemium (Pay-to-Contact)
+2. **AdminModule** — Dashboard admin avec file de modération et KPIs
+3. ~~**Privacy Wall backend**~~ ✅ — Interceptor pour masquer les champs sensibles selon le statut premium
+4. ~~**Matching IA**~~ ✅ — Calcul automatique des MatchScores (candidat ↔ projet)
+5. **Tests** — Couverture unitaire et e2e minimale avant lancement
+6. **Sécurité** — Rate limiting, Helmet, CORS stricte en production
+7. **Messagerie** — Système de messages entre fondateurs et candidats acceptés

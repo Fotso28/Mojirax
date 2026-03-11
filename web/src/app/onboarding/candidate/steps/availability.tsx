@@ -19,7 +19,7 @@ export function CandidateAvailabilityStep() {
                         Temps disponible (Hebdo)
                     </label>
                     <select
-                        className="w-full rounded-xl border-gray-200 py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                         value={data.time_availability || ''}
                         onChange={(e) => updateData('time_availability', e.target.value)}
                     >
@@ -36,7 +36,7 @@ export function CandidateAvailabilityStep() {
                         Type d'engagement visé
                     </label>
                     <select
-                        className="w-full rounded-xl border-gray-200 py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                         value={data.commitment_type || ''}
                         onChange={(e) => updateData('commitment_type', e.target.value)}
                     >

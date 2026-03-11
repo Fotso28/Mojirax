@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiService } from '../projects/ai.service';
+import { AiService } from '../ai/ai.service';
 import { UsersService } from './users.service';
+import { MatchingService } from '../matching/matching.service';
 
 @Injectable()
 export class CandidateModerationService {
@@ -11,6 +12,7 @@ export class CandidateModerationService {
         private prisma: PrismaService,
         private aiService: AiService,
         private usersService: UsersService,
+        private matchingService: MatchingService,
     ) {}
 
     /**
@@ -103,6 +105,13 @@ export class CandidateModerationService {
                 this.usersService.generateCandidateEmbeddings(candidateProfileId).catch((err) => {
                     this.logger.warn(`Embeddings generation failed for ${candidateProfileId}: ${err.message}`);
                 });
+
+                // Calculer les match scores (delayed pour laisser les embeddings se générer)
+                setTimeout(() => {
+                    this.matchingService.calculateForCandidate(candidateProfileId).catch((err) => {
+                        this.logger.warn(`Match scores failed for candidate ${candidateProfileId}: ${err.message}`);
+                    });
+                }, 5000);
 
                 // Notification : profil publié
                 await this.prisma.notification.create({

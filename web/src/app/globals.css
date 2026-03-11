@@ -36,6 +36,31 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
+
+  /* Glow effect for saved buttons */
+  .saved-glow {
+    box-shadow: 0 0 12px rgba(0, 102, 255, 0.35), 0 0 4px rgba(0, 102, 255, 0.15);
+  }
+
+  /* Hide scrollbar but keep scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 102, 255, 0.25); }
+  50% { box-shadow: 0 0 16px rgba(0, 102, 255, 0.45), 0 0 6px rgba(0, 102, 255, 0.2); }
+}
+
+@layer utilities {
+  .animate-pulse-once {
+    animation: pulse-glow 0.6s ease-in-out 1;
+  }
 }
 
 body {

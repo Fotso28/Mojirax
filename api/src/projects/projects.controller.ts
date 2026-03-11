@@ -4,16 +4,19 @@ import {
     BadRequestException, ForbiddenException, NotFoundException, Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSummaryDto } from './dto/update-summary.dto';
 import { RegenerateBlockDto } from './dto/regenerate-block.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
-import { AiService } from './ai.service';
+import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
+import { AiService } from '../ai/ai.service';
 import { DocumentStorageService } from '../documents/document-storage.service';
 import { DocumentAnalysisService } from '../documents/document-analysis.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 
 @ApiTags('projects')
@@ -32,6 +35,7 @@ export class ProjectsController {
     @ApiBearerAuth()
     @UseGuards(FirebaseAuthGuard)
     @Post()
+    @Throttle({ default: { ttl: 60000, limit: 3 } })
     @ApiOperation({ summary: 'Create a new project' })
     @ApiResponse({ status: 201, description: 'The project has been successfully created.' })
     async create(@Request() req, @Body() dto: CreateProjectDto) {
@@ -193,10 +197,14 @@ export class ProjectsController {
         return updated;
     }
 
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard)
     @Get(':id/document')
     @ApiOperation({ summary: 'Get document metadata for a project' })
     @ApiResponse({ status: 200, description: 'Document metadata returned.' })
-    async getDocument(@Param('id') id: string) {
+    async getDocument(@Request() req, @Param('id') id: string) {
+        await this.findProjectAndVerifyOwnership(id, req.user.uid);
+
         const project = await this.prisma.project.findUnique({
             where: { id },
             select: {
@@ -250,6 +258,7 @@ export class ProjectsController {
     @ApiBearerAuth()
     @UseGuards(FirebaseAuthGuard)
     @Post(':id/logo')
+    @Throttle({ default: { ttl: 60000, limit: 5 } })
     @ApiOperation({ summary: 'Upload project logo' })
     @ApiConsumes('multipart/form-data')
     @ApiResponse({ status: 200, description: 'Logo uploaded successfully.' })
@@ -274,11 +283,21 @@ export class ProjectsController {
         return this.projectsService.updateLogo(req.user.uid, id, file.buffer);
     }
 
+    @Get('trending')
+    @Throttle({ default: { ttl: 60000, limit: 30 } })
+    @ApiOperation({ summary: 'Get top 5 trending projects' })
+    @ApiResponse({ status: 200, description: 'Trending projects returned.' })
+    async getTrending() {
+        return this.projectsService.getTrending();
+    }
+
+    @UseGuards(FirebaseAuthOptionalGuard)
+    @UseInterceptors(PrivacyInterceptor)
     @Get(':idOrSlug')
     @ApiOperation({ summary: 'Get project by ID or slug' })
     @ApiResponse({ status: 200, description: 'Project details returned.' })
     @ApiResponse({ status: 404, description: 'Project not found.' })
-    async findOne(@Param('idOrSlug') idOrSlug: string) {
+    async findOne(@Request() req, @Param('idOrSlug') idOrSlug: string) {
         return this.projectsService.findOne(idOrSlug);
     }
 

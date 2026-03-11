@@ -7,13 +7,16 @@ import {
     Body,
     Query,
     UseGuards,
+    UseInterceptors,
     Request,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
+import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -23,6 +26,7 @@ export class ApplicationsController {
     constructor(private readonly applicationsService: ApplicationsService) { }
 
     @Post()
+    @Throttle({ default: { ttl: 60000, limit: 5 } })
     @ApiOperation({ summary: 'Postuler à un projet' })
     async apply(@Request() req, @Body() dto: CreateApplicationDto) {
         return this.applicationsService.apply(req.user.uid, dto);
@@ -45,6 +49,7 @@ export class ApplicationsController {
     }
 
     @Get('project/:projectId')
+    @UseInterceptors(PrivacyInterceptor)
     @ApiOperation({ summary: 'Lister les candidatures reçues pour un projet (fondateur uniquement)' })
     @ApiQuery({ name: 'take', required: false, type: Number })
     @ApiQuery({ name: 'skip', required: false, type: Number })

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { InteractionsService } from './interactions.service';
 import { CreateInteractionDto } from './dto/create-interaction.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
@@ -16,5 +16,12 @@ export class InteractionsController {
     @ApiResponse({ status: 201, description: 'Interaction recorded.' })
     async create(@Request() req, @Body() dto: CreateInteractionDto) {
         return this.interactionsService.create(req.user.uid, dto);
+    }
+
+    @Get('saved')
+    @ApiOperation({ summary: 'Get IDs of projects saved by the current user' })
+    @ApiResponse({ status: 200, description: 'Array of saved project IDs.' })
+    async getSaved(@Request() req): Promise<string[]> {
+        return this.interactionsService.getSavedProjectIds(req.user.uid);
     }
 }

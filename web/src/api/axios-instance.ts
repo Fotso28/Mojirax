@@ -1,15 +1,17 @@
 import Axios, { AxiosRequestConfig } from 'axios';
+import { auth } from '@/lib/firebase';
 
 export const AXIOS_INSTANCE = Axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 });
 
-// Request interceptor for adding auth token
+// Request interceptor — fresh token on every request
 AXIOS_INSTANCE.interceptors.request.use(
-    (config) => {
-        // Add auth token if available
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        if (token) {
+    async (config) => {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+            // getIdToken() rafraîchit automatiquement si expiré
+            const token = await currentUser.getIdToken();
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -24,9 +26,9 @@ AXIOS_INSTANCE.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Handle unauthorized
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('token');
+                localStorage.removeItem('db_user');
                 window.location.href = '/login';
             }
         }

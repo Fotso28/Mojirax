@@ -30,7 +30,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
                     </div>
                     {/* Reuse SidebarLeft content */}
                     <div className="flex-1 overflow-y-auto p-4">
-                        <SidebarLeft />
+                        <SidebarLeft expanded />
                     </div>
                 </div>
             </div>

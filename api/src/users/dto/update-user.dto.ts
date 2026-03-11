@@ -1,18 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsObject, IsOptional, IsString, IsUrl } from 'class-validator';
 
-export enum UserRole {
-    ADMIN = 'ADMIN',
+// Rôles autorisés pour l'auto-assignation (onboarding)
+// ADMIN est exclu — seul un admin peut promouvoir via PATCH /admin/users/:id/role
+export enum SelfAssignableRole {
     FOUNDER = 'FOUNDER',
     CANDIDATE = 'CANDIDATE',
-    USER = 'USER',
 }
 
 export class UpdateUserProfileDto {
-    @ApiProperty({ enum: UserRole, description: 'The role of the user' })
-    @IsEnum(UserRole)
+    @ApiProperty({ enum: SelfAssignableRole, description: 'The role of the user (FOUNDER or CANDIDATE only)' })
+    @IsEnum(SelfAssignableRole, { message: 'Le rôle doit être FOUNDER ou CANDIDATE' })
     @IsOptional()
-    role?: UserRole;
+    role?: SelfAssignableRole;
 
     @ApiProperty({ description: 'First name of the user', required: false })
     @IsString()

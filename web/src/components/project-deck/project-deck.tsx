@@ -9,7 +9,7 @@ import { DocumentView } from './document-view';
 import { FounderSidebar } from './founder-sidebar';
 import { ApplyModal } from '@/components/applications/apply-modal';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
-import { Loader2, ArrowLeft, Share2, Bookmark, BookmarkCheck, MapPin, Briefcase, Users, CheckCircle2, AlertCircle, Pencil } from 'lucide-react';
+import { Loader2, ArrowLeft, Share2, Bookmark, BookmarkCheck, MapPin, Briefcase, Users, CheckCircle2, AlertCircle, Pencil, Clock, XCircle, FileEdit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -78,6 +78,14 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
         };
         fetchProject();
     }, [projectId]);
+
+    // Charger l'état sauvegardé depuis le backend
+    useEffect(() => {
+        if (!user) return;
+        AXIOS_INSTANCE.get<string[]>('/interactions/saved')
+            .then(({ data }) => setIsSaved(data.includes(projectId)))
+            .catch(() => {});
+    }, [user, projectId]);
 
     useEffect(() => {
         const start = viewStartRef.current;
@@ -174,7 +182,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                 {/* Main project content */}
                 <div className="flex flex-col bg-white md:rounded-2xl">
                     {/* Hero */}
-                    <div className="relative bg-gradient-to-br from-kezak-dark to-kezak-primary px-6 pt-5 pb-6 md:rounded-t-2xl">
+                    <div className="relative bg-gradient-to-br from-kezak-dark to-kezak-primary px-6 pt-5 pb-6 rounded-t-2xl">
                         {/* Top bar: back + actions */}
                         <div className="flex items-center justify-between mb-6">
                             {canGoBack ? (
@@ -188,7 +196,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                 </button>
                                 <button onClick={handleSave} className={cn(
                                     "p-2 rounded-full transition-all duration-200",
-                                    isSaved ? "text-yellow-400 bg-white/10" : "text-white/70 hover:text-white hover:bg-white/10"
+                                    isSaved ? "text-yellow-400 bg-white/15 saved-glow" : "text-white/70 hover:text-white hover:bg-white/10"
                                 )}>
                                     {isSaved ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
                                 </button>
@@ -254,9 +262,58 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                         </div>
                     </div>
 
+                    {/* Moderation status banner */}
+                    {project.status === 'DRAFT' && dbUser?.id === project.founderId && (
+                        <div className="mx-6 mt-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <FileEdit className="w-5 h-5 text-gray-500 shrink-0" />
+                                <p className="text-sm text-gray-600">
+                                    Ce projet n&apos;est pas encore publie. Completez-le et soumettez-le pour verification.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    {project.status === 'PENDING_AI' && (
+                        <div className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+                                <p className="text-sm text-amber-700">
+                                    Ce projet est en cours de verification par notre IA. Vous serez notifie du resultat.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    {project.status === 'REJECTED' && (
+                        <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                            <div className="flex items-start gap-3">
+                                <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-red-700">
+                                        Ce projet a ete rejete par la moderation.
+                                    </p>
+                                    {project.moderationReason && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            Raison : {project.moderationReason}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {project.status === 'ANALYZING' && (
+                        <div className="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <Loader2 className="w-5 h-5 text-blue-600 shrink-0 animate-spin" />
+                                <p className="text-sm text-blue-700">
+                                    Ce projet est en cours d&apos;analyse par notre IA. Cela peut prendre quelques minutes.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Tabs */}
-                    <div className="border-b border-gray-100 px-6 bg-white">
-                        <nav className="flex space-x-8">
+                    <div className="border-b border-gray-100 px-4 sm:px-6 bg-white overflow-x-auto scrollbar-hide">
+                        <nav className="flex space-x-1 sm:space-x-8 min-w-max">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
@@ -275,7 +332,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                     </div>
 
                     {/* Content */}
-                    <div ref={scrollRef} onScroll={handleScroll} className="p-6 md:p-8 bg-gray-50/30">
+                    <div ref={scrollRef} onScroll={handleScroll} className="p-3 sm:p-6 md:p-8 bg-gray-50/30">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeTab}

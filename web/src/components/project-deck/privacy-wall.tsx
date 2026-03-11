@@ -5,12 +5,16 @@ interface PrivacyWallProps {
     children: React.ReactNode;
     isPremium?: boolean;
     blurIntensity?: 'sm' | 'md' | 'lg';
+    onUnlock?: () => void;
+    lockedFieldsCount?: number;
 }
 
 export function PrivacyWall({
     children,
     isPremium = false,
-    blurIntensity = 'md'
+    blurIntensity = 'md',
+    onUnlock,
+    lockedFieldsCount,
 }: PrivacyWallProps) {
     if (isPremium) {
         return <>{children}</>;
@@ -34,9 +38,14 @@ export function PrivacyWall({
                     </div>
                     <h4 className="font-bold text-gray-900 mb-1">Information Masquée</h4>
                     <p className="text-xs text-gray-500 mb-4">
-                        Passez Premium pour voir les détails de contact et les liens.
+                        {lockedFieldsCount
+                            ? `${lockedFieldsCount} information${lockedFieldsCount > 1 ? 's' : ''} masquée${lockedFieldsCount > 1 ? 's' : ''}`
+                            : 'Passez Premium pour voir les détails de contact et les liens.'}
                     </p>
-                    <button className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all">
+                    <button
+                        onClick={onUnlock}
+                        className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all"
+                    >
                         Débloquer
                     </button>
                 </div>

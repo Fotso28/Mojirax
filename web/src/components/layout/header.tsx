@@ -1,8 +1,9 @@
 'use client';
 
-import { Menu, Grid, Search } from 'lucide-react';
+import { Menu, Grid, Search, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useSidebar } from '@/context/sidebar-context';
 import { NotificationDropdown } from '@/components/layout/notification-dropdown';
 
@@ -21,14 +22,14 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
             <div className="max-w-[1600px] mx-auto px-4 h-full flex items-center justify-between">
 
                 {/* Left: Logo */}
-                <div className="flex items-center gap-2">
+                <Link href="/feed" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-kezak-primary rounded flex items-center justify-center">
                         <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                             <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
                     <span className="text-xl font-bold text-kezak-dark">MojiraX</span>
-                </div>
+                </Link>
 
                 {/* Center: Search Bar (Desktop only — lg+) */}
                 <div className="hidden lg:flex flex-1 max-w-xl mx-8">
@@ -53,6 +54,17 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                     >
                         <Search className="w-6 h-6" />
                     </button>
+
+                    {/* Admin link — visible only for ADMIN role */}
+                    {dbUser?.role === 'ADMIN' && (
+                        <button
+                            onClick={() => router.push('/admin')}
+                            className="p-2 text-gray-400 hover:text-kezak-primary hover:bg-gray-50 rounded-full transition-colors"
+                            title="Administration"
+                        >
+                            <ShieldCheck className="w-5 h-5" />
+                        </button>
+                    )}
 
                     {/* Notifications (Mobile + Desktop) */}
                     <NotificationDropdown />

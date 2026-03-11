@@ -40,7 +40,7 @@ export function VisionView({ project }: { project: any }) {
 
             {/* CTA: Télécharger le dossier */}
             {project.documentUrl && (
-                <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between gap-4">
+                <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                             <FileText className="w-5 h-5 text-blue-500" />
@@ -55,7 +55,7 @@ export function VisionView({ project }: { project: any }) {
                         download={project.documentName || 'document'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-kezak-primary text-white rounded-lg text-sm font-semibold hover:bg-kezak-dark transition-colors shrink-0"
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-kezak-primary text-white rounded-lg text-sm font-semibold hover:bg-kezak-dark transition-colors w-full sm:w-auto"
                     >
                         <Download className="w-3.5 h-3.5" />
                         Télécharger

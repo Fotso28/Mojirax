@@ -3,10 +3,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { ProjectCard } from './project-card';
-import { NativeAd } from './native-ad';
+import { AdFeedCard } from '@/components/ads/ad-feed-card';
 import { FeedFilters } from './feed-filters';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
+
+interface FeedAd {
+    id: string;
+    title: string;
+    description?: string | null;
+    imageUrl?: string | null;
+    linkUrl?: string | null;
+    ctaText?: string | null;
+}
 
 interface FeedResponse {
     projects: any[];
@@ -21,14 +31,39 @@ interface Filters {
 }
 
 export function FeedStream() {
+    const { user } = useAuth();
     const [projects, setProjects] = useState<any[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [filters, setFilters] = useState<Filters>({});
+    const [feedAds, setFeedAds] = useState<FeedAd[]>([]);
+    const [insertEvery, setInsertEvery] = useState(8);
+    const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
     const observerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
+
+    // Charger les pubs feed
+    useEffect(() => {
+        AXIOS_INSTANCE.get('/ads/feed')
+            .then(({ data }) => {
+                setFeedAds(data.ads || []);
+                if (data.insertEvery) setInsertEvery(data.insertEvery);
+            })
+            .catch(() => {});
+    }, []);
+
+    // Charger les projets sauvegardés par l'utilisateur
+    useEffect(() => {
+        if (!user) {
+            setSavedIds(new Set());
+            return;
+        }
+        AXIOS_INSTANCE.get<string[]>('/interactions/saved')
+            .then(({ data }) => setSavedIds(new Set(data)))
+            .catch(() => {});
+    }, [user]);
 
     const loadFeed = useCallback(async (cursor: string | null = null, currentFilters: Filters = {}) => {
         if (cursor) {
@@ -166,12 +201,20 @@ export function FeedStream() {
         <div className="space-y-6 max-w-2xl mx-auto">
             <FeedFilters onFilterChange={handleFilterChange} />
             {projects.map((project, index) => {
-                const showAd = index > 0 && index % 5 === 0;
+                // Première pub après 3 projets, puis toutes les insertEvery positions
+                const firstAdAt = Math.min(3, insertEvery);
+                let adIndex = -1;
+                if (feedAds.length > 0 && index === firstAdAt) {
+                    adIndex = 0;
+                } else if (feedAds.length > 0 && index > firstAdAt && (index - firstAdAt) % insertEvery === 0) {
+                    adIndex = Math.floor((index - firstAdAt) / insertEvery) + 1;
+                }
+                const ad = adIndex >= 0 ? feedAds[adIndex % feedAds.length] : null;
 
                 return (
                     <div key={project.id} className="space-y-6">
-                        {showAd && <NativeAd />}
-                        <ProjectCard project={project} position={index} />
+                        {ad && <AdFeedCard ad={ad} position={adIndex} />}
+                        <ProjectCard project={project} position={index} initialSaved={savedIds.has(project.id)} />
                     </div>
                 );
             })}

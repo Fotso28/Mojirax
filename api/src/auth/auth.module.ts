@@ -3,6 +3,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { FirebaseStrategy } from './firebase.strategy';
+import { VisitsService } from './visits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseModule } from '../firebase/firebase.module';
 
@@ -12,7 +13,7 @@ import { FirebaseModule } from '../firebase/firebase.module';
         FirebaseModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, FirebaseStrategy, PrismaService],
-    exports: [AuthService, PassportModule],
+    providers: [AuthService, FirebaseStrategy, VisitsService, PrismaService],
+    exports: [AuthService, VisitsService, PassportModule],
 })
 export class AuthModule { }

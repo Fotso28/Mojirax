@@ -34,8 +34,8 @@ export class UploadService implements OnModuleInit {
             endpoint: this.endpoint,
             region: 'us-east-1',
             credentials: {
-                accessKeyId: this.config.get('MINIO_ACCESS_KEY', 'minioadmin'),
-                secretAccessKey: this.config.get('MINIO_SECRET_KEY', 'minioadmin'),
+                accessKeyId: this.config.getOrThrow<string>('MINIO_ACCESS_KEY'),
+                secretAccessKey: this.config.getOrThrow<string>('MINIO_SECRET_KEY'),
             },
             forcePathStyle: true,
         });
@@ -132,6 +132,19 @@ export class UploadService implements OnModuleInit {
             width: 400,
             height: 400,
         });
+    }
+
+    /**
+     * Upload image pub avec dimensions selon le placement
+     */
+    async uploadAdImage(adId: string, buffer: Buffer, placement: string): Promise<string> {
+        const dimensions: Record<string, { width: number; height: number }> = {
+            FEED: { width: 1200, height: 628 },
+            SIDEBAR: { width: 600, height: 600 },
+            SEARCH: { width: 1200, height: 628 },
+        };
+        const dim = dimensions[placement] || dimensions.FEED;
+        return this.uploadImage('ads', adId, buffer, dim);
     }
 
     async deleteFile(key: string): Promise<void> {

@@ -6,6 +6,7 @@ import { SidebarLeft } from './sidebar-left';
 import { SidebarRight } from './sidebar-right';
 import { MobileNavDrawer } from './mobile-nav-drawer';
 import { MobileWidgetDrawer } from './mobile-widget-drawer';
+import { AdBanner } from '@/components/ads/ad-banner';
 import { useSidebar } from '@/context/sidebar-context';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
+            {/* Banner Ad */}
+            <AdBanner />
+
             {/* Header - Fixed Top */}
             <Header
                 onOpenMobileNav={() => setIsMobileNavOpen(true)}
@@ -29,7 +33,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             {/* Main Grid Layout */}
             <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-8">
                 <div className={cn(
-                    "grid grid-cols-1 md:grid-cols-[80px_1fr] gap-6 items-start",
+                    "grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start",
                     isSidebarHidden ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[280px_1fr_300px]"
                 )}>
 

@@ -68,31 +68,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setLoading(false);
 
                 try {
-                    const token = await currentUser.getIdToken();
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem('token', token);
+                    // 1. Sync
+                    await axiosInstance.post('/auth/sync');
+
+                    // 2. Fetch Profile
+                    const { data: profileData } = await axiosInstance.get('/users/profile');
+
+                    if (profileData) {
+                        setDbUser(profileData);
+                        localStorage.setItem('db_user', JSON.stringify(profileData));
                     }
-
-                    try {
-                        // 1. Sync
-                        await axiosInstance.post('/auth/sync');
-
-                        // 2. Fetch Profile
-                        const { data: profileData } = await axiosInstance.get('/users/profile');
-
-                        if (profileData) {
-                            setDbUser(profileData);
-                            localStorage.setItem('db_user', JSON.stringify(profileData)); // Cache it!
-                        }
-                    } catch (err) {
-                        console.error("Background sync failed", err);
-                    }
-                } catch (error) {
-                    console.error("Error processing auth user:", error);
+                } catch (err) {
+                    console.error("Background sync failed", err);
                 }
             } else {
                 if (typeof window !== 'undefined') {
-                    localStorage.removeItem('token');
                     localStorage.removeItem('auth_user');
                     localStorage.removeItem('db_user');
                 }
@@ -153,9 +143,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         try {
             await signOut(auth);
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('token');
-            }
             router.push('/');
         } catch (error) {
             console.error("Error signing out", error);

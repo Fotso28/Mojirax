@@ -40,6 +40,33 @@ export const IMAGE_PRESETS = {
         cropShape: 'rect' as const,
         title: 'Recadrer le logo',
     },
+    adFeed: {
+        aspect: 1.91 / 1,
+        outputWidth: 1200,
+        outputHeight: 628,
+        quality: 0.82,
+        maxFileSizeKb: 500,
+        cropShape: 'rect' as const,
+        title: 'Image pub — Feed (1.91:1)',
+    },
+    adSidebar: {
+        aspect: 1,
+        outputWidth: 600,
+        outputHeight: 600,
+        quality: 0.80,
+        maxFileSizeKb: 400,
+        cropShape: 'rect' as const,
+        title: 'Image pub — Sidebar (1:1)',
+    },
+    adSearch: {
+        aspect: 1.91 / 1,
+        outputWidth: 1200,
+        outputHeight: 628,
+        quality: 0.82,
+        maxFileSizeKb: 500,
+        cropShape: 'rect' as const,
+        title: 'Image pub — Recherche (1.91:1)',
+    },
 } as const;
 
 export type ImagePresetKey = keyof typeof IMAGE_PRESETS;

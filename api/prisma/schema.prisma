@@ -65,6 +65,7 @@ model User {
   adminLogs        AdminLog[]
   searchLogs       SearchLog[]
   projectInteractions UserProjectInteraction[]
+  visits           UserVisit[]
 
   @@map("users")
 }
@@ -519,6 +520,7 @@ enum NotificationType {
   DOCUMENT_ANALYSIS_FAILED
   PROFILE_PUBLISHED
   PROFILE_REVIEW
+  PROFILE_UNLOCKED
 }
 
 model Notification {
@@ -569,4 +571,182 @@ model UserProjectInteraction {
   @@index([userId, projectId])
   @@index([projectId, action])
   @@index([createdAt])
+}
+
+// --------------------------------------
+// 9. Ads / Contenu Premium
+// --------------------------------------
+
+enum AdPlacement {
+  FEED
+  SIDEBAR
+  BANNER
+  SEARCH
+}
+
+enum AdEventType {
+  IMPRESSION
+  CLICK
+}
+
+model Ad {
+  id              String       @id @default(cuid())
+
+  // Contenu
+  title           String
+  description     String?      @db.Text
+  imageUrl        String?      @map("image_url")
+  linkUrl         String?      @map("link_url")
+  ctaText         String?      @map("cta_text")
+
+  // Placement
+  placement       AdPlacement
+  priority        Int          @default(5) // 1-10
+
+  // Ciblage
+  targetRoles     String[]     @default([]) @map("target_roles")
+  targetSectors   String[]     @default([]) @map("target_sectors")
+  targetCities    String[]     @default([]) @map("target_cities")
+  targetStages    String[]     @default([]) @map("target_stages")
+  targetSkills    String[]     @default([]) @map("target_skills")
+
+  // Diffusion
+  isActive        Boolean      @default(true)  @map("is_active")
+  startDate       DateTime     @default(now()) @map("start_date")
+  endDate         DateTime?    @map("end_date")
+
+  // Frequency capping
+  maxImpressionsPerUserPerDay Int @default(3) @map("max_impressions_per_user_per_day")
+
+  // Stats dénormalisées
+  totalImpressions Int         @default(0) @map("total_impressions")
+  totalClicks      Int         @default(0) @map("total_clicks")
+
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt      @map("updated_at")
+
+  // Relations
+  events          AdEvent[]
+
+  @@map("ads")
+  @@index([placement, isActive])
+  @@index([startDate, endDate])
+}
+
+model AdEvent {
+  id          String      @id @default(cuid())
+  adId        String      @map("ad_id")
+  userId      String?     @map("user_id")
+
+  type        AdEventType
+  placement   AdPlacement
+  position    Int?
+
+  // Viewport tracking
+  viewportMs  Int?        @map("viewport_ms")
+
+  source      String?
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  ad          Ad          @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@map("ad_events")
+  @@index([adId, type])
+  @@index([userId, adId, createdAt])
+  @@index([createdAt])
+}
+
+model AdConfig {
+  id                    String  @id @default("singleton")
+  feedInsertEvery       Int     @default(8)    @map("feed_insert_every")
+  feedRandomize         Boolean @default(true) @map("feed_randomize")
+  sidebarMaxAds         Int     @default(2)    @map("sidebar_max_ads")
+  bannerEnabled         Boolean @default(true) @map("banner_enabled")
+  searchInsertPosition  Int     @default(1)    @map("search_insert_position")
+
+  updatedAt             DateTime @updatedAt    @map("updated_at")
+
+  @@map("ad_config")
+}
+
+// --------------------------------------
+// 10. AI Configuration & Monitoring
+// --------------------------------------
+
+model AiConfig {
+  id                    String   @id @default("singleton")
+  defaultProvider       String   @default("DEEPSEEK") @map("default_provider")
+  embeddingProvider     String   @default("JINA") @map("embedding_provider")
+  providerPerAction     Json     @default("{}") @map("provider_per_action") @db.JsonB
+  models                Json     @default("{}") @db.JsonB
+  maxTokens             Int      @default(4096) @map("max_tokens")
+  temperature           Float?
+  moderationThresholds  Json     @default("{\"publishMin\":0.7,\"rejectMax\":0.3}") @map("moderation_thresholds") @db.JsonB
+  matchingWeights       Json     @default("{\"skills\":40,\"experience\":20,\"location\":15,\"culture\":25}") @map("matching_weights") @db.JsonB
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_config")
+}
+
+model AiPrompt {
+  id               String   @id @default(cuid())
+  action           String   @unique
+  content          String   @db.Text
+  version          Int      @default(1)
+  previousVersions Json     @default("[]") @map("previous_versions") @db.JsonB
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_prompts")
+}
+
+model AiCallLog {
+  id               String   @id @default(cuid())
+  action           String
+  provider         String
+  model            String
+  success          Boolean
+  durationMs       Int      @map("duration_ms")
+  inputTokens      Int?     @map("input_tokens")
+  outputTokens     Int?     @map("output_tokens")
+  estimatedCostUsd Float?   @map("estimated_cost_usd")
+  error            String?  @db.Text
+  resourceType     String?  @map("resource_type")
+  resourceId       String?  @map("resource_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("ai_call_logs")
+  @@index([action])
+  @@index([provider])
+  @@index([createdAt])
+  @@index([success])
+}
+
+// --------------------------------------
+// 11. User Visits / Session Tracking
+// --------------------------------------
+
+model UserVisit {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+
+  // Device info
+  ip          String?
+  userAgent   String?  @map("user_agent")
+  device      String?  // MOBILE, DESKTOP, TABLET (parsed from UA)
+  browser     String?  // Chrome, Firefox, Safari...
+  os          String?  // Windows, Android, iOS...
+  country     String?  // Geo from IP (optional future)
+
+  // Session timing
+  loginAt     DateTime @default(now()) @map("login_at")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_visits")
+  @@index([userId, loginAt])
+  @@index([loginAt])
+  @@index([userId, lastSeenAt])
 }

@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
@@ -13,6 +15,13 @@ import { SearchModule } from './search/search.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DocumentsModule } from './documents/documents.module';
+import { MatchingModule } from './matching/matching.module';
+import { UnlockModule } from './unlock/unlock.module';
+import { AiModule } from './ai/ai.module';
+import { ModerationModule } from './moderation/moderation.module';
+import { AdminModule } from './admin/admin.module';
+import { AdsModule } from './ads/ads.module';
+import { AiConfigModule } from './ai-config/ai-config.module';
 
 @Module({
   imports: [
@@ -20,6 +29,11 @@ import { DocumentsModule } from './documents/documents.module';
       isGlobal: true,
       envFilePath: '../.env',
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60000, limit: 20 }],
+    }),
+    AiModule,
+    AiConfigModule,
     PrismaModule,
     HealthModule,
     AuthModule,
@@ -31,8 +45,19 @@ import { DocumentsModule } from './documents/documents.module';
     ApplicationsModule,
     NotificationsModule,
     DocumentsModule,
+    MatchingModule,
+    UnlockModule,
+    ModerationModule,
+    AdminModule,
+    AdsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule { }

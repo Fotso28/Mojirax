@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 
-export function SidebarLeft() {
+export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     const pathname = usePathname();
     const { logout, dbUser } = useAuth();
 
     const isActive = (path: string) => pathname === path;
 
     const commonItems = [
-        { icon: Home, label: 'Tableau de bord', path: '/' },
+        { icon: Home, label: 'Accueil', path: '/' },
         { icon: MessageSquare, label: 'Messages', path: '/messages' },
         { icon: User, label: 'Mon Profil', path: '/profile' },
         { icon: Settings, label: 'Paramètres', path: '/settings' },
@@ -39,10 +39,12 @@ export function SidebarLeft() {
         ...commonItems.slice(1),
     ];
 
+    const labelClass = expanded ? 'block' : 'hidden md:block';
+
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full flex flex-col overflow-hidden">
-            {/* Profile Summary (Desktop Only) */}
-            <div className="hidden lg:block p-6 border-b border-gray-50">
+            {/* Profile Summary (Tablet + Desktop) */}
+            <div className={`${expanded ? 'block' : 'hidden md:block'} p-6 border-b border-gray-50`}>
                 <div className="flex items-center gap-3 mb-1">
                     <h3 className="font-bold text-gray-900 truncate">Mon Espace</h3>
                 </div>
@@ -64,7 +66,7 @@ export function SidebarLeft() {
                         `}
                     >
                         <item.icon className={`w-6 h-6 shrink-0 ${isActive(item.path) ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                        <span className="hidden lg:block text-sm">{item.label}</span>
+                        <span className={`${labelClass} text-sm`}>{item.label}</span>
                     </Link>
                 ))}
             </nav>
@@ -76,7 +78,7 @@ export function SidebarLeft() {
                     className="flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
                 >
                     <LogOut className="w-6 h-6 shrink-0" />
-                    <span className="hidden lg:block text-sm font-medium">Déconnexion</span>
+                    <span className={`${labelClass} text-sm font-medium`}>Déconnexion</span>
                 </button>
             </div>
         </div>

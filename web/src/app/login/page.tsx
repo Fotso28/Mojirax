@@ -7,6 +7,8 @@ import { useEffect, useState, useRef } from 'react';
 import { getFirebaseErrorMessage } from '@/utils/firebase-errors';
 import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
 import { Rocket, Compass, CheckCircle, ArrowRight } from 'lucide-react';
+import { CountrySelect } from '@/components/ui/country-select';
+import { COUNTRIES } from '@/lib/constants/countries';
 
 const roles = [
     {
@@ -92,8 +94,12 @@ export default function LoginPage() {
     const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
+    const [country, setCountry] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const selectedCountry = COUNTRIES.find(c => c.label === country);
+    const dialCode = selectedCountry?.dialCode || '';
 
     const justSignedUp = useRef(false);
 
@@ -156,7 +162,14 @@ export default function LoginPage() {
         setIsUpdatingRole(true);
         setError('');
         try {
-            await axiosInstance.patch('/users/profile', { role: selectedRole });
+            const fullAddress = [address, country].filter(Boolean).join(', ') || undefined;
+            await axiosInstance.patch('/users/profile', {
+                role: selectedRole,
+                firstName: firstName || undefined,
+                lastName: lastName || undefined,
+                phone: phone || undefined,
+                address: fullAddress,
+            });
             router.push(selectedRole === 'FOUNDER' ? '/onboarding/founder' : '/onboarding/candidate');
         } catch (error) {
             console.error('Failed to update role:', error);
@@ -269,16 +282,56 @@ export default function LoginPage() {
                                         </div>
 
                                         {authMode === 'signup' && (
-                                            <div className="grid grid-cols-2 gap-3.5 mb-4.5">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ml-1">Téléphone</label>
-                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="+237 600 000 000" required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                                            <>
+                                                <div className="space-y-1.5 mb-4.5">
+                                                    <label className="text-[13px] font-semibold text-slate-700 ml-1">Pays</label>
+                                                    <CountrySelect
+                                                        value={country}
+                                                        onChange={(val) => {
+                                                            setCountry(val);
+                                                            const c = COUNTRIES.find(ct => ct.label === val);
+                                                            if (c?.dialCode && !phone) {
+                                                                setPhone(c.dialCode + ' ');
+                                                            } else if (c?.dialCode && phone) {
+                                                                // Replace existing dial code prefix
+                                                                const oldCountry = selectedCountry;
+                                                                if (oldCountry?.dialCode && phone.startsWith(oldCountry.dialCode)) {
+                                                                    setPhone(c.dialCode + phone.slice(oldCountry.dialCode.length));
+                                                                } else if (!phone.startsWith('+')) {
+                                                                    setPhone(c.dialCode + ' ' + phone);
+                                                                }
+                                                            }
+                                                        }}
+                                                        placeholder="Sélectionner votre pays..."
+                                                    />
                                                 </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ml-1">Ville</label>
-                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="Douala" required value={address} onChange={(e) => setAddress(e.target.value)} />
+                                                <div className="grid grid-cols-2 gap-3.5 mb-4.5">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[13px] font-semibold text-slate-700 ml-1">Téléphone</label>
+                                                        <div className="relative flex items-center">
+                                                            {dialCode && (
+                                                                <span className="absolute left-4 text-[15px] text-slate-500 font-medium pointer-events-none">{dialCode}</span>
+                                                            )}
+                                                            <input
+                                                                className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400"
+                                                                style={{ paddingLeft: dialCode ? `${dialCode.length * 10 + 20}px` : '16px', paddingRight: '16px' }}
+                                                                placeholder={dialCode ? '600 000 000' : '+237 600 000 000'}
+                                                                required
+                                                                type="tel"
+                                                                value={dialCode && phone.startsWith(dialCode) ? phone.slice(dialCode.length).trimStart() : phone}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    setPhone(dialCode ? dialCode + ' ' + val.replace(/^\s+/, '') : val);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[13px] font-semibold text-slate-700 ml-1">Ville</label>
+                                                        <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="Douala" required value={address} onChange={(e) => setAddress(e.target.value)} />
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </>
                                         )}
 
                                         <div className="space-y-1.5">

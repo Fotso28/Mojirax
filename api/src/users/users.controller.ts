@@ -9,6 +9,9 @@ import { CandidateModerationService } from './candidate-moderation.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
+import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
+import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('users')
@@ -79,6 +82,7 @@ export class UsersController {
     @ApiBearerAuth()
     @UseGuards(FirebaseAuthGuard)
     @Post('avatar')
+    @Throttle({ default: { ttl: 60000, limit: 5 } })
     @ApiOperation({ summary: 'Upload user avatar' })
     @ApiConsumes('multipart/form-data')
     @ApiResponse({ status: 200, description: 'Avatar uploaded successfully.' })
@@ -162,11 +166,21 @@ export class UsersController {
         });
     }
 
+    @Get('candidates/trending')
+    @Throttle({ default: { ttl: 60000, limit: 30 } })
+    @ApiOperation({ summary: 'Get top 5 trending candidates' })
+    @ApiResponse({ status: 200, description: 'Trending candidates returned.' })
+    async getTrendingCandidates() {
+        return this.usersService.getTrendingCandidates();
+    }
+
+    @UseGuards(FirebaseAuthOptionalGuard)
+    @UseInterceptors(PrivacyInterceptor)
     @Get(':id/public')
     @ApiOperation({ summary: 'Get public user profile by ID' })
     @ApiResponse({ status: 200, description: 'Public profile returned.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
-    async getPublicProfile(@Param('id') id: string) {
+    async getPublicProfile(@Request() req, @Param('id') id: string) {
         return this.usersService.findPublicProfile(id);
     }
 }

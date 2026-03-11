@@ -2,7 +2,6 @@
 
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
-import { Input } from '@/components/ui/input';
 
 export function CandidateExpertiseStep() {
     const { data, updateData, nextStep } = useOnboarding();
@@ -20,11 +19,11 @@ export function CandidateExpertiseStep() {
             <div className="space-y-6">
                 <div className="space-y-4">
                     <label className="block text-sm font-medium text-gray-700">Votre Titre Actuel</label>
-                    <Input
+                    <input
                         placeholder="Ex: Senior React Developer, CTO, Growth Hacker..."
                         value={data.title || ''}
                         onChange={(e) => updateData('title', e.target.value)}
-                        className="text-lg py-6"
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 text-lg focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                         autoFocus
                     />
                 </div>
@@ -33,7 +32,7 @@ export function CandidateExpertiseStep() {
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">Rôle Principal</label>
                         <select
-                            className="w-full rounded-xl border-gray-200 py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                             value={data.role_type || ''}
                             onChange={(e) => updateData('role_type', e.target.value)}
                         >
@@ -48,7 +47,7 @@ export function CandidateExpertiseStep() {
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">Expérience</label>
                         <select
-                            className="w-full rounded-xl border-gray-200 py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                             value={data.years_exp || ''}
                             onChange={(e) => updateData('years_exp', e.target.value)}
                         >
@@ -66,7 +65,7 @@ export function CandidateExpertiseStep() {
                         Votre Compétence Clé (Top 1)
                     </label>
                     <input
-                        className="w-full rounded-xl border-gray-200 py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                         placeholder="Ex: React Native, Vente B2B, Levée de fonds..."
                         value={data.main_competence || ''}
                         onChange={(e) => updateData('main_competence', e.target.value)}
@@ -78,7 +77,7 @@ export function CandidateExpertiseStep() {
                         Réalisations Marquantes (Max 600)
                     </label>
                     <textarea
-                        className="w-full rounded-xl border-gray-200 p-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[100px]"
+                        className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none min-h-[100px] bg-white"
                         placeholder="J'ai scalé une app à 10k users..."
                         value={data.achievements || ''}
                         onChange={(e) => updateData('achievements', e.target.value)}

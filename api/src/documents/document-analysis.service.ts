@@ -7,10 +7,11 @@ import {
     forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiService } from '../projects/ai.service';
+import { AiService } from '../ai/ai.service';
 import { ProjectsService } from '../projects/projects.service';
 import { DocumentStorageService } from './document-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MatchingService } from '../matching/matching.service';
 
 @Injectable()
 export class DocumentAnalysisService {
@@ -23,6 +24,7 @@ export class DocumentAnalysisService {
         private readonly notificationsService: NotificationsService,
         @Inject(forwardRef(() => ProjectsService))
         private readonly projectsService: ProjectsService,
+        private readonly matchingService: MatchingService,
     ) {}
 
     /**
@@ -140,7 +142,14 @@ export class DocumentAnalysisService {
 
             this.logger.log(`Projet ${projectId} analysé avec succès — statut: ${projectStatus}`);
 
-            // 7. Notifier le fondateur
+            // 7. Calculer les match scores (fire-and-forget)
+            if (isProjectLegal) {
+                this.matchingService.calculateForProject(projectId).catch((err) => {
+                    this.logger.warn(`Match scores calculation failed for project ${projectId}: ${err.message}`);
+                });
+            }
+
+            // 8. Notifier le fondateur
             if (isProjectLegal) {
                 await this.notificationsService.notify(
                     founderId,

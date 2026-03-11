@@ -24,8 +24,8 @@ export function CandidateConditionsStep() {
                                 key={type}
                                 onClick={() => updateData('collab_pref', type)}
                                 className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.collab_pref === type
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                                     }`}
                             >
                                 {type === 'EQUITY' ? 'Parts (Associé)' : type === 'PAID' ? 'Mission rémunérée' : type === 'HYBRID' ? 'Mixte' : 'À discuter'}
@@ -39,7 +39,7 @@ export function CandidateConditionsStep() {
                         Où voulez-vous travailler ?
                     </label>
                     <select
-                        className="w-full rounded-xl border-gray-200 py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                         value={data.location_pref || ''}
                         onChange={(e) => updateData('location_pref', e.target.value)}
                     >

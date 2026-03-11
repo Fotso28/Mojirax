@@ -5,15 +5,15 @@ import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import Link from 'next/link';
-import { Plus, ArrowRight, Calendar, Layers, Globe, Users, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, ArrowRight, Calendar, Layers, Globe, Users, Pencil, Trash2, AlertTriangle, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { DeleteBottomSheet } from '@/components/ui/delete-bottom-sheet';
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   DRAFT: { label: 'Brouillon', className: 'bg-gray-100 text-gray-600' },
-  PENDING_AI: { label: 'En analyse', className: 'bg-amber-50 text-amber-600' },
+  PENDING_AI: { label: 'En verification', className: 'bg-amber-50 text-amber-600' },
   ANALYZING: { label: 'Analyse IA...', className: 'bg-blue-50 text-blue-600' },
-  PUBLISHED: { label: 'Publié', className: 'bg-green-50 text-green-600' },
-  REJECTED: { label: 'Rejeté', className: 'bg-red-50 text-red-600' },
+  PUBLISHED: { label: 'Publie', className: 'bg-green-50 text-green-600' },
+  REJECTED: { label: 'Rejete', className: 'bg-red-50 text-red-600' },
 };
 
 export default function MyProjectsPage() {
@@ -177,6 +177,31 @@ export default function MyProjectsPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Moderation status banner */}
+                  {project.status === 'PENDING_AI' && (
+                    <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      <p className="text-sm text-amber-700">
+                        Ce projet est en cours de verification par notre IA. Vous serez notifie du resultat.
+                      </p>
+                    </div>
+                  )}
+                  {project.status === 'REJECTED' && (
+                    <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+                      <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-red-700">
+                          Ce projet a ete rejete par la moderation.
+                        </p>
+                        {(project as any).moderationLogs?.[0]?.aiReason && (
+                          <p className="text-sm text-red-600 mt-1">
+                            Raison : {(project as any).moderationLogs[0].aiReason}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-50">
                     <Link

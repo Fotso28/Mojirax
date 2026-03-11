@@ -3,9 +3,11 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InteractionsService } from '../interactions/interactions.service';
 import { UploadService } from '../upload/upload.service';
-import { AiService } from './ai.service';
+import { AiService } from '../ai/ai.service';
+import { ModerationService } from '../moderation/moderation.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { MatchingService } from '../matching/matching.service';
 
 function slugify(text: string): string {
     return text
@@ -42,6 +44,8 @@ export class ProjectsService {
         private interactionsService: InteractionsService,
         private uploadService: UploadService,
         private aiService: AiService,
+        private matchingService: MatchingService,
+        private moderationService: ModerationService,
     ) { }
 
     // =============================================
@@ -432,7 +436,7 @@ export class ProjectsService {
                     vision: dto.vision,
                     description: dto.description,
                     requiredSkills: dto.requiredSkills || [],
-                    status: 'PUBLISHED',
+                    status: 'PENDING_AI',
                 },
             });
         });
@@ -445,6 +449,16 @@ export class ProjectsService {
         // Generate embedding asynchronously (non-blocking)
         this.generateProjectEmbedding(project.id, dto).catch(err =>
             this.logger.warn(`Embedding generation failed for project ${project.id}: ${err.message}`)
+        );
+
+        // Moderation IA asynchrone (fire-and-forget)
+        this.moderationService.moderateProject(project.id).then(() => {
+            // Si le projet est publie apres moderation, calculer les match scores
+            this.matchingService.calculateForProject(project.id).catch(err =>
+                this.logger.warn(`Match scores failed for project ${project.id}: ${err.message}`)
+            );
+        }).catch(err =>
+            this.logger.warn(`Moderation failed for project ${project.id}: ${err.message}`)
         );
 
         return project;
@@ -513,6 +527,8 @@ export class ProjectsService {
                         firstName: true,
                         lastName: true,
                         name: true,
+                        email: true,
+                        phone: true,
                         image: true,
                         founderProfile: true,
                         createdAt: true,
@@ -683,5 +699,80 @@ export class ProjectsService {
 
         this.logger.log(`Project ${projectId} deleted by user ${user.id}`);
         return { deleted: true };
+    }
+
+    // ─── Trending ──────────────────────────────────────
+    /**
+     * Top 5 projets publiés classés par score composite :
+     * qualité (40%) + récence (30%) + vues (30%)
+     */
+    async getTrending() {
+        const now = Date.now();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+        // Projets publiés récents (< 60 jours) avec leur qualityScore
+        const projects = await this.prisma.project.findMany({
+            where: {
+                status: 'PUBLISHED',
+                createdAt: { gte: new Date(now - 60 * 24 * 60 * 60 * 1000) },
+            },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                sector: true,
+                stage: true,
+                logoUrl: true,
+                qualityScore: true,
+                createdAt: true,
+                founder: {
+                    select: { id: true, name: true, image: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+        });
+
+        if (projects.length === 0) return [];
+
+        // Compter les vues par projet
+        const viewCounts = await this.prisma.userProjectInteraction.groupBy({
+            by: ['projectId'],
+            where: {
+                projectId: { in: projects.map((p) => p.id) },
+                action: 'VIEW',
+            },
+            _count: true,
+        });
+
+        const viewMap = new Map(viewCounts.map((v) => [v.projectId, v._count]));
+        const maxViews = Math.max(1, ...viewCounts.map((v) => v._count));
+
+        // Calculer le score composite
+        const scored = projects.map((p) => {
+            const qualityNorm = (p.qualityScore || 0) / 100; // 0-1
+            const ageMs = now - new Date(p.createdAt).getTime();
+            const freshnessNorm = Math.max(0, 1 - ageMs / thirtyDaysMs); // 1=nouveau, 0=vieux
+            const viewsNorm = (viewMap.get(p.id) || 0) / maxViews; // 0-1
+
+            const score = qualityNorm * 0.4 + freshnessNorm * 0.3 + viewsNorm * 0.3;
+
+            return {
+                id: p.id,
+                name: p.name,
+                slug: p.slug,
+                sector: p.sector,
+                stage: p.stage,
+                logoUrl: p.logoUrl,
+                qualityScore: p.qualityScore,
+                founder: p.founder,
+                views: viewMap.get(p.id) || 0,
+                score,
+            };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+
+        return scored.slice(0, 5);
     }
 }
