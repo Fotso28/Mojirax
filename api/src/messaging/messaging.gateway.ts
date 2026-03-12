@@ -173,6 +173,20 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         return;
       }
 
+      // Validate content length (M02)
+      if (data.content && data.content.length > 5000) {
+        client.emit('error', { message: 'Message trop long (5000 caractères max)' });
+        return;
+      }
+      if (data.fileSize && data.fileSize > 5_242_880) {
+        client.emit('error', { message: 'Fichier trop volumineux (5 MB max)' });
+        return;
+      }
+      if (data.fileMimeType && !['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(data.fileMimeType)) {
+        client.emit('error', { message: 'Type de fichier non autorisé' });
+        return;
+      }
+
       const message = await this.messagingService.sendMessage(userId, {
         conversationId: data.conversationId,
         content: data.content,
@@ -238,29 +252,14 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     try {
       const result = await this.messagingService.markDelivered(data.messageId, userId);
       if (result) {
-        // Notify sender of delivery
+        // Notify conversation room of delivery status
         this.server
-          .to(`conversation:${result.senderId}`)
+          .to(`conversation:${result.conversationId}`)
           .emit('message:status', {
             messageId: data.messageId,
             status: 'DELIVERED',
             deliveredAt: result.deliveredAt,
           });
-
-        // Find the conversation for this message to emit to room
-        const message = await this.prisma.message.findUnique({
-          where: { id: data.messageId },
-          select: { conversationId: true },
-        });
-        if (message) {
-          this.server
-            .to(`conversation:${message.conversationId}`)
-            .emit('message:status', {
-              messageId: data.messageId,
-              status: 'DELIVERED',
-              deliveredAt: result.deliveredAt,
-            });
-        }
       }
     } catch (err: any) {
       this.logger.error(`message:delivered failed: ${err?.message}`);
@@ -309,6 +308,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       const allowed = await this.rateLimiter.check(userId, 'typing:start');
       if (!allowed) return;
 
+      // Verify user belongs to conversation (M01)
+      await this.messagingService.verifyMembership(data.conversationId, userId);
+
       // Set typing flag in Redis with short TTL
       await this.redis.set(
         `typing:${data.conversationId}:${userId}`,
@@ -340,6 +342,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     try {
       const allowed = await this.rateLimiter.check(userId, 'typing:stop');
       if (!allowed) return;
+
+      // Verify user belongs to conversation (M01)
+      await this.messagingService.verifyMembership(data.conversationId, userId);
 
       // Remove typing flag
       await this.redis.del(`typing:${data.conversationId}:${userId}`);
@@ -373,26 +378,18 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         return;
       }
 
-      const reactions = await this.messagingService.addReaction(
+      const { conversationId, reactions } = await this.messagingService.addReaction(
         data.messageId,
         userId,
         data.emoji,
       );
 
-      // Get the conversation to emit to
-      const message = await this.prisma.message.findUnique({
-        where: { id: data.messageId },
-        select: { conversationId: true },
-      });
-
-      if (message) {
-        this.server
-          .to(`conversation:${message.conversationId}`)
-          .emit('reaction:update', {
-            messageId: data.messageId,
-            reactions,
-          });
-      }
+      this.server
+        .to(`conversation:${conversationId}`)
+        .emit('reaction:update', {
+          messageId: data.messageId,
+          reactions,
+        });
     } catch (err: any) {
       this.logger.error(`reaction:add failed: ${err?.message}`);
       client.emit('error', { message: err?.message || 'Erreur d\'ajout de réaction' });
@@ -414,25 +411,18 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         return;
       }
 
-      const reactions = await this.messagingService.removeReaction(
+      const { conversationId, reactions } = await this.messagingService.removeReaction(
         data.messageId,
         userId,
         data.emoji,
       );
 
-      const message = await this.prisma.message.findUnique({
-        where: { id: data.messageId },
-        select: { conversationId: true },
-      });
-
-      if (message) {
-        this.server
-          .to(`conversation:${message.conversationId}`)
-          .emit('reaction:update', {
-            messageId: data.messageId,
-            reactions,
-          });
-      }
+      this.server
+        .to(`conversation:${conversationId}`)
+        .emit('reaction:update', {
+          messageId: data.messageId,
+          reactions,
+        });
     } catch (err: any) {
       this.logger.error(`reaction:remove failed: ${err?.message}`);
       client.emit('error', { message: err?.message || 'Erreur de suppression de réaction' });

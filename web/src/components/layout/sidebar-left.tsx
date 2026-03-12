@@ -21,13 +21,16 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     }, []);
 
     useEffect(() => {
-        if (!socket) return;
-        const handler = (_message: unknown) => {
-            setUnreadCount((c) => c + 1);
+        if (!socket || !dbUser?.id) return;
+        const currentUserId = dbUser.id;
+        const handler = (message: { senderId: string }) => {
+            if (message.senderId !== currentUserId) {
+                setUnreadCount((c) => c + 1);
+            }
         };
         socket.on('message:new', handler);
         return () => { socket.off('message:new', handler); };
-    }, [socket]);
+    }, [socket, dbUser?.id]);
 
     const isActive = (path: string) => pathname === path;
 

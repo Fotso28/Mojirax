@@ -67,26 +67,24 @@ export default function MessagesPage() {
       });
     };
 
-    const handleUserOnline = ({ userId }: { userId: string }) => {
-      setOnlineUsers((prev) => new Set([...prev, userId]));
-    };
-
-    const handleUserOffline = ({ userId }: { userId: string }) => {
+    const handlePresenceUpdate = ({ userId, status }: { userId: string; status: 'online' | 'offline' }) => {
       setOnlineUsers((prev) => {
         const next = new Set(prev);
-        next.delete(userId);
+        if (status === 'online') {
+          next.add(userId);
+        } else {
+          next.delete(userId);
+        }
         return next;
       });
     };
 
     socket.on('message:new', handleNewMessage);
-    socket.on('user:online', handleUserOnline);
-    socket.on('user:offline', handleUserOffline);
+    socket.on('presence:update', handlePresenceUpdate);
 
     return () => {
       socket.off('message:new', handleNewMessage);
-      socket.off('user:online', handleUserOnline);
-      socket.off('user:offline', handleUserOffline);
+      socket.off('presence:update', handlePresenceUpdate);
     };
   }, [socket, fetchConversations]);
 

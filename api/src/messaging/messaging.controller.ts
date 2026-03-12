@@ -31,9 +31,9 @@ export class MessagingController {
   ) {}
 
   @Get('conversations')
-  async getConversations(@Req() req: any) {
+  async getConversations(@Req() req: any, @Query() dto: GetMessagesDto) {
     const userId = await this.messagingService.resolveUserId(req.user.uid);
-    return this.messagingService.getConversations(userId);
+    return this.messagingService.getConversations(userId, dto.cursor, dto.limit);
   }
 
   @Get('conversations/unread-count')

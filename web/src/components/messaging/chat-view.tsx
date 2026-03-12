@@ -63,7 +63,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       const params: Record<string, string | number> = { limit: MESSAGES_LIMIT };
       if (cursorParam) params.cursor = cursorParam;
 
-      const { data } = await AXIOS_INSTANCE.get(`/messages/conversations/${convId}/messages`, { params });
+      const { data } = await AXIOS_INSTANCE.get(`/messages/${convId}`, { params });
       return data;
     } catch {
       return null;
@@ -81,7 +81,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
 
     loadMessages(conversationId).then((data) => {
       if (data) {
-        const msgs: Message[] = (data.messages || []).slice().reverse();
+        const msgs: Message[] = (data.items || []).slice().reverse();
         setMessages(msgs);
         prevLengthRef.current = msgs.length;
         setHasMore(data.hasMore ?? false);
@@ -112,7 +112,10 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewMessage = (msg: Message) => {
+    const handleNewMessage = (msg: Message & { conversationId?: string }) => {
+      // Ignore messages from other conversations
+      if (msg.conversationId && msg.conversationId !== conversationId) return;
+
       if (msg.senderId !== currentUserId) {
         // Deliver then read
         socket.emit('message:delivered', { messageId: msg.id });
@@ -144,13 +147,13 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
 
     socket.on('message:new', handleNewMessage);
     socket.on('message:status', handleStatus);
-    socket.on('typing:indicator', handleTyping);
+    socket.on('typing:update', handleTyping);
     socket.on('reaction:update', handleReaction);
 
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('message:status', handleStatus);
-      socket.off('typing:indicator', handleTyping);
+      socket.off('typing:update', handleTyping);
       socket.off('reaction:update', handleReaction);
     };
   }, [socket, currentUserId, conversationId]);
@@ -161,7 +164,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     setLoadingMore(true);
     const data = await loadMessages(conversationId, cursor);
     if (data) {
-      const older: Message[] = (data.messages || []).slice().reverse();
+      const older: Message[] = (data.items || []).slice().reverse();
       setMessages((prev) => [...older, ...prev]);
       setHasMore(data.hasMore ?? false);
       setCursor(data.nextCursor ?? null);
@@ -337,7 +340,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf,.docx"
+            accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             className="hidden"
             onChange={handleFileChange}
           />

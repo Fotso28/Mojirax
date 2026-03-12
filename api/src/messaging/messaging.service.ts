@@ -162,7 +162,7 @@ export class MessagingService {
     return this.prisma.message.update({
       where: { id: messageId },
       data: { status: 'DELIVERED', deliveredAt: new Date() },
-      select: { id: true, status: true, deliveredAt: true, senderId: true },
+      select: { id: true, status: true, deliveredAt: true, senderId: true, conversationId: true },
     });
   }
 
@@ -183,7 +183,7 @@ export class MessagingService {
     return { conversationId, readAt: now };
   }
 
-  /** Add emoji reaction */
+  /** Add emoji reaction — returns { conversationId, reactions } */
   async addReaction(messageId: string, userId: string, emoji: string) {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
@@ -203,10 +203,11 @@ export class MessagingService {
       update: {},
     });
 
-    return this.getReactions(messageId);
+    const reactions = await this.getReactions(messageId);
+    return { conversationId: message.conversationId, reactions };
   }
 
-  /** Remove emoji reaction */
+  /** Remove emoji reaction — returns { conversationId, reactions } */
   async removeReaction(messageId: string, userId: string, emoji: string) {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
@@ -219,7 +220,8 @@ export class MessagingService {
       where: { messageId, userId, emoji },
     });
 
-    return this.getReactions(messageId);
+    const reactions = await this.getReactions(messageId);
+    return { conversationId: message.conversationId, reactions };
   }
 
   /** Get reactions for a message */
