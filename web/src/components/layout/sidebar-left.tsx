@@ -3,11 +3,31 @@
 import { Home, MessageSquare, User, Settings, LogOut, FolderKanban, Rocket, Send } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
+import { useSocket } from '@/context/socket-context';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
 export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     const pathname = usePathname();
     const { logout, dbUser } = useAuth();
+    const { socket } = useSocket();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        AXIOS_INSTANCE.get('/messages/conversations/unread-count')
+            .then((res) => setUnreadCount(res.data.count))
+            .catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+        const handler = (_message: unknown) => {
+            setUnreadCount((c) => c + 1);
+        };
+        socket.on('message:new', handler);
+        return () => { socket.off('message:new', handler); };
+    }, [socket]);
 
     const isActive = (path: string) => pathname === path;
 
@@ -67,6 +87,11 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
                     >
                         <item.icon className={`w-6 h-6 shrink-0 ${isActive(item.path) ? 'stroke-[2.5px]' : 'stroke-2'}`} />
                         <span className={`${labelClass} text-sm`}>{item.label}</span>
+                        {item.path === '/messages' && unreadCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
                     </Link>
                 ))}
             </nav>
