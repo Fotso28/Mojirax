@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { CandidateModerationService } from '../users/candidate-moderation.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -20,6 +21,7 @@ export class ApplicationsService {
         private prisma: PrismaService,
         @Inject(forwardRef(() => CandidateModerationService))
         private candidateModerationService: CandidateModerationService,
+        private notificationsService: NotificationsService,
     ) { }
 
     async apply(firebaseUid: string, dto: CreateApplicationDto) {
@@ -77,7 +79,7 @@ export class ApplicationsService {
 
         const project = await this.prisma.project.findUnique({
             where: { id: dto.projectId },
-            select: { id: true, name: true, status: true, founderId: true },
+            select: { id: true, name: true, slug: true, status: true, founderId: true },
         });
 
         if (!project || project.status !== 'PUBLISHED') {
@@ -109,21 +111,6 @@ export class ApplicationsService {
                 throw error;
             }
 
-            // Create notification for founder
-            const userName = user.firstName
-                ? `${user.firstName} ${user.lastName || ''}`.trim()
-                : user.name || 'Un candidat';
-
-            await tx.notification.create({
-                data: {
-                    userId: project.founderId,
-                    type: 'APPLICATION_RECEIVED',
-                    title: 'Nouvelle candidature',
-                    message: `${userName} a postulé à ${project.name}`,
-                    data: { applicationId: created.id, projectId: project.id },
-                },
-            });
-
             // Track interaction
             await tx.userProjectInteraction.create({
                 data: {
@@ -138,6 +125,21 @@ export class ApplicationsService {
         });
 
         this.logger.log(`Application created: user=${user.id} project=${dto.projectId}`);
+
+        // Notify founder (outside transaction so push FCM fires)
+        const userName = user.firstName
+            ? `${user.firstName} ${user.lastName || ''}`.trim()
+            : user.name || 'Un candidat';
+
+        this.notificationsService.notify(
+            project.founderId,
+            'APPLICATION_RECEIVED',
+            'Nouvelle candidature',
+            `${userName} a postulé à ${project.name}`,
+            { applicationId: application.id, projectId: project.id, projectSlug: project.slug, candidateName: userName },
+        ).catch((err) => {
+            this.logger.warn(`Failed to notify founder: ${err?.message}`);
+        });
 
         return application;
     }
@@ -255,7 +257,7 @@ export class ApplicationsService {
             select: {
                 id: true,
                 status: true,
-                project: { select: { id: true, name: true, founderId: true } },
+                project: { select: { id: true, name: true, slug: true, founderId: true } },
                 candidate: {
                     select: {
                         id: true,
@@ -283,33 +285,56 @@ export class ApplicationsService {
             throw new ForbiddenException('Vous n\'êtes pas le fondateur de ce projet');
         }
 
-        // Atomic update: only update if still PENDING (prevents TOCTOU race condition)
-        const result = await this.prisma.application.updateMany({
-            where: { id: applicationId, status: 'PENDING' },
-            data: { status },
+        // Atomic update + conversation creation in transaction
+        await this.prisma.$transaction(async (tx) => {
+            // Atomic update: only update if still PENDING (prevents TOCTOU race condition)
+            const result = await tx.application.updateMany({
+                where: { id: applicationId, status: 'PENDING' },
+                data: { status },
+            });
+
+            if (result.count === 0) {
+                throw new BadRequestException(
+                    `Cette candidature a déjà été traitée (statut: ${application.status})`,
+                );
+            }
+
+            // Auto-create conversation when application is accepted
+            if (status === 'ACCEPTED') {
+                try {
+                    await tx.conversation.create({
+                        data: {
+                            applicationId,
+                            founderId: application.project.founderId,
+                            candidateId: application.candidate.user.id,
+                        },
+                    });
+                    this.logger.log(`Conversation created for application ${applicationId} (founder=${application.project.founderId}, candidate=${application.candidate.user.id})`);
+                } catch (err: any) {
+                    // Unique constraint on applicationId — conversation already exists, ignore
+                    if (err?.code !== 'P2002') {
+                        throw err;
+                    }
+                    this.logger.warn(`Conversation already exists for application ${applicationId}`);
+                }
+            }
         });
 
-        if (result.count === 0) {
-            throw new BadRequestException(
-                `Cette candidature a déjà été traitée (statut: ${application.status})`,
-            );
-        }
-
-        // Create notification for candidate
+        // Notify candidate (with push FCM)
         const notificationType = status === 'ACCEPTED' ? 'APPLICATION_ACCEPTED' : 'APPLICATION_REJECTED';
         const notificationTitle = status === 'ACCEPTED' ? 'Candidature acceptée !' : 'Candidature refusée';
         const notificationMessage = status === 'ACCEPTED'
             ? `Votre candidature à ${application.project.name} a été acceptée`
             : `Votre candidature à ${application.project.name} n'a pas été retenue`;
 
-        await this.prisma.notification.create({
-            data: {
-                userId: application.candidate.user.id,
-                type: notificationType,
-                title: notificationTitle,
-                message: notificationMessage,
-                data: { applicationId: application.id, projectId: application.project.id },
-            },
+        this.notificationsService.notify(
+            application.candidate.user.id,
+            notificationType as any,
+            notificationTitle,
+            notificationMessage,
+            { applicationId: application.id, projectId: application.project.id, projectSlug: application.project.slug },
+        ).catch((err) => {
+            this.logger.warn(`Failed to notify candidate: ${err?.message}`);
         });
 
         this.logger.log(`Application ${applicationId} updated to ${status} by user ${user.id}`);
