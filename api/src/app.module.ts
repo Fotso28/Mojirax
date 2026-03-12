@@ -25,6 +25,7 @@ import { AiConfigModule } from './ai-config/ai-config.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FiltersModule } from './filters/filters.module';
 import { RedisModule } from './redis/redis.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { RedisModule } from './redis/redis.module';
     AdminModule,
     AdsModule,
     FiltersModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [
