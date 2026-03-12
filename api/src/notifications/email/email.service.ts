@@ -114,7 +114,7 @@ export class EmailService {
           type,
           to: user.email,
           subject,
-          brevoId: (response as any)?.messageId || null,
+          brevoId: response?.messageId || null,
           status: 'SENT',
         },
       });

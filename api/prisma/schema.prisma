@@ -805,7 +805,7 @@ model PushConfig {
 model EmailConfig {
   id           String   @id @default("singleton")
   enabled      Boolean  @default(true)
-  enabledTypes String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED", "WELCOME", "ONBOARDING_REMINDER"]) @map("enabled_types")
+  enabledTypes String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED", "WELCOME", "ONBOARDING_REMINDER", "MESSAGE_RECEIVED"]) @map("enabled_types")
   fromName     String   @default("MojiraX") @map("from_name")
   fromEmail    String   @default("noreply@mojirax.com") @map("from_email")
   updatedAt    DateTime @updatedAt @map("updated_at")
