@@ -22,6 +22,9 @@ import { ModerationModule } from './moderation/moderation.module';
 import { AdminModule } from './admin/admin.module';
 import { AdsModule } from './ads/ads.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { FiltersModule } from './filters/filters.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -32,6 +35,8 @@ import { AiConfigModule } from './ai-config/ai-config.module';
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 20 }],
     }),
+    ScheduleModule.forRoot(),
+    RedisModule,
     AiModule,
     AiConfigModule,
     PrismaModule,
@@ -50,6 +55,7 @@ import { AiConfigModule } from './ai-config/ai-config.module';
     ModerationModule,
     AdminModule,
     AdsModule,
+    FiltersModule,
   ],
   controllers: [AppController],
   providers: [
