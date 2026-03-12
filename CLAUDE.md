@@ -243,7 +243,7 @@ const { userId } = req.body;
 ### Uploads
 - Valider le type MIME et la taille des fichiers uploadés côté serveur.
 - Taille max : 5 MB pour les images, 10 MB pour les documents.
-- Types autorisés : `image/jpeg`, `image/png`, `image/webp`, `application/pdf`.
+- Types autorisés : `image/jpeg`, `image/png`, `image/webp`, `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
 
 ### Webhooks
 - Tout webhook entrant (Lygos Pay, etc.) DOIT vérifier la signature.
@@ -286,6 +286,71 @@ console.log('Project created');
 ### Bloquer les IPs privées
 - Si un service doit faire des requêtes sortantes, bloquer les ranges privés :
   `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.0/8`.
+
+---
+
+## M01 — Contrôle d'accès messagerie
+
+- Tout accès à une conversation doit vérifier que l'utilisateur est membre (founder ou candidate).
+- Vérifier la membership via `Conversation.founderId` ou `Conversation.candidate.userId`.
+- Ne jamais se fier à un `conversationId` passé sans vérification.
+
+```typescript
+// CORRECT
+const conversation = await this.prisma.conversation.findUnique({
+  where: { id: conversationId },
+  include: { candidate: { select: { userId: true } } },
+});
+if (conversation.founderId !== userId && conversation.candidate.userId !== userId) {
+  throw new ForbiddenException();
+}
+
+// INTERDIT — pas de vérification de membership
+const messages = await this.prisma.message.findMany({ where: { conversationId } });
+```
+
+---
+
+## M02 — Validation des messages
+
+- Contenu texte : max 5000 caractères.
+- Fichiers : max 5 MB, types autorisés PDF + DOCX uniquement.
+- Valider côté DTO (`class-validator`) ET côté gateway.
+
+```typescript
+// DTO — SendMessageDto
+@IsString()
+@MaxLength(5000)
+content: string;
+```
+
+---
+
+## M03 — Rate limiting WebSocket
+
+- Rate limiting Redis-based pour les événements WebSocket.
+- `message:send` : 30 requêtes / 60 secondes.
+- `typing:start` : 10 requêtes / 10 secondes.
+- `reaction:add` / `reaction:remove` : 20 requêtes / 60 secondes.
+- Logger les dépassements via le `Logger` NestJS.
+
+---
+
+## M04 — Auth WebSocket
+
+- Vérification Firebase token à la connexion WebSocket (`handleConnection`).
+- Re-vérification toutes les 50 minutes via événement `auth:refresh`.
+- Déconnexion immédiate si token expiré ou invalide.
+
+```typescript
+// CORRECT — dans le gateway
+async handleConnection(client: Socket) {
+  const token = client.handshake.auth?.token;
+  if (!token) { client.disconnect(); return; }
+  const decoded = await this.firebaseAdmin.verifyIdToken(token);
+  client.data.userId = decoded.uid;
+}
+```
 
 ---
 
