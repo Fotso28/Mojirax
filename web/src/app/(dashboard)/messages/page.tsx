@@ -32,7 +32,7 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const { data } = await AXIOS_INSTANCE.get('/messages/conversations');
-      setConversations(data ?? []);
+      setConversations(data?.items ?? data ?? []);
     } catch {
       // silent
     } finally {

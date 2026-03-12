@@ -6,7 +6,6 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
-  WsException,
 } from '@nestjs/websockets';
 import { UseGuards, Inject, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -17,7 +16,6 @@ import { MessagingService } from './messaging.service';
 import { WsAuthGuard } from './ws-auth.guard';
 import { WsRateLimiter } from './ws-rate-limiter';
 import { NotificationsService } from '../notifications/notifications.service';
-import { PushService } from '../notifications/push.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 import { NotificationType } from '@prisma/client';
@@ -43,7 +41,6 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   constructor(
     private readonly messagingService: MessagingService,
     private readonly notificationsService: NotificationsService,
-    private readonly pushService: PushService,
     private readonly prisma: PrismaService,
     private readonly rateLimiter: WsRateLimiter,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
