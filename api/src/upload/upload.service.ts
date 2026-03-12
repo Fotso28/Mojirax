@@ -147,6 +147,30 @@ export class UploadService implements OnModuleInit {
         return this.uploadImage('ads', adId, buffer, dim);
     }
 
+    /**
+     * Upload générique de fichier brut (PDF, DOCX, etc.) sans traitement Sharp
+     */
+    async uploadFile(
+        folder: string,
+        key: string,
+        buffer: Buffer,
+        contentType: string,
+    ): Promise<string> {
+        const fullKey = `${folder}/${key}-${Date.now()}`;
+
+        await this.s3.send(
+            new PutObjectCommand({
+                Bucket: this.bucket,
+                Key: fullKey,
+                Body: buffer,
+                ContentType: contentType,
+                ACL: 'public-read',
+            }),
+        );
+
+        return `${this.publicUrl}/${this.bucket}/${fullKey}`;
+    }
+
     async deleteFile(key: string): Promise<void> {
         try {
             await this.s3.send(
