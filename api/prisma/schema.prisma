@@ -66,6 +66,17 @@ model User {
   searchLogs       SearchLog[]
   projectInteractions UserProjectInteraction[]
   visits           UserVisit[]
+  fcmTokens        FcmToken[]
+  emailLogs        EmailLog[]
+
+  // Messaging
+  founderConversations   Conversation[]    @relation("FounderConversations")
+  candidateConversations Conversation[]    @relation("CandidateConversations")
+  sentMessages           Message[]         @relation("SentMessages")
+  messageReactions       MessageReaction[] @relation("MessageReactions")
+
+  // Preferences
+  preferredLang  String       @default("fr") @map("preferred_lang")
 
   @@map("users")
 }
@@ -342,7 +353,7 @@ model SearchLog {
   // Query
   query           String
   filters         Json?    @db.JsonB // {sector: "Fintech", location: "Douala"}
-  searchType      String   @map("search_type") // "CANDIDATE", "PROJECT"
+  searchType      String   @map("search_type") // "UNIVERSAL", "TEXT_FALLBACK", "SEMANTIC_HYBRID"
   
   // Results
   resultsCount    Int      @map("results_count")
@@ -499,6 +510,7 @@ model Application {
   // Relations
   candidate         CandidateProfile  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  conversation      Conversation?
 
   @@unique([candidateId, projectId]) // One application per candidate per project
   @@index([projectId, status])       // Founder dashboard query
@@ -521,6 +533,15 @@ enum NotificationType {
   PROFILE_PUBLISHED
   PROFILE_REVIEW
   PROFILE_UNLOCKED
+  WELCOME
+  ONBOARDING_REMINDER
+  MESSAGE_RECEIVED
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
 }
 
 model Notification {
@@ -749,4 +770,134 @@ model UserVisit {
   @@index([userId, loginAt])
   @@index([loginAt])
   @@index([userId, lastSeenAt])
+}
+
+// --------------------------------------
+// 12. FCM Push Notifications
+// --------------------------------------
+
+model FcmToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique // FCM registration token
+  device    String?  // DESKTOP, MOBILE, TABLET
+  browser   String?  // Chrome, Firefox, Safari...
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("fcm_tokens")
+}
+
+model PushConfig {
+  id                    String  @id @default("singleton")
+  enabled               Boolean @default(true)
+  // Types de notifications pour lesquels le push est activé (toutes par défaut)
+  enabledTypes          String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED"]) @map("enabled_types")
+
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("push_config")
+}
+
+model EmailConfig {
+  id            String   @id @default("singleton")
+  enabled       Boolean  @default(true)
+  enabledTypes  String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED", "WELCOME", "ONBOARDING_REMINDER"]) @map("enabled_types")
+  fromName      String   @default("MojiraX") @map("from_name")
+  fromEmail     String   @default("noreply@mojirax.com") @map("from_email")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("email_configs")
+}
+
+model EmailLog {
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  type        NotificationType
+  to          String
+  subject     String
+  brevoId     String?          @map("brevo_id")
+  status      String           @default("SENT")
+  error       String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("email_logs")
+}
+
+// --------------------------------------
+// Filter Embeddings (Skills sémantiques)
+// --------------------------------------
+
+model FilterEmbedding {
+  id         String   @id @default(cuid())
+  type       String   // "SKILL"
+  value      String   // valeur brute ex: "React Native"
+  label      String   // label affichage
+  embedding  Unsupported("vector(1024)")? @map("embedding")
+  usageCount Int      @default(0) @map("usage_count")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([type, value])
+  @@map("filter_embeddings")
+}
+
+// --------------------------------------
+// 13. Messaging
+// --------------------------------------
+
+model Conversation {
+  id                 String      @id @default(uuid())
+  applicationId      String      @unique @map("application_id")
+  application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  founderId          String      @map("founder_id")
+  founder            User        @relation("FounderConversations", fields: [founderId], references: [id])
+  candidateId        String      @map("candidate_id")
+  candidate          User        @relation("CandidateConversations", fields: [candidateId], references: [id])
+  lastMessageAt      DateTime?   @map("last_message_at")
+  lastMessagePreview String?     @map("last_message_preview")
+  messages           Message[]
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String          @id @default(uuid())
+  conversationId String          @map("conversation_id")
+  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String          @map("sender_id")
+  sender         User            @relation("SentMessages", fields: [senderId], references: [id])
+  content        String?
+  fileUrl        String?         @map("file_url")
+  fileName       String?         @map("file_name")
+  fileSize       Int?            @map("file_size")
+  fileMimeType   String?         @map("file_mime_type")
+  status         MessageStatus   @default(SENT)
+  deliveredAt    DateTime?       @map("delivered_at")
+  readAt         DateTime?       @map("read_at")
+  reactions      MessageReaction[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation("MessageReactions", fields: [userId], references: [id])
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([messageId, userId, emoji])
+  @@map("message_reactions")
 }
