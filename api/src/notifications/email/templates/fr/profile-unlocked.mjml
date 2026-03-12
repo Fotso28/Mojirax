@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Bonjour {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Le profil de <strong>{{targetName}}</strong> a été débloqué pour vous.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Vous pouvez maintenant consulter ses informations complètes.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Voir le profil
+</mj-button>

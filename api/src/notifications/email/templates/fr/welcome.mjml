@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Bonjour {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Bienvenue sur <strong>MojiraX</strong>, la plateforme qui connecte les fondateurs et co-fondateurs en Afrique.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Commencez par compléter votre profil pour découvrir des projets et talents qui correspondent à vos ambitions.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Compléter mon profil
+</mj-button>

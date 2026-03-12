@@ -1,0 +1,15 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Hello {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Your project <strong>{{projectName}}</strong> could not be published for the following reason:
+</mj-text>
+<mj-text padding="0 0 16px 0" font-style="italic" color="#dc2626">
+  {{reason}}
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Please update your project and resubmit.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Edit my project
+</mj-button>

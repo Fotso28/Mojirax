@@ -117,7 +117,7 @@ export class UnlockService {
             NotificationType.PROFILE_UNLOCKED,
             'Profil débloqué',
             `Vous avez débloqué le profil de ${targetName}`,
-            { unlockId: unlock.id, targetId, targetType: type },
+            { unlockId: unlock.id, targetId, targetName, unlockType: type },
         );
 
         this.logger.log(`Unlock created: user=${userId} → ${type} ${targetId}`);

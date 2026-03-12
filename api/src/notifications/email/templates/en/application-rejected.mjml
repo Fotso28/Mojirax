@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Hello {{candidateName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Your application for the project <strong>{{projectName}}</strong> was not selected this time.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Don't give up — new projects are published every day. Keep exploring opportunities!
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Explore projects
+</mj-button>

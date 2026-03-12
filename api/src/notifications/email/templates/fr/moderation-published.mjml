@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Bonjour {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Votre projet <strong>{{projectName}}</strong> a été approuvé et est maintenant <strong style="color: #16a34a;">publié</strong> sur MojiraX.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Les candidats peuvent désormais le découvrir et postuler.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Voir mon projet
+</mj-button>

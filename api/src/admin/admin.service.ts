@@ -10,6 +10,7 @@ import {
   ListLogsDto,
   ListProjectsDto,
 } from './dto/admin.dto';
+import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
 
 @Injectable()
 export class AdminService {
@@ -840,5 +841,76 @@ export class AdminService {
     }));
 
     return { projects: enriched, total, take, skip: dto.skip ?? 0 };
+  }
+
+  // ─── Push Config ────────────────────────────────────
+
+  async getPushConfig() {
+    let config = await this.prisma.pushConfig.findUnique({
+      where: { id: 'singleton' },
+    });
+
+    if (!config) {
+      config = await this.prisma.pushConfig.create({
+        data: { id: 'singleton' },
+      });
+    }
+
+    // Nombre de tokens enregistrés
+    const tokenCount = await this.prisma.fcmToken.count();
+
+    return { ...config, tokenCount };
+  }
+
+  async updatePushConfig(data: { enabled?: boolean; enabledTypes?: string[] }) {
+    const updateData: any = {};
+    if (data.enabled !== undefined) updateData.enabled = data.enabled;
+    if (data.enabledTypes) updateData.enabledTypes = data.enabledTypes;
+
+    const config = await this.prisma.pushConfig.upsert({
+      where: { id: 'singleton' },
+      update: updateData,
+      create: { id: 'singleton', ...updateData },
+    });
+
+    this.logger.log(`Push config updated: enabled=${config.enabled}, types=${config.enabledTypes.length}`);
+
+    return config;
+  }
+
+  // ─── Email Config ────────────────────────────────────
+
+  async getEmailConfig() {
+    let config = await this.prisma.emailConfig.findUnique({
+      where: { id: 'singleton' },
+    });
+
+    if (!config) {
+      config = await this.prisma.emailConfig.create({
+        data: { id: 'singleton' },
+      });
+    }
+
+    const emailCount = await this.prisma.emailLog.count({
+      where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+    });
+
+    return { ...config, emailsSentLast24h: emailCount };
+  }
+
+  async updateEmailConfig(data: UpdateEmailConfigDto) {
+    const config = await this.prisma.emailConfig.upsert({
+      where: { id: 'singleton' },
+      update: {
+        ...(data.enabled !== undefined && { enabled: data.enabled }),
+        ...(data.enabledTypes && { enabledTypes: data.enabledTypes }),
+        ...(data.fromName && { fromName: data.fromName }),
+        ...(data.fromEmail && { fromEmail: data.fromEmail }),
+      },
+      create: { id: 'singleton' },
+    });
+
+    this.logger.log('Email config updated');
+    return config;
   }
 }

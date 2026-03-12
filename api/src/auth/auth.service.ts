@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../notifications/email/email.service';
 
 @Injectable()
 export class AuthService {
-    constructor(private prisma: PrismaService) { }
+    private readonly logger = new Logger(AuthService.name);
+
+    constructor(
+        private prisma: PrismaService,
+        private emailService: EmailService,
+    ) { }
 
     async syncUser(firebaseUser: any) {
         const { uid, email, name, picture } = firebaseUser;
@@ -54,6 +60,11 @@ export class AuthService {
                 role: 'USER',
             },
         });
+
+        // Send welcome email (fire & forget)
+        this.emailService.sendWelcome(user.id).catch((e) =>
+            this.logger.warn('Welcome email failed', e),
+        );
 
         return user;
     }

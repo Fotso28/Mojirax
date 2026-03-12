@@ -11,6 +11,7 @@ import {
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminService } from './admin.service';
+import { PushService } from '../notifications/push.service';
 import {
   ListUsersDto,
   ListModerationDto,
@@ -20,11 +21,16 @@ import {
   ListLogsDto,
   ListProjectsDto,
 } from './dto/admin.dto';
+import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
+import { UpdatePushConfigDto } from './dto/update-push-config.dto';
 
 @Controller('admin')
 @UseGuards(FirebaseAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly pushService: PushService,
+  ) {}
 
   @Get('kpis')
   getKpis() {
@@ -77,5 +83,29 @@ export class AdminController {
   @Get('projects')
   listProjects(@Query() dto: ListProjectsDto) {
     return this.adminService.listProjects(dto);
+  }
+
+  // ─── Push Config ──────────────────────────────────
+
+  @Get('push-config')
+  getPushConfig() {
+    return this.adminService.getPushConfig();
+  }
+
+  @Patch('push-config')
+  updatePushConfig(@Body() dto: UpdatePushConfigDto) {
+    return this.adminService.updatePushConfig(dto);
+  }
+
+  // ─── Email Config ──────────────────────────────────
+
+  @Get('email-config')
+  getEmailConfig() {
+    return this.adminService.getEmailConfig();
+  }
+
+  @Patch('email-config')
+  updateEmailConfig(@Body() dto: UpdateEmailConfigDto) {
+    return this.adminService.updateEmailConfig(dto);
   }
 }

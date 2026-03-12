@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Hello {{founderName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  <strong>{{candidateName}}</strong> has applied to join your project <strong>{{projectName}}</strong>.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Review their application and profile to make your decision.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  View application
+</mj-button>

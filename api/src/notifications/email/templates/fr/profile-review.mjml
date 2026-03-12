@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Bonjour {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Votre profil candidat est en cours de validation par notre équipe.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Vous serez notifié dès qu'il sera publié.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Voir mon profil
+</mj-button>

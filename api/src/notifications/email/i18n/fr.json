@@ -1,0 +1,25 @@
+{
+  "subjects": {
+    "welcome": "Bienvenue sur MojiraX !",
+    "application-received": "Nouvelle candidature reçue",
+    "application-accepted": "Votre candidature a été acceptée !",
+    "application-rejected": "Mise à jour de votre candidature",
+    "moderation-published": "Votre projet est publié !",
+    "moderation-rejected": "Votre projet nécessite des modifications",
+    "moderation-pending": "Votre projet est en cours de revue",
+    "profile-published": "Votre profil est maintenant visible",
+    "profile-review": "Votre profil est en cours de validation",
+    "document-analyzed": "Analyse de document terminée",
+    "document-failed": "Échec de l'analyse du document",
+    "profile-unlocked": "Un profil a été débloqué pour vous",
+    "onboarding-reminder": "Complétez votre profil MojiraX",
+    "system": "Notification MojiraX"
+  },
+  "labels": {
+    "cta": "Voir sur MojiraX",
+    "footer": "Vous recevez cet email car vous êtes inscrit sur MojiraX.",
+    "unsubscribe": "Se désinscrire",
+    "greeting": "Bonjour {{userName}},",
+    "team": "L'équipe MojiraX"
+  }
+}

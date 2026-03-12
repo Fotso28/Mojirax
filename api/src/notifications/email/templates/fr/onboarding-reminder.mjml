@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Bonjour {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Vous avez créé votre compte MojiraX mais n'avez pas encore complété votre profil.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Remplissez votre profil en quelques minutes pour commencer à trouver votre co-fondateur idéal.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Compléter mon profil
+</mj-button>

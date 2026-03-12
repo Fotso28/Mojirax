@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Hello {{userName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Your project <strong>{{projectName}}</strong> is currently under review by our team.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  You will be notified once the review is complete. This usually takes less than 24 hours.
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  View my project
+</mj-button>

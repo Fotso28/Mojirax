@@ -2,13 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [vector]
 }
 
@@ -24,50 +24,50 @@ enum UserRole {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Contact Info
   firstName     String?   @map("first_name")
   lastName      String?   @map("last_name")
-  name          String?   // Full name (computed or from OAuth)
+  name          String? // Full name (computed or from OAuth)
   email         String    @unique
-  phone         String?   // Format: +237XXXXXXXXX
-  address       String?   // Full address
+  phone         String? // Format: +237XXXXXXXXX
+  address       String? // Full address
   emailVerified DateTime? @map("email_verified")
   firebaseUid   String?   @unique @map("firebase_uid") // Firebase Auth UID
-  
+
   // Profile
-  image         String?   // Avatar URL (R2)
-  role          UserRole  @default(USER)
-  
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  image String? // Avatar URL (R2)
+  role  UserRole @default(USER)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Founder Profile (JSON: { title, bio, skills[], experience[], education[], linkedinUrl, city, languages[] })
-  founderProfile  Json?   @map("founder_profile") @db.JsonB
+  founderProfile Json? @map("founder_profile") @db.JsonB
 
   // Onboarding Draft State
-  onboardingState Json?   @map("onboarding_state") // Stores { step: 2, data: {...} }
-  projectDraft    Json?   @map("project_draft")    // Stores { step: 3, data: {...} } for /create/project wizard
+  onboardingState Json? @map("onboarding_state") // Stores { step: 2, data: {...} }
+  projectDraft    Json? @map("project_draft") // Stores { step: 3, data: {...} } for /create/project wizard
 
   // Relations
-  accounts         Account[]
-  sessions         Session[]
-  
+  accounts Account[]
+  sessions Session[]
+
   // Profile Relations
   candidateProfile CandidateProfile?
   projects         Project[]
 
   // Monetization
-  transactions     Transaction[]
-  unlocks          Unlock[]
-  notifications    Notification[]
-  adminLogs        AdminLog[]
-  searchLogs       SearchLog[]
+  transactions        Transaction[]
+  unlocks             Unlock[]
+  notifications       Notification[]
+  adminLogs           AdminLog[]
+  searchLogs          SearchLog[]
   projectInteractions UserProjectInteraction[]
-  visits           UserVisit[]
-  fcmTokens        FcmToken[]
-  emailLogs        EmailLog[]
+  visits              UserVisit[]
+  fcmTokens           FcmToken[]
+  emailLogs           EmailLog[]
 
   // Messaging
   founderConversations   Conversation[]    @relation("FounderConversations")
@@ -76,24 +76,24 @@ model User {
   messageReactions       MessageReaction[] @relation("MessageReactions")
 
   // Preferences
-  preferredLang  String       @default("fr") @map("preferred_lang")
+  preferredLang String @default("fr") @map("preferred_lang")
 
   @@map("users")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String  @map("user_id")
-  type               String
-  provider           String
-  providerAccountId  String  @map("provider_account_id")
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -133,68 +133,68 @@ enum ModerationStatus {
 }
 
 model CandidateProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique @map("user_id")
-  
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
   // Core Data
-  title       String   // e.g., "Senior React Developer"
-  bio         String   @db.Text
+  title       String // e.g., "Senior React Developer"
+  bio         String  @db.Text
   location    String?
-  linkedinUrl String?  @map("linkedin_url")
-  resumeUrl   String?  @map("resume_url") // R2 Link
-  
+  linkedinUrl String? @map("linkedin_url")
+  resumeUrl   String? @map("resume_url") // R2 Link
+
   // Skills & Tags
-  skills      String[] 
-  
+  skills String[]
+
   // Computed/Synced Data (LinkedIn Import)
-  experience  Json?    @db.JsonB // Flexible structure for job history
-  education   Json?    @db.JsonB
-  
+  experience Json? @db.JsonB // Flexible structure for job history
+  education  Json? @db.JsonB
+
   // Additional Profile Details
-  yearsOfExperience Int?      @map("years_of_experience")
-  languages         String[]  @default([]) // ["French", "English"]
-  certifications    String[]  @default([]) // ["AWS Certified"]
-  portfolioUrl      String?   @map("portfolio_url")
-  githubUrl         String?   @map("github_url")
-  
+  yearsOfExperience Int?     @map("years_of_experience")
+  languages         String[] @default([]) // ["French", "English"]
+  certifications    String[] @default([]) // ["AWS Certified"]
+  portfolioUrl      String?  @map("portfolio_url")
+  githubUrl         String?  @map("github_url")
+
   // Wizard-sourced fields (stored separately for round-trip editing)
-  shortPitch        String?   @map("short_pitch") @db.Text
-  longPitch         String?   @map("long_pitch") @db.Text
-  vision            String?   @db.Text
-  roleType          String?   @map("role_type")       // TECH, PRODUCT, MARKETING, OPS, FINANCE
-  commitmentType    String?   @map("commitment_type") // SIDE, SERIOUS, FULLTIME
-  collabPref        String?   @map("collab_pref")     // EQUITY, PAID, HYBRID, DISCUSS
-  locationPref      String?   @map("location_pref")   // REMOTE, HYBRID, ONSITE
-  hasCofounded      String?   @map("has_cofounded")   // YES, NO
+  shortPitch     String? @map("short_pitch") @db.Text
+  longPitch      String? @map("long_pitch") @db.Text
+  vision         String? @db.Text
+  roleType       String? @map("role_type") // TECH, PRODUCT, MARKETING, OPS, FINANCE
+  commitmentType String? @map("commitment_type") // SIDE, SERIOUS, FULLTIME
+  collabPref     String? @map("collab_pref") // EQUITY, PAID, HYBRID, DISCUSS
+  locationPref   String? @map("location_pref") // REMOTE, HYBRID, ONSITE
+  hasCofounded   String? @map("has_cofounded") // YES, NO
 
   // Matching Preferences
-  desiredSectors    String[]  @default([]) @map("desired_sectors") // ["Fintech", "Health"]
-  desiredStage      String[]  @default([]) @map("desired_stage")   // ["MVP", "Growth"]
-  desiredLocation   String[]  @default([]) @map("desired_location") // ["Douala", "Remote"]
-  minSalary         Int?      @map("min_salary")
-  maxSalary         Int?      @map("max_salary")
-  availability      String?   // "IMMEDIATE", "1_MONTH", "3_MONTHS"
-  willingToRelocate Boolean   @default(false) @map("willing_to_relocate")
-  remoteOnly        Boolean   @default(false) @map("remote_only")
-  
+  desiredSectors    String[] @default([]) @map("desired_sectors") // ["Fintech", "Health"]
+  desiredStage      String[] @default([]) @map("desired_stage") // ["MVP", "Growth"]
+  desiredLocation   String[] @default([]) @map("desired_location") // ["Douala", "Remote"]
+  minSalary         Int?     @map("min_salary")
+  maxSalary         Int?     @map("max_salary")
+  availability      String? // "IMMEDIATE", "1_MONTH", "3_MONTHS"
+  willingToRelocate Boolean  @default(false) @map("willing_to_relocate")
+  remoteOnly        Boolean  @default(false) @map("remote_only")
+
   // Privacy & Monetization
   isContactVisible Boolean @default(false) @map("is_contact_visible")
 
   // Moderation
-  status      ModerationStatus @default(DRAFT)
-  
+  status ModerationStatus @default(DRAFT)
+
   // AI Search & Scoring
-  bioEmbedding         Unsupported("vector(1024)")? @map("bio_embedding")
-  skillsEmbedding      Unsupported("vector(1024)")? @map("skills_embedding")
-  embeddingModel       String?   @map("embedding_model") // "text-embedding-3-small"
-  embeddingVersion     String?   @map("embedding_version")
-  lastEmbeddedAt       DateTime? @map("last_embedded_at")
-  
-  profileCompleteness  Float     @default(0.0) @map("profile_completeness") // 0-100
-  qualityScore         Float     @default(0.0) @map("quality_score") // AI-calculated
-  
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  bioEmbedding     Unsupported("vector(1024)")? @map("bio_embedding")
+  skillsEmbedding  Unsupported("vector(1024)")? @map("skills_embedding")
+  embeddingModel   String?                      @map("embedding_model") // "text-embedding-3-small"
+  embeddingVersion String?                      @map("embedding_version")
+  lastEmbeddedAt   DateTime?                    @map("last_embedded_at")
+
+  profileCompleteness Float @default(0.0) @map("profile_completeness") // 0-100
+  qualityScore        Float @default(0.0) @map("quality_score") // AI-calculated
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -203,66 +203,66 @@ model CandidateProfile {
   applications   Application[]
   matchScores    MatchScore[]
 
-  @@map("candidate_profiles")
   @@index([status])
   @@index([skills])
   @@index([desiredSectors])
   @@index([location])
+  @@map("candidate_profiles")
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  founderId   String   @map("founder_id")
-  slug        String?  @unique // SEO-friendly URL slug
+  id        String  @id @default(cuid())
+  founderId String  @map("founder_id")
+  slug      String? @unique // SEO-friendly URL slug
 
   // Content
   name        String
-  pitch       String   @db.Text // Short tagline
-  description String?  @db.Text // Full AI-analyzed text (optional, generated later)
-  sector      String?  // Fintech, Health, etc.
-  stage       String?  // Idea, MVP, Growth
-  logoUrl     String?  @map("logo_url")
+  pitch       String  @db.Text // Short tagline
+  description String? @db.Text // Full AI-analyzed text (optional, generated later)
+  sector      String? // Fintech, Health, etc.
+  stage       String? // Idea, MVP, Growth
+  logoUrl     String? @map("logo_url")
 
   // Document source (uploaded by founder)
-  documentUrl      String?  @map("document_url")
-  documentName     String?  @map("document_name")
-  documentMimeType String?  @map("document_mime_type")
+  documentUrl      String? @map("document_url")
+  documentName     String? @map("document_name")
+  documentMimeType String? @map("document_mime_type")
 
   // AI-generated summary blocks (6 blocs)
-  aiSummary        Json?    @map("ai_summary") @db.JsonB
+  aiSummary Json? @map("ai_summary") @db.JsonB
 
   // Identity (Step 1)
-  country       String?
-  city          String?
-  location      String?   // Computed: "city, country"
+  country  String?
+  city     String?
+  location String? // Computed: "city, country"
 
   // Details (Step 2)
-  scope         String?   // LOCAL, DIASPORA, HYBRID
+  scope String? // LOCAL, DIASPORA, HYBRID
 
   // Problem (Step 3)
-  problem          String?   @db.Text
-  target           String?   // Persona
-  solutionCurrent  String?   @map("solution_current") @db.Text
+  problem         String? @db.Text
+  target          String? // Persona
+  solutionCurrent String? @map("solution_current") @db.Text
 
   // Solution (Step 4)
-  solutionDesc  String?   @map("solution_desc") @db.Text
-  uvp           String?   // Unique Value Proposition
-  antiScope     String?   @map("anti_scope") @db.Text
+  solutionDesc String? @map("solution_desc") @db.Text
+  uvp          String? // Unique Value Proposition
+  antiScope    String? @map("anti_scope") @db.Text
 
   // Market (Step 5)
-  marketType      String?   @map("market_type")    // B2C, B2B, B2G, MARKETPLACE
-  businessModel   String?   @map("business_model") // SUBSCRIPTION, COMMISSION, SALES, FREEMIUM, ADS
-  competitors     String?   @db.Text
+  marketType    String? @map("market_type") // B2C, B2B, B2G, MARKETPLACE
+  businessModel String? @map("business_model") // SUBSCRIPTION, COMMISSION, SALES, FREEMIUM, ADS
+  competitors   String? @db.Text
 
   // Traction (Step 6)
-  founderRole       String?   @map("founder_role")       // CEO, CTO, CPO, CMO, COO
-  timeAvailability  String?   @map("time_availability")  // 2-5H, 5-10H, 10-20H, FULLTIME
-  traction          String?   @db.Text
+  founderRole      String? @map("founder_role") // CEO, CTO, CPO, CMO, COO
+  timeAvailability String? @map("time_availability") // 2-5H, 5-10H, 10-20H, FULLTIME
+  traction         String? @db.Text
 
   // Cofounder (Step 7)
-  lookingForRole  String?   @map("looking_for_role") // TECH, BIZ, PRODUCT, FINANCE
-  collabType      String?   @map("collab_type")      // EQUITY, PAID, HYBRID
-  vision          String?   @db.Text
+  lookingForRole String? @map("looking_for_role") // TECH, BIZ, PRODUCT, FINANCE
+  collabType     String? @map("collab_type") // EQUITY, PAID, HYBRID
+  vision         String? @db.Text
 
   // Project Details (legacy)
   teamSize      Int?      @map("team_size")
@@ -273,41 +273,41 @@ model Project {
   deadline      DateTime? // Recruitment deadline
 
   // Requirements (legacy)
-  requiredSkills    String[]  @default([]) @map("required_skills")
-  niceToHaveSkills  String[]  @default([]) @map("nice_to_have_skills")
-  commitment        String?   // "FULL_TIME", "PART_TIME", "FREELANCE"
-  budget            Json?     @db.JsonB // {min: 500000, max: 2000000, currency: "XAF"}
-  isRemote          Boolean   @default(false) @map("is_remote")
-  isUrgent          Boolean   @default(false) @map("is_urgent")
-  
+  requiredSkills   String[] @default([]) @map("required_skills")
+  niceToHaveSkills String[] @default([]) @map("nice_to_have_skills")
+  commitment       String? // "FULL_TIME", "PART_TIME", "FREELANCE"
+  budget           Json?    @db.JsonB // {min: 500000, max: 2000000, currency: "XAF"}
+  isRemote         Boolean  @default(false) @map("is_remote")
+  isUrgent         Boolean  @default(false) @map("is_urgent")
+
   // Moderation
-  status      ModerationStatus @default(DRAFT)
-  
+  status ModerationStatus @default(DRAFT)
+
   // AI Search & Scoring
   descriptionEmbedding Unsupported("vector(1024)")? @map("description_embedding")
-  embeddingModel       String?   @map("embedding_model")
-  embeddingVersion     String?   @map("embedding_version")
-  lastEmbeddedAt       DateTime? @map("last_embedded_at")
-  
-  urgency              Int       @default(5) // 1-10
-  qualityScore         Float     @default(0.0) @map("quality_score")
+  embeddingModel       String?                      @map("embedding_model")
+  embeddingVersion     String?                      @map("embedding_version")
+  lastEmbeddedAt       DateTime?                    @map("last_embedded_at")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  urgency      Int   @default(5) // 1-10
+  qualityScore Float @default(0.0) @map("quality_score")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  founder        User            @relation(fields: [founderId], references: [id], onDelete: Cascade)
-  moderationLogs ModerationLog[]
-  unlocks        Unlock[]
-  applications   Application[]
-  matchScores    MatchScore[]
+  founder          User                     @relation(fields: [founderId], references: [id], onDelete: Cascade)
+  moderationLogs   ModerationLog[]
+  unlocks          Unlock[]
+  applications     Application[]
+  matchScores      MatchScore[]
   userInteractions UserProjectInteraction[]
 
-  @@map("projects")
   @@index([status])
   @@index([sector])
   @@index([requiredSkills])
   @@index([isUrgent])
+  @@map("projects")
 }
 
 // --------------------------------------
@@ -315,30 +315,30 @@ model Project {
 // --------------------------------------
 
 model MatchScore {
-  id              String   @id @default(cuid())
-  
-  candidateId     String   @map("candidate_id")
-  projectId       String   @map("project_id")
-  
+  id String @id @default(cuid())
+
+  candidateId String @map("candidate_id")
+  projectId   String @map("project_id")
+
   // Detailed Scores (0-100)
-  overallScore    Float    @map("overall_score")
-  skillsMatch     Float    @map("skills_match")
-  experienceMatch Float    @map("experience_match")
-  locationMatch   Float    @map("location_match")
-  culturalFit     Float    @map("cultural_fit")
-  
+  overallScore    Float @map("overall_score")
+  skillsMatch     Float @map("skills_match")
+  experienceMatch Float @map("experience_match")
+  locationMatch   Float @map("location_match")
+  culturalFit     Float @map("cultural_fit")
+
   // AI Reasoning
-  aiReason        String?  @db.Text
-  aiConfidence    Float    @map("ai_confidence") // 0-1
-  
+  aiReason     String? @db.Text
+  aiConfidence Float   @map("ai_confidence") // 0-1
+
   // Metadata
-  calculatedAt    DateTime @default(now()) @map("calculated_at")
-  modelVersion    String   @map("model_version") // "gpt-4-turbo-2024-01"
-  
+  calculatedAt DateTime @default(now()) @map("calculated_at")
+  modelVersion String   @map("model_version") // "gpt-4-turbo-2024-01"
+
   // Relations
-  candidate       CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  candidate CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@unique([candidateId, projectId])
   @@index([projectId, overallScore(sort: Desc)]) // Top matches for project
   @@index([candidateId, overallScore(sort: Desc)]) // Top projects for candidate
@@ -347,27 +347,27 @@ model MatchScore {
 }
 
 model SearchLog {
-  id              String   @id @default(cuid())
-  userId          String?  @map("user_id") // Null if anonymous
-  
+  id     String  @id @default(cuid())
+  userId String? @map("user_id") // Null if anonymous
+
   // Query
-  query           String
-  filters         Json?    @db.JsonB // {sector: "Fintech", location: "Douala"}
-  searchType      String   @map("search_type") // "UNIVERSAL", "TEXT_FALLBACK", "SEMANTIC_HYBRID"
-  
+  query      String
+  filters    Json?  @db.JsonB // {sector: "Fintech", location: "Douala"}
+  searchType String @map("search_type") // "UNIVERSAL", "TEXT_FALLBACK", "SEMANTIC_HYBRID"
+
   // Results
-  resultsCount    Int      @map("results_count")
-  topResultIds    String[] @map("top_result_ids") // Top 10 IDs
-  
+  resultsCount Int      @map("results_count")
+  topResultIds String[] @map("top_result_ids") // Top 10 IDs
+
   // User Interaction
-  clickedResultId String?  @map("clicked_result_id")
-  clickPosition   Int?     @map("click_position") // Position in results (1-based)
-  timeToClick     Int?     @map("time_to_click") // Milliseconds
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  
-  user            User?    @relation(fields: [userId], references: [id])
-  
+  clickedResultId String? @map("clicked_result_id")
+  clickPosition   Int?    @map("click_position") // Position in results (1-based)
+  timeToClick     Int?    @map("time_to_click") // Milliseconds
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
   @@index([query]) // Trending searches
   @@index([searchType, createdAt])
   @@index([userId, createdAt])
@@ -379,38 +379,38 @@ model SearchLog {
 // --------------------------------------
 
 model ModerationLog {
-  id                String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Targets (Polymorphic-ish via nullable FKs)
   candidateProfileId String? @map("candidate_profile_id")
-  projectId         String?  @map("project_id")
-  
+  projectId          String? @map("project_id")
+
   // AI Result
-  aiScore           Float    @map("ai_score") // 0.0 to 1.0 confidence
-  aiReason          String?  @map("ai_reason")
-  aiPayload         Json?    @map("ai_payload") @db.JsonB // Full LLM response
-  
+  aiScore   Float   @map("ai_score") // 0.0 to 1.0 confidence
+  aiReason  String? @map("ai_reason")
+  aiPayload Json?   @map("ai_payload") @db.JsonB // Full LLM response
+
   // Decision
-  status            ModerationStatus
-  reviewedAt        DateTime @default(now()) @map("reviewed_at")
+  status     ModerationStatus
+  reviewedAt DateTime         @default(now()) @map("reviewed_at")
 
   // Relations
-  candidateProfile  CandidateProfile? @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
-  project           Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  candidateProfile CandidateProfile? @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  project          Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("moderation_logs")
 }
 
 model AdminLog {
-  id          String   @id @default(cuid())
-  adminId     String   @map("admin_id")
-  action      String   // "OVERRIDE_MODERATION", "UPDATE_PROMPT"
-  targetId    String   @map("target_id")
-  details     Json?    @db.JsonB
-  
-  createdAt   DateTime @default(now()) @map("created_at")
+  id       String @id @default(cuid())
+  adminId  String @map("admin_id")
+  action   String // "OVERRIDE_MODERATION", "UPDATE_PROMPT"
+  targetId String @map("target_id")
+  details  Json?  @db.JsonB
 
-  admin       User     @relation(fields: [adminId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin User @relation(fields: [adminId], references: [id])
 
   @@map("admin_logs")
 }
@@ -427,57 +427,57 @@ enum TransactionStatus {
 }
 
 model Transaction {
-  id              String   @id @default(cuid())
-  userId          String   @map("user_id")
-  
-  amount          Decimal  @db.Decimal(10, 2)
-  currency        String   @default("XAF")
-  status          TransactionStatus @default(PENDING)
-  
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  amount   Decimal           @db.Decimal(10, 2)
+  currency String            @default("XAF")
+  status   TransactionStatus @default(PENDING)
+
   // External Reference
-  provider        String   @default("LYGOS")
-  externalId      String?  @unique @map("external_id") // Lygos Transaction ID
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  provider   String  @default("LYGOS")
+  externalId String? @unique @map("external_id") // Lygos Transaction ID
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user            User     @relation(fields: [userId], references: [id])
-  unlocks         Unlock[]
-  auditLogs       PaymentAuditLog[]
+  user      User              @relation(fields: [userId], references: [id])
+  unlocks   Unlock[]
+  auditLogs PaymentAuditLog[]
 
   @@map("transactions")
 }
 
 model PaymentAuditLog {
-  id              String   @id @default(cuid())
-  transactionId   String   @map("transaction_id")
-  event           String   // "WEBHOOK_RECEIVED", "SIGNATURE_VALIDATED"
-  payload         Json     @db.JsonB
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  
-  transaction     Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  id            String @id @default(cuid())
+  transactionId String @map("transaction_id")
+  event         String // "WEBHOOK_RECEIVED", "SIGNATURE_VALIDATED"
+  payload       Json   @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@map("payment_audit_logs")
 }
 
 model Unlock {
-  id                 String   @id @default(cuid())
-  userId             String   @map("user_id") // The Payer
-  transactionId      String   @map("transaction_id")
-  
+  id            String @id @default(cuid())
+  userId        String @map("user_id") // The Payer
+  transactionId String @map("transaction_id")
+
   // What was unlocked?
-  targetCandidateId  String?  @map("target_candidate_id")
-  targetProjectId    String?  @map("target_project_id")
-  
-  createdAt          DateTime @default(now()) @map("created_at")
+  targetCandidateId String? @map("target_candidate_id")
+  targetProjectId   String? @map("target_project_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  user               User             @relation(fields: [userId], references: [id])
-  transaction        Transaction      @relation(fields: [transactionId], references: [id])
-  candidate          CandidateProfile? @relation(fields: [targetCandidateId], references: [id], onDelete: SetNull)
-  project            Project?          @relation(fields: [targetProjectId], references: [id], onDelete: SetNull)
+  user        User              @relation(fields: [userId], references: [id])
+  transaction Transaction       @relation(fields: [transactionId], references: [id])
+  candidate   CandidateProfile? @relation(fields: [targetCandidateId], references: [id], onDelete: SetNull)
+  project     Project?          @relation(fields: [targetProjectId], references: [id], onDelete: SetNull)
 
   @@unique([userId, targetCandidateId]) // Prevent double payment
   @@unique([userId, targetProjectId])
@@ -496,25 +496,25 @@ enum ApplicationStatus {
 }
 
 model Application {
-  id                String            @id @default(cuid())
-  
-  candidateId       String            @map("candidate_id")
-  projectId         String            @map("project_id")
-  
-  status            ApplicationStatus @default(PENDING)
-  message           String?           @db.Text // Optional cover note
-  
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  id String @id @default(cuid())
+
+  candidateId String @map("candidate_id")
+  projectId   String @map("project_id")
+
+  status  ApplicationStatus @default(PENDING)
+  message String?           @db.Text // Optional cover note
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  candidate         CandidateProfile  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  conversation      Conversation?
+  candidate    CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  conversation Conversation?
 
   @@unique([candidateId, projectId]) // One application per candidate per project
-  @@index([projectId, status])       // Founder dashboard query
-  @@index([candidateId])             // Candidate "My Applications" query
+  @@index([projectId, status]) // Founder dashboard query
+  @@index([candidateId]) // Candidate "My Applications" query
   @@map("applications")
 }
 
@@ -545,17 +545,17 @@ enum MessageStatus {
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  userId    String           @map("user_id")
-  type      NotificationType
-  title     String
-  message   String
-  isRead    Boolean          @default(false) @map("is_read")
-  data      Json?            @db.JsonB // Link to Application ID or Project ID
-  
-  createdAt DateTime         @default(now()) @map("created_at")
+  id      String           @id @default(cuid())
+  userId  String           @map("user_id")
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false) @map("is_read")
+  data    Json?            @db.JsonB // Link to Application ID or Project ID
 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@map("notifications")
@@ -566,32 +566,32 @@ model Notification {
 // --------------------------------------
 
 model UserProjectInteraction {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  projectId   String   @map("project_id")
+  id        String @id @default(cuid())
+  userId    String @map("user_id")
+  projectId String @map("project_id")
 
   // Action type
-  action      String   // VIEW, CLICK, SAVE, UNSAVE, APPLY, SKIP, SHARE, UNLOCK
+  action String // VIEW, CLICK, SAVE, UNSAVE, APPLY, SKIP, SHARE, UNLOCK
 
   // Engagement depth
-  dwellTimeMs Int?     @map("dwell_time_ms")  // Time spent in ms
-  scrollDepth Float?   @map("scroll_depth")    // 0.0 to 1.0
+  dwellTimeMs Int?   @map("dwell_time_ms") // Time spent in ms
+  scrollDepth Float? @map("scroll_depth") // 0.0 to 1.0
 
   // Context
-  source      String?  // FEED, SEARCH, DIRECT, NOTIFICATION
-  position    Int?     // Position in feed when seen
+  source   String? // FEED, SEARCH, DIRECT, NOTIFICATION
+  position Int? // Position in feed when seen
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@map("user_project_interactions")
   @@index([userId, action])
   @@index([userId, projectId])
   @@index([projectId, action])
   @@index([createdAt])
+  @@map("user_project_interactions")
 }
 
 // --------------------------------------
@@ -611,82 +611,82 @@ enum AdEventType {
 }
 
 model Ad {
-  id              String       @id @default(cuid())
+  id String @id @default(cuid())
 
   // Contenu
-  title           String
-  description     String?      @db.Text
-  imageUrl        String?      @map("image_url")
-  linkUrl         String?      @map("link_url")
-  ctaText         String?      @map("cta_text")
+  title       String
+  description String? @db.Text
+  imageUrl    String? @map("image_url")
+  linkUrl     String? @map("link_url")
+  ctaText     String? @map("cta_text")
 
   // Placement
-  placement       AdPlacement
-  priority        Int          @default(5) // 1-10
+  placement AdPlacement
+  priority  Int         @default(5) // 1-10
 
   // Ciblage
-  targetRoles     String[]     @default([]) @map("target_roles")
-  targetSectors   String[]     @default([]) @map("target_sectors")
-  targetCities    String[]     @default([]) @map("target_cities")
-  targetStages    String[]     @default([]) @map("target_stages")
-  targetSkills    String[]     @default([]) @map("target_skills")
+  targetRoles   String[] @default([]) @map("target_roles")
+  targetSectors String[] @default([]) @map("target_sectors")
+  targetCities  String[] @default([]) @map("target_cities")
+  targetStages  String[] @default([]) @map("target_stages")
+  targetSkills  String[] @default([]) @map("target_skills")
 
   // Diffusion
-  isActive        Boolean      @default(true)  @map("is_active")
-  startDate       DateTime     @default(now()) @map("start_date")
-  endDate         DateTime?    @map("end_date")
+  isActive  Boolean   @default(true) @map("is_active")
+  startDate DateTime  @default(now()) @map("start_date")
+  endDate   DateTime? @map("end_date")
 
   // Frequency capping
   maxImpressionsPerUserPerDay Int @default(3) @map("max_impressions_per_user_per_day")
 
   // Stats dénormalisées
-  totalImpressions Int         @default(0) @map("total_impressions")
-  totalClicks      Int         @default(0) @map("total_clicks")
+  totalImpressions Int @default(0) @map("total_impressions")
+  totalClicks      Int @default(0) @map("total_clicks")
 
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt      @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  events          AdEvent[]
+  events AdEvent[]
 
-  @@map("ads")
   @@index([placement, isActive])
   @@index([startDate, endDate])
+  @@map("ads")
 }
 
 model AdEvent {
-  id          String      @id @default(cuid())
-  adId        String      @map("ad_id")
-  userId      String?     @map("user_id")
+  id     String  @id @default(cuid())
+  adId   String  @map("ad_id")
+  userId String? @map("user_id")
 
-  type        AdEventType
-  placement   AdPlacement
-  position    Int?
+  type      AdEventType
+  placement AdPlacement
+  position  Int?
 
   // Viewport tracking
-  viewportMs  Int?        @map("viewport_ms")
+  viewportMs Int? @map("viewport_ms")
 
-  source      String?
+  source String?
 
-  createdAt   DateTime    @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  ad          Ad          @relation(fields: [adId], references: [id], onDelete: Cascade)
+  ad Ad @relation(fields: [adId], references: [id], onDelete: Cascade)
 
-  @@map("ad_events")
   @@index([adId, type])
   @@index([userId, adId, createdAt])
   @@index([createdAt])
+  @@map("ad_events")
 }
 
 model AdConfig {
-  id                    String  @id @default("singleton")
-  feedInsertEvery       Int     @default(8)    @map("feed_insert_every")
-  feedRandomize         Boolean @default(true) @map("feed_randomize")
-  sidebarMaxAds         Int     @default(2)    @map("sidebar_max_ads")
-  bannerEnabled         Boolean @default(true) @map("banner_enabled")
-  searchInsertPosition  Int     @default(1)    @map("search_insert_position")
+  id                   String  @id @default("singleton")
+  feedInsertEvery      Int     @default(8) @map("feed_insert_every")
+  feedRandomize        Boolean @default(true) @map("feed_randomize")
+  sidebarMaxAds        Int     @default(2) @map("sidebar_max_ads")
+  bannerEnabled        Boolean @default(true) @map("banner_enabled")
+  searchInsertPosition Int     @default(1) @map("search_insert_position")
 
-  updatedAt             DateTime @updatedAt    @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("ad_config")
 }
@@ -696,16 +696,16 @@ model AdConfig {
 // --------------------------------------
 
 model AiConfig {
-  id                    String   @id @default("singleton")
-  defaultProvider       String   @default("DEEPSEEK") @map("default_provider")
-  embeddingProvider     String   @default("JINA") @map("embedding_provider")
-  providerPerAction     Json     @default("{}") @map("provider_per_action") @db.JsonB
-  models                Json     @default("{}") @db.JsonB
-  maxTokens             Int      @default(4096) @map("max_tokens")
-  temperature           Float?
-  moderationThresholds  Json     @default("{\"publishMin\":0.7,\"rejectMax\":0.3}") @map("moderation_thresholds") @db.JsonB
-  matchingWeights       Json     @default("{\"skills\":40,\"experience\":20,\"location\":15,\"culture\":25}") @map("matching_weights") @db.JsonB
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  id                   String   @id @default("singleton")
+  defaultProvider      String   @default("DEEPSEEK") @map("default_provider")
+  embeddingProvider    String   @default("JINA") @map("embedding_provider")
+  providerPerAction    Json     @default("{}") @map("provider_per_action") @db.JsonB
+  models               Json     @default("{}") @db.JsonB
+  maxTokens            Int      @default(4096) @map("max_tokens")
+  temperature          Float?
+  moderationThresholds Json     @default("{\"publishMin\":0.7,\"rejectMax\":0.3}") @map("moderation_thresholds") @db.JsonB
+  matchingWeights      Json     @default("{\"skills\":40,\"experience\":20,\"location\":15,\"culture\":25}") @map("matching_weights") @db.JsonB
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   @@map("ai_config")
 }
@@ -736,11 +736,11 @@ model AiCallLog {
   resourceId       String?  @map("resource_id")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  @@map("ai_call_logs")
   @@index([action])
   @@index([provider])
   @@index([createdAt])
   @@index([success])
+  @@map("ai_call_logs")
 }
 
 // --------------------------------------
@@ -748,28 +748,28 @@ model AiCallLog {
 // --------------------------------------
 
 model UserVisit {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
+  id     String @id @default(cuid())
+  userId String @map("user_id")
 
   // Device info
-  ip          String?
-  userAgent   String?  @map("user_agent")
-  device      String?  // MOBILE, DESKTOP, TABLET (parsed from UA)
-  browser     String?  // Chrome, Firefox, Safari...
-  os          String?  // Windows, Android, iOS...
-  country     String?  // Geo from IP (optional future)
+  ip        String?
+  userAgent String? @map("user_agent")
+  device    String? // MOBILE, DESKTOP, TABLET (parsed from UA)
+  browser   String? // Chrome, Firefox, Safari...
+  os        String? // Windows, Android, iOS...
+  country   String? // Geo from IP (optional future)
 
   // Session timing
-  loginAt     DateTime @default(now()) @map("login_at")
-  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+  loginAt    DateTime @default(now()) @map("login_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("user_visits")
   @@index([userId, loginAt])
   @@index([loginAt])
   @@index([userId, lastSeenAt])
+  @@map("user_visits")
 }
 
 // --------------------------------------
@@ -780,50 +780,50 @@ model FcmToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   token     String   @unique // FCM registration token
-  device    String?  // DESKTOP, MOBILE, TABLET
-  browser   String?  // Chrome, Firefox, Safari...
+  device    String? // DESKTOP, MOBILE, TABLET
+  browser   String? // Chrome, Firefox, Safari...
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("fcm_tokens")
 }
 
 model PushConfig {
-  id                    String  @id @default("singleton")
-  enabled               Boolean @default(true)
+  id           String   @id @default("singleton")
+  enabled      Boolean  @default(true)
   // Types de notifications pour lesquels le push est activé (toutes par défaut)
-  enabledTypes          String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED"]) @map("enabled_types")
+  enabledTypes String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED"]) @map("enabled_types")
 
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("push_config")
 }
 
 model EmailConfig {
-  id            String   @id @default("singleton")
-  enabled       Boolean  @default(true)
-  enabledTypes  String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED", "WELCOME", "ONBOARDING_REMINDER"]) @map("enabled_types")
-  fromName      String   @default("MojiraX") @map("from_name")
-  fromEmail     String   @default("noreply@mojirax.com") @map("from_email")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default("singleton")
+  enabled      Boolean  @default(true)
+  enabledTypes String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "PROFILE_UNLOCKED", "WELCOME", "ONBOARDING_REMINDER"]) @map("enabled_types")
+  fromName     String   @default("MojiraX") @map("from_name")
+  fromEmail    String   @default("noreply@mojirax.com") @map("from_email")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("email_configs")
 }
 
 model EmailLog {
-  id          String           @id @default(cuid())
-  userId      String           @map("user_id")
-  type        NotificationType
-  to          String
-  subject     String
-  brevoId     String?          @map("brevo_id")
-  status      String           @default("SENT")
-  error       String?
-  createdAt   DateTime         @default(now()) @map("created_at")
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  to        String
+  subject   String
+  brevoId   String?          @map("brevo_id")
+  status    String           @default("SENT")
+  error     String?
+  createdAt DateTime         @default(now()) @map("created_at")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([status])
@@ -835,13 +835,13 @@ model EmailLog {
 // --------------------------------------
 
 model FilterEmbedding {
-  id         String   @id @default(cuid())
-  type       String   // "SKILL"
-  value      String   // valeur brute ex: "React Native"
-  label      String   // label affichage
+  id         String                       @id @default(cuid())
+  type       String // "SKILL"
+  value      String // valeur brute ex: "React Native"
+  label      String // label affichage
   embedding  Unsupported("vector(1024)")? @map("embedding")
-  usageCount Int      @default(0) @map("usage_count")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  usageCount Int                          @default(0) @map("usage_count")
+  updatedAt  DateTime                     @updatedAt @map("updated_at")
 
   @@unique([type, value])
   @@map("filter_embeddings")
@@ -869,21 +869,21 @@ model Conversation {
 }
 
 model Message {
-  id             String          @id @default(uuid())
-  conversationId String          @map("conversation_id")
-  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String          @map("sender_id")
-  sender         User            @relation("SentMessages", fields: [senderId], references: [id])
+  id             String            @id @default(uuid())
+  conversationId String            @map("conversation_id")
+  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String            @map("sender_id")
+  sender         User              @relation("SentMessages", fields: [senderId], references: [id])
   content        String?
-  fileUrl        String?         @map("file_url")
-  fileName       String?         @map("file_name")
-  fileSize       Int?            @map("file_size")
-  fileMimeType   String?         @map("file_mime_type")
-  status         MessageStatus   @default(SENT)
-  deliveredAt    DateTime?       @map("delivered_at")
-  readAt         DateTime?       @map("read_at")
+  fileUrl        String?           @map("file_url")
+  fileName       String?           @map("file_name")
+  fileSize       Int?              @map("file_size")
+  fileMimeType   String?           @map("file_mime_type")
+  status         MessageStatus     @default(SENT)
+  deliveredAt    DateTime?         @map("delivered_at")
+  readAt         DateTime?         @map("read_at")
   reactions      MessageReaction[]
-  createdAt      DateTime        @default(now()) @map("created_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
 
   @@index([conversationId, createdAt])
   @@map("messages")

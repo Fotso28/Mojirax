@@ -6,11 +6,13 @@ import { FirebaseStrategy } from './firebase.strategy';
 import { VisitsService } from './visits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseModule } from '../firebase/firebase.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
         PassportModule.register({ defaultStrategy: 'firebase-jwt' }),
         FirebaseModule,
+        NotificationsModule,
     ],
     controllers: [AuthController],
     providers: [AuthService, FirebaseStrategy, VisitsService, PrismaService],

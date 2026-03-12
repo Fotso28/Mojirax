@@ -6,12 +6,18 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationType, Prisma } from '@prisma/client';
+import { PushService } from './push.service';
+import { EmailService } from './email/email.service';
 
 @Injectable()
 export class NotificationsService {
     private readonly logger = new Logger(NotificationsService.name);
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private pushService: PushService,
+        private emailService: EmailService,
+    ) { }
 
     /**
      * Crée une notification pour un utilisateur.
@@ -30,6 +36,25 @@ export class NotificationsService {
         });
 
         this.logger.log(`Notification created: type=${type} user=${userId}`);
+
+        // Envoyer push FCM (fire & forget — ne bloque pas)
+        const pushData: Record<string, string> = {
+            type,
+            notificationId: notification.id,
+        };
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+            const d = data as Record<string, unknown>;
+            if (d.projectId) pushData.projectId = String(d.projectId);
+            if (d.applicationId) pushData.applicationId = String(d.applicationId);
+        }
+        this.pushService.sendPush(userId, title, message, pushData).catch((err) => {
+            this.logger.warn(`Push notification failed: ${err?.message}`);
+        });
+
+        // Fire & forget email
+        this.emailService
+            .sendEmail(userId, type, data as Record<string, any>)
+            .catch((e) => this.logger.warn('Email failed', e));
 
         return notification;
     }
@@ -129,6 +154,13 @@ export class NotificationsService {
         this.logger.log(`Marked ${result.count} notifications as read for user=${user.id}`);
 
         return { updated: result.count };
+    }
+
+    /**
+     * Résout un firebaseUid en userId interne (public pour le controller push).
+     */
+    async resolveUserPublic(firebaseUid: string) {
+        return this.resolveUser(firebaseUid);
     }
 
     /**

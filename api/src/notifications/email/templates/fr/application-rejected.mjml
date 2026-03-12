@@ -1,0 +1,12 @@
+<mj-text font-size="16px" padding="0 0 16px 0">
+  Bonjour {{candidateName}},
+</mj-text>
+<mj-text padding="0 0 16px 0">
+  Votre candidature pour le projet <strong>{{projectName}}</strong> n'a pas été retenue cette fois-ci.
+</mj-text>
+<mj-text padding="0 0 24px 0">
+  Ne vous découragez pas — de nouveaux projets sont publiés chaque jour. Continuez à explorer les opportunités !
+</mj-text>
+<mj-button href="{{actionUrl}}">
+  Explorer les projets
+</mj-button>
