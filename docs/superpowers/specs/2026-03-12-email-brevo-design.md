@@ -28,7 +28,8 @@ Ajouter un systeme d'emails transactionnels professionnels a MojiraX via Brevo. 
 ```prisma
 model User {
   // ... champs existants ...
-  preferredLang  String  @default("fr") @map("preferred_lang") // "fr" | "en"
+  preferredLang  String     @default("fr") @map("preferred_lang") // "fr" | "en"
+  emailLogs      EmailLog[]
 }
 ```
 
@@ -38,7 +39,7 @@ model User {
 model EmailConfig {
   id            String   @id @default("singleton")
   enabled       Boolean  @default(true)
-  enabledTypes  String[] @map("enabled_types")
+  enabledTypes  String[] @default(["SYSTEM", "APPLICATION_RECEIVED", "APPLICATION_ACCEPTED", "APPLICATION_REJECTED", "MODERATION_ALERT", "PROFILE_PUBLISHED", "PROFILE_REVIEW", "DOCUMENT_ANALYZED", "DOCUMENT_ANALYSIS_FAILED", "PROFILE_UNLOCKED", "WELCOME", "ONBOARDING_REMINDER"]) @map("enabled_types")
   fromName      String   @default("MojiraX") @map("from_name")
   fromEmail     String   @default("noreply@mojirax.com") @map("from_email")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -59,7 +60,7 @@ model EmailLog {
   status      String           @default("SENT") // SENT, FAILED
   error       String?
   createdAt   DateTime         @default(now()) @map("created_at")
-  user        User             @relation(fields: [userId], references: [id])
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, createdAt])
   @@index([status])
   @@map("email_logs")
@@ -131,6 +132,7 @@ apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, BREVO_API_KEY)
 await apiInstance.sendTransacEmail({
   sender: { name: config.fromName, email: config.fromEmail },
   to: [{ email: user.email, name: user.firstName }],
+  replyTo: { email: config.fromEmail, name: config.fromName },
   subject,
   htmlContent,
   tags: [type],
@@ -174,7 +176,16 @@ api/src/notifications/email/
 
 Header avec logo MojiraX + footer avec liens legaux. Utilise les couleurs kezak-primary (#0066ff) et kezak-dark (#001f4d).
 
-### 5.3 Variables par type
+### 5.3 Resolution des sous-templates
+
+Le type `MODERATION_ALERT` genere 3 templates differents selon le champ `data.moderationStatus` :
+- `published` → `moderation-published.mjml`
+- `rejected` → `moderation-rejected.mjml`
+- `pending` → `moderation-pending.mjml`
+
+Le mapping est defini dans `email.constants.ts`. La resolution de `userName` utilise `user.firstName || user.name || 'Utilisateur'`.
+
+### 5.4 Variables par type
 
 | Type | Variables |
 |------|-----------|
@@ -193,7 +204,7 @@ Header avec logo MojiraX + footer avec liens legaux. Utilise les couleurs kezak-
 | ONBOARDING_REMINDER | userName, actionUrl |
 | SYSTEM | userName, actionUrl |
 
-### 5.4 Mapping actionUrl
+### 5.5 Mapping actionUrl
 
 | Type | URL |
 |------|-----|
@@ -219,7 +230,8 @@ Tous les appels `notify()` existants declenchent automatiquement un email en plu
 
 ### 6.2 WELCOME (nouveau)
 
-- Declencheur : `AuthService.syncUser()` quand `isNewUser === true`
+- Declencheur : `AuthService.syncUser()` quand l'utilisateur est nouveau
+- Detection : `syncUser()` sera modifie pour retourner `{ user, isNewUser: boolean }` en utilisant le resultat de `upsert` (creation = `isNewUser: true`)
 - Pas de notification in-app — uniquement email
 - Appel direct : `this.emailService.sendWelcome(user.id)`
 
@@ -227,6 +239,7 @@ Tous les appels `notify()` existants declenchent automatiquement un email en plu
 
 - Declencheur : Cron job NestJS (`@Cron('0 10 * * *')`) — tous les jours a 10h
 - Cible : Users crees il y a 48h+ sans role defini ou sans projet/profil candidat
+- Traitement par batch de 50 utilisateurs max pour eviter les requetes non-bornees
 - Max 1 reminder par utilisateur (verifie via EmailLog)
 - Cree une notification in-app + email
 
@@ -246,8 +259,8 @@ class UpdateEmailConfigDto {
   @IsOptional() @IsBoolean()
   enabled?: boolean;
 
-  @IsOptional() @IsArray() @IsString({ each: true })
-  enabledTypes?: string[];
+  @IsOptional() @IsArray() @IsEnum(NotificationType, { each: true })
+  enabledTypes?: NotificationType[];
 
   @IsOptional() @IsString() @MaxLength(100)
   fromName?: string;
@@ -308,13 +321,20 @@ npm install @getbrevo/brevo mjml @nestjs/schedule
 | Fichier | Modification |
 |---------|-------------|
 | `api/prisma/schema.prisma` | +preferredLang, +EmailConfig, +EmailLog, +2 enum values |
-| `api/src/notifications/notifications.module.ts` | +EmailService, +EmailCompilerService, +ScheduleModule |
+| `api/src/app.module.ts` | +ScheduleModule.forRoot() (requis pour les decorateurs @Cron) |
+| `api/src/notifications/notifications.module.ts` | +EmailService, +EmailCompilerService |
 | `api/src/notifications/notifications.service.ts` | Appeler emailService.sendEmail() dans notify() |
-| `api/src/auth/auth.service.ts` | Appeler emailService.sendWelcome() sur nouveau user |
+| `api/src/auth/auth.service.ts` | Modifier syncUser() pour retourner `{ user, isNewUser }` + appeler emailService.sendWelcome() |
 | `api/src/admin/admin.service.ts` | +getEmailConfig(), +updateEmailConfig() |
 | `api/src/admin/admin.controller.ts` | +GET/PATCH /admin/email-config |
 | `api/src/applications/applications.service.ts` | Enrichir data avec projectSlug |
 | `api/src/unlock/unlock.service.ts` | Enrichir data avec targetName |
+
+### Limitations connues (V1)
+
+- Pas de retry automatique pour les emails FAILED (iteration future)
+- Pas de politique de purge des EmailLog (iteration future)
+- Pas de tracking d'ouverture/clic via webhooks Brevo (iteration future)
 
 ### Inchange
 
