@@ -22,6 +22,9 @@ import {
   ListTransactionsDto,
   ListLogsDto,
   ListProjectsDto,
+  BanUserDto,
+  UnbanUserDto,
+  ArchiveProjectDto,
 } from './dto/admin.dto';
 import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
 import { UpdatePushConfigDto } from './dto/update-push-config.dto';
@@ -59,6 +62,24 @@ export class AdminController {
     return this.adminService.changeUserRole(req.user.dbId, id, dto);
   }
 
+  @Patch('users/:id/ban')
+  async banUser(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: BanUserDto,
+  ) {
+    return this.adminService.banUser(req.user.dbId, id, dto);
+  }
+
+  @Patch('users/:id/unban')
+  async unbanUser(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: UnbanUserDto,
+  ) {
+    return this.adminService.unbanUser(req.user.dbId, id, dto);
+  }
+
   @Get('moderation')
   listModeration(@Query() dto: ListModerationDto) {
     return this.adminService.listModeration(dto);
@@ -86,6 +107,23 @@ export class AdminController {
   @Get('projects')
   listProjects(@Query() dto: ListProjectsDto) {
     return this.adminService.listProjects(dto);
+  }
+
+  @Patch('projects/:id/archive')
+  async archiveProject(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: ArchiveProjectDto,
+  ) {
+    return this.adminService.archiveProject(req.user.dbId, id, dto);
+  }
+
+  @Patch('projects/:id/restore')
+  async restoreProject(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.restoreProject(req.user.dbId, id);
   }
 
   // ─── Push Config ──────────────────────────────────
