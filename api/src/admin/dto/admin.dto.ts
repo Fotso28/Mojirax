@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, Max, IsEnum, IsIn } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, Max, IsEnum, IsIn, MinLength, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class PaginationDto {
@@ -20,6 +20,10 @@ export class ListUsersDto extends PaginationDto {
   @IsOptional()
   @IsIn(['ADMIN', 'FOUNDER', 'CANDIDATE', 'USER'])
   role?: string;
+
+  @IsOptional()
+  @IsIn(['ACTIVE', 'BANNED'])
+  status?: string;
 
   @IsOptional()
   @IsString()
@@ -64,7 +68,7 @@ export class ListLogsDto extends PaginationDto {
 
 export class ListProjectsDto extends PaginationDto {
   @IsOptional()
-  @IsIn(['DRAFT', 'ANALYZING', 'PENDING_AI', 'PUBLISHED', 'REJECTED'])
+  @IsIn(['DRAFT', 'ANALYZING', 'PENDING_AI', 'PUBLISHED', 'REJECTED', 'REMOVED_BY_ADMIN'])
   status?: string;
 
   @IsOptional()
@@ -74,4 +78,25 @@ export class ListProjectsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
+}
+
+export class BanUserDto {
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason: string;
+}
+
+export class UnbanUserDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class ArchiveProjectDto {
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason: string;
 }
