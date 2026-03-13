@@ -24,12 +24,34 @@ AXIOS_INSTANCE.interceptors.request.use(
 // Response interceptor for error handling
 AXIOS_INSTANCE.interceptors.response.use(
     (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
+    async (error) => {
+        // Check for banned account
+        if (
+            error.response?.status === 403 &&
+            error.response?.data?.code === 'ACCOUNT_BANNED'
+        ) {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('db_user');
+                const { auth } = await import('@/lib/firebase');
+                const { signOut } = await import('firebase/auth');
+                await signOut(auth).catch(() => {});
+                alert('Votre compte a été désactivé, contactez le support');
                 window.location.href = '/login';
+            }
+            return Promise.reject(error);
+        }
+
+        if (error.response?.status === 401) {
+            if (typeof window !== 'undefined') {
+                // Don't redirect if already on login or during auth sync (prevents loops)
+                const isLoginPage = window.location.pathname === '/login';
+                const isAuthSync = error.config?.url?.includes('/auth/sync');
+                if (!isLoginPage && !isAuthSync) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('db_user');
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);
