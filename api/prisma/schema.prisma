@@ -856,9 +856,9 @@ model Conversation {
   applicationId      String      @unique @map("application_id")
   application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   founderId          String      @map("founder_id")
-  founder            User        @relation("FounderConversations", fields: [founderId], references: [id])
+  founder            User        @relation("FounderConversations", fields: [founderId], references: [id], onDelete: Cascade)
   candidateId        String      @map("candidate_id")
-  candidate          User        @relation("CandidateConversations", fields: [candidateId], references: [id])
+  candidate          User        @relation("CandidateConversations", fields: [candidateId], references: [id], onDelete: Cascade)
   lastMessageAt      DateTime?   @map("last_message_at")
   lastMessagePreview String?     @map("last_message_preview")
   messages           Message[]
@@ -895,9 +895,61 @@ model MessageReaction {
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   userId    String   @map("user_id")
   user      User     @relation("MessageReactions", fields: [userId], references: [id])
-  emoji     String
+  emoji     String   @db.VarChar(32)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([messageId, userId, emoji])
   @@map("message_reactions")
+}
+
+// --------------------------------------
+// Landing Page Content
+// --------------------------------------
+
+model PricingPlan {
+  id          String   @id @default(cuid())
+  name        String
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  period      String   @default("mois")
+  currency    String   @default("EUR")
+  description String?
+  features    String[]
+  isPopular   Boolean  @default(false) @map("is_popular")
+  isActive    Boolean  @default(true) @map("is_active")
+  order       Int      @default(0)
+  ctaLabel    String   @default("Commencer") @map("cta_label")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, order])
+  @@map("pricing_plans")
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  isActive  Boolean  @default(true) @map("is_active")
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, order])
+  @@map("faqs")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  location  String
+  quote     String
+  imageUrl  String   @map("image_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, order])
+  @@map("testimonials")
 }
