@@ -11,6 +11,7 @@ import {
   ListProjectsDto,
 } from './dto/admin.dto';
 import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
+import { CreatePlanDto, UpdatePlanDto, ReorderPlansDto } from './dto/plan.dto';
 
 @Injectable()
 export class AdminService {
@@ -912,5 +913,131 @@ export class AdminService {
 
     this.logger.log('Email config updated');
     return config;
+  }
+
+  // ─── Pricing Plans CRUD ────────────────────────────
+
+  async listPlans() {
+    return this.prisma.pricingPlan.findMany({
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async createPlan(dto: CreatePlanDto, adminId: string) {
+    const plan = await this.prisma.pricingPlan.create({
+      data: {
+        name: dto.name,
+        price: dto.price,
+        period: dto.period ?? 'mois',
+        currency: dto.currency ?? 'EUR',
+        description: dto.description,
+        features: dto.features,
+        isPopular: dto.isPopular ?? false,
+        isActive: dto.isActive ?? true,
+        ctaLabel: dto.ctaLabel ?? 'Commencer',
+        order: dto.order ?? 0,
+      },
+    });
+
+    if (plan.isPopular) {
+      await this.prisma.pricingPlan.updateMany({
+        where: { id: { not: plan.id }, isPopular: true },
+        data: { isPopular: false },
+      });
+    }
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'CREATE_PLAN',
+        targetId: plan.id,
+        details: { name: plan.name, price: Number(plan.price) },
+      },
+    });
+
+    this.logger.log(`Plan created: ${plan.name} (${plan.id})`);
+    return plan;
+  }
+
+  async updatePlan(id: string, dto: UpdatePlanDto, adminId: string) {
+    const existing = await this.prisma.pricingPlan.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Plan not found');
+
+    const plan = await this.prisma.pricingPlan.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.price !== undefined && { price: dto.price }),
+        ...(dto.period !== undefined && { period: dto.period }),
+        ...(dto.currency !== undefined && { currency: dto.currency }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.features !== undefined && { features: dto.features }),
+        ...(dto.isPopular !== undefined && { isPopular: dto.isPopular }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.ctaLabel !== undefined && { ctaLabel: dto.ctaLabel }),
+        ...(dto.order !== undefined && { order: dto.order }),
+      },
+    });
+
+    if (dto.isPopular === true) {
+      await this.prisma.pricingPlan.updateMany({
+        where: { id: { not: id }, isPopular: true },
+        data: { isPopular: false },
+      });
+    }
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'UPDATE_PLAN',
+        targetId: id,
+        details: { name: plan.name, changes: dto },
+      },
+    });
+
+    this.logger.log(`Plan updated: ${plan.name} (${id})`);
+    return plan;
+  }
+
+  async deletePlan(id: string, adminId: string) {
+    const existing = await this.prisma.pricingPlan.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Plan not found');
+
+    await this.prisma.pricingPlan.delete({ where: { id } });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'DELETE_PLAN',
+        targetId: id,
+        details: { name: existing.name },
+      },
+    });
+
+    this.logger.log(`Plan deleted: ${existing.name} (${id})`);
+    return { success: true };
+  }
+
+  async reorderPlans(dto: ReorderPlansDto, adminId: string) {
+    await this.prisma.$transaction(
+      dto.plans.map((item) =>
+        this.prisma.pricingPlan.update({
+          where: { id: item.id },
+          data: { order: item.order },
+        }),
+      ),
+    );
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'REORDER_PLANS',
+        targetId: null,
+        details: { plans: dto.plans },
+      },
+    });
+
+    this.logger.log('Plans reordered');
+    return this.listPlans();
   }
 }
