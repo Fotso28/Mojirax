@@ -9,6 +9,9 @@ import {
   ListTransactionsDto,
   ListLogsDto,
   ListProjectsDto,
+  BanUserDto,
+  UnbanUserDto,
+  ArchiveProjectDto,
 } from './dto/admin.dto';
 import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
 import { CreatePlanDto, UpdatePlanDto, ReorderPlansDto } from './dto/plan.dto';
@@ -75,6 +78,9 @@ export class AdminService {
       visitsToday,
       uniqueVisitorsThisWeek,
       deviceStats,
+      // Ban / Archive
+      bannedUsersCount,
+      archivedByAdminCount,
     ] = await Promise.all([
       // Users
       this.prisma.user.count(),
@@ -147,6 +153,9 @@ export class AdminService {
         by: ['device'],
         _count: true,
       }),
+      // Ban / Archive
+      this.prisma.user.count({ where: { status: 'BANNED' } }),
+      this.prisma.project.count({ where: { status: 'REMOVED_BY_ADMIN' } }),
     ]);
 
     return {
@@ -156,6 +165,7 @@ export class AdminService {
         founders: foundersCount,
         candidates: candidatesCount,
         unassigned: usersCount,
+        banned: bannedUsersCount,
         newThisWeek,
       },
       projects: {
@@ -165,6 +175,7 @@ export class AdminService {
         pendingAi: pendingAiProjects,
         analyzingDoc: analyzingProjects,
         rejected: rejectedProjects,
+        archivedByAdmin: archivedByAdminCount,
       },
       applications: {
         total: totalApplications,
@@ -220,6 +231,10 @@ export class AdminService {
       where.role = dto.role;
     }
 
+    if (dto.status) {
+      where.status = dto.status;
+    }
+
     if (dto.search) {
       where.OR = [
         { name: { contains: dto.search, mode: 'insensitive' } },
@@ -237,6 +252,7 @@ export class AdminService {
           name: true,
           email: true,
           role: true,
+          status: true,
           image: true,
           createdAt: true,
           _count: {
@@ -268,6 +284,7 @@ export class AdminService {
           email: true,
           phone: true,
           role: true,
+          status: true,
           image: true,
           createdAt: true,
           updatedAt: true,
@@ -459,6 +476,97 @@ export class AdminService {
     this.logger.log(`Admin ${adminId} changed role of user ${userId}: ${oldRole} → ${dto.role}`);
 
     return { success: true, oldRole, newRole: dto.role };
+  }
+
+  async banUser(adminId: string, userId: string, dto: BanUserDto) {
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, status: true, name: true, email: true },
+    });
+
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+    if (target.role === 'ADMIN') throw new BadRequestException('Impossible de bannir un administrateur');
+    if (target.status === 'BANNED') throw new BadRequestException('Utilisateur déjà banni');
+
+    const publishedProjects = await this.prisma.project.findMany({
+      where: { founderId: userId, status: 'PUBLISHED' },
+      select: { id: true },
+    });
+    const archivedProjectIds = publishedProjects.map((p) => p.id);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { status: 'BANNED' },
+      }),
+      ...(archivedProjectIds.length > 0
+        ? [this.prisma.project.updateMany({
+            where: { id: { in: archivedProjectIds } },
+            data: { status: 'REMOVED_BY_ADMIN' },
+          })]
+        : []),
+      this.prisma.adminLog.create({
+        data: {
+          adminId,
+          action: 'BAN_USER',
+          targetId: userId,
+          details: { reason: dto.reason, archivedProjectIds },
+        },
+      }),
+    ]);
+
+    this.logger.warn(`User banned: userId=${userId} by adminId=${adminId}, reason="${dto.reason}", archivedProjects=${archivedProjectIds.length}`);
+    return { id: target.id, name: target.name, email: target.email, role: target.role, status: 'BANNED' as const, archivedProjects: archivedProjectIds.length };
+  }
+
+  async unbanUser(adminId: string, userId: string, dto: UnbanUserDto) {
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true, name: true, email: true, role: true },
+    });
+
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+    if (target.status !== 'BANNED') throw new BadRequestException('Utilisateur non banni');
+
+    const banLog = await this.prisma.adminLog.findFirst({
+      where: { targetId: userId, action: 'BAN_USER' },
+      orderBy: { createdAt: 'desc' },
+      select: { details: true },
+    });
+
+    const archivedProjectIds: string[] = (banLog?.details as any)?.archivedProjectIds ?? [];
+
+    const projectsToRestore = archivedProjectIds.length > 0
+      ? await this.prisma.project.findMany({
+          where: { id: { in: archivedProjectIds }, status: 'REMOVED_BY_ADMIN' },
+          select: { id: true },
+        })
+      : [];
+    const restoredProjectIds = projectsToRestore.map((p) => p.id);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { status: 'ACTIVE' },
+      }),
+      ...(restoredProjectIds.length > 0
+        ? [this.prisma.project.updateMany({
+            where: { id: { in: restoredProjectIds } },
+            data: { status: 'PUBLISHED' },
+          })]
+        : []),
+      this.prisma.adminLog.create({
+        data: {
+          adminId,
+          action: 'UNBAN_USER',
+          targetId: userId,
+          details: { reason: dto.reason ?? null, restoredProjectIds },
+        },
+      }),
+    ]);
+
+    this.logger.log(`User unbanned: userId=${userId} by adminId=${adminId}, restoredProjects=${restoredProjectIds.length}`);
+    return { id: target.id, name: target.name, email: target.email, role: target.role, status: 'ACTIVE' as const, restoredProjects: restoredProjectIds.length };
   }
 
   // ─── Modération ────────────────────────────────────────
@@ -842,6 +950,65 @@ export class AdminService {
     }));
 
     return { projects: enriched, total, take, skip: dto.skip ?? 0 };
+  }
+
+  // ─── Archive / Restore Projects ────────────────────
+
+  async archiveProject(adminId: string, projectId: string, dto: ArchiveProjectDto) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, name: true, status: true, founderId: true },
+    });
+
+    if (!project) throw new NotFoundException('Projet introuvable');
+    if (project.status === 'REMOVED_BY_ADMIN') throw new BadRequestException('Projet déjà archivé');
+    if (project.status !== 'PUBLISHED') throw new BadRequestException('Seuls les projets publiés peuvent être archivés');
+
+    await this.prisma.$transaction([
+      this.prisma.project.update({
+        where: { id: projectId },
+        data: { status: 'REMOVED_BY_ADMIN' },
+      }),
+      this.prisma.adminLog.create({
+        data: {
+          adminId,
+          action: 'ARCHIVE_PROJECT',
+          targetId: projectId,
+          details: { reason: dto.reason, projectName: project.name },
+        },
+      }),
+    ]);
+
+    this.logger.warn(`Project archived: projectId=${projectId} by adminId=${adminId}, reason="${dto.reason}"`);
+    return { id: project.id, name: project.name, status: 'REMOVED_BY_ADMIN' as const, founderId: project.founderId };
+  }
+
+  async restoreProject(adminId: string, projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, name: true, status: true, founderId: true },
+    });
+
+    if (!project) throw new NotFoundException('Projet introuvable');
+    if (project.status !== 'REMOVED_BY_ADMIN') throw new BadRequestException('Seuls les projets archivés par admin peuvent être restaurés');
+
+    await this.prisma.$transaction([
+      this.prisma.project.update({
+        where: { id: projectId },
+        data: { status: 'PUBLISHED' },
+      }),
+      this.prisma.adminLog.create({
+        data: {
+          adminId,
+          action: 'RESTORE_PROJECT',
+          targetId: projectId,
+          details: { projectName: project.name },
+        },
+      }),
+    ]);
+
+    this.logger.log(`Project restored: projectId=${projectId} by adminId=${adminId}`);
+    return { id: project.id, name: project.name, status: 'PUBLISHED' as const, founderId: project.founderId };
   }
 
   // ─── Push Config ────────────────────────────────────
