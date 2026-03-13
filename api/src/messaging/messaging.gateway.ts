@@ -7,7 +7,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { UseGuards, Inject, Logger } from '@nestjs/common';
+import { UseGuards, Inject, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import * as admin from 'firebase-admin';
 import Redis from 'ioredis';
@@ -19,10 +19,18 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 import { NotificationType } from '@prisma/client';
+import {
+  WsSendMessageDto,
+  WsConversationIdDto,
+  WsMessageIdDto,
+  WsReactionDto,
+  WsAuthRefreshDto,
+} from './dto/ws-message.dto';
 
 const PRESENCE_TTL = 300; // 5 minutes
 const TYPING_TTL = 3; // 3 seconds
 const REAUTH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
+const MAX_CONTENT_BYTES = 20_000; // 20 KB max for message content
 
 @WebSocketGateway({
   namespace: '/messaging',
@@ -31,6 +39,7 @@ const REAUTH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
     credentials: true,
   },
 })
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
 export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -46,6 +55,49 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     @Inject('FIREBASE_ADMIN') private readonly firebaseAdmin: typeof admin,
   ) {}
+
+  // ─── Helpers ──────────────────────────────────────────────
+
+  /** Safe Redis call — logs error but never throws */
+  private async safeRedis<T>(op: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await op();
+    } catch (err: any) {
+      this.logger.error(`Redis operation failed: ${err?.message}`);
+      return fallback;
+    }
+  }
+
+  /** Increment presence counter — returns new count */
+  private async presenceIncr(userId: string): Promise<void> {
+    await this.safeRedis(async () => {
+      const key = `presence:${userId}`;
+      await this.redis.incr(key);
+      await this.redis.expire(key, PRESENCE_TTL);
+    }, undefined);
+  }
+
+  /** Decrement presence counter — returns true if user went offline */
+  private async presenceDecr(userId: string): Promise<boolean> {
+    return this.safeRedis(async () => {
+      const key = `presence:${userId}`;
+      const count = await this.redis.decr(key);
+      if (count <= 0) {
+        await this.redis.del(key);
+        return true;
+      }
+      await this.redis.expire(key, PRESENCE_TTL);
+      return false;
+    }, true);
+  }
+
+  /** Check if user is online (presence counter > 0) */
+  private async isUserOnline(userId: string): Promise<boolean> {
+    return this.safeRedis(async () => {
+      const val = await this.redis.get(`presence:${userId}`);
+      return val !== null && parseInt(val, 10) > 0;
+    }, false);
+  }
 
   // ─── Connection ────────────────────────────────────────────
 
@@ -66,17 +118,30 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Resolve internal userId
       const userId = await this.messagingService.resolveUserId(uid);
 
+      // Check if user is banned
+      const userRecord = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { status: true },
+      });
+      if (userRecord?.status === 'BANNED') {
+        this.logger.warn(`Banned user tried to connect: userId=${userId}`);
+        client.emit('error', { code: 'ACCOUNT_BANNED', message: 'Votre compte a été désactivé' });
+        client.disconnect();
+        return;
+      }
+
       // Store user data on socket
       client.data.user = { uid, userId };
 
-      // Join user's conversation rooms
+      // Join user's conversation rooms (parallel)
       const conversationIds = await this.messagingService.getUserConversationIds(userId);
-      for (const convId of conversationIds) {
-        await client.join(`conversation:${convId}`);
-      }
+      await Promise.all(conversationIds.map((convId) => client.join(`conversation:${convId}`)));
 
-      // Set presence in Redis
-      await this.redis.set(`presence:${userId}`, 'online', 'EX', PRESENCE_TTL);
+      // Cache conversation IDs on socket for disconnect
+      client.data.conversationIds = conversationIds;
+
+      // Increment presence counter
+      await this.presenceIncr(userId);
 
       // Broadcast online status to all conversations
       for (const convId of conversationIds) {
@@ -97,7 +162,10 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
           }
           await this.firebaseAdmin.auth().verifyIdToken(freshToken);
           // Refresh presence TTL
-          await this.redis.set(`presence:${userId}`, 'online', 'EX', PRESENCE_TTL);
+          await this.safeRedis(
+            () => this.redis.expire(`presence:${userId}`, PRESENCE_TTL),
+            0,
+          );
         } catch {
           this.logger.warn(`Re-auth failed for user=${userId}, disconnecting`);
           client.disconnect();
@@ -127,21 +195,50 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     if (!userId) return;
 
     try {
-      // Remove presence
-      await this.redis.del(`presence:${userId}`);
+      // Decrement presence — only broadcast offline if counter reached 0
+      const wentOffline = await this.presenceDecr(userId);
 
-      // Broadcast offline to conversations
-      const conversationIds = await this.messagingService.getUserConversationIds(userId);
-      for (const convId of conversationIds) {
-        client.to(`conversation:${convId}`).emit('presence:update', {
-          userId,
-          status: 'offline',
-        });
+      if (wentOffline) {
+        // Use cached conversationIds to avoid extra DB query
+        const conversationIds =
+          client.data.conversationIds ||
+          (await this.messagingService.getUserConversationIds(userId));
+
+        for (const convId of conversationIds) {
+          client.to(`conversation:${convId}`).emit('presence:update', {
+            userId,
+            status: 'offline',
+          });
+        }
       }
 
       this.logger.log(`Client disconnected: socketId=${client.id} userId=${userId}`);
     } catch (err: any) {
       this.logger.error(`Disconnect cleanup failed: ${err?.message}`);
+    }
+  }
+
+  // ─── Room Management ───────────────────────────────────────
+
+  @UseGuards(WsAuthGuard)
+  @SubscribeMessage('conversation:join')
+  async handleJoinConversation(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: WsConversationIdDto,
+  ) {
+    const userId = client.data.user.userId;
+
+    try {
+      await this.messagingService.verifyMembership(data.conversationId, userId);
+      await client.join(`conversation:${data.conversationId}`);
+
+      // Update cached conversationIds (avoid duplicates)
+      if (client.data.conversationIds && !client.data.conversationIds.includes(data.conversationId)) {
+        client.data.conversationIds.push(data.conversationId);
+      }
+    } catch (err: any) {
+      this.logger.error(`conversation:join failed: ${err?.message}`);
+      client.emit('error', { message: err?.message || 'Erreur de rejoindre la conversation' });
     }
   }
 
@@ -151,14 +248,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: {
-      conversationId: string;
-      content?: string;
-      fileUrl?: string;
-      fileName?: string;
-      fileSize?: number;
-      fileMimeType?: string;
-    },
+    @MessageBody() data: WsSendMessageDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -170,17 +260,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         return;
       }
 
-      // Validate content length (M02)
-      if (data.content && data.content.length > 5000) {
-        client.emit('error', { message: 'Message trop long (5000 caractères max)' });
-        return;
-      }
-      if (data.fileSize && data.fileSize > 5_242_880) {
-        client.emit('error', { message: 'Fichier trop volumineux (5 MB max)' });
-        return;
-      }
-      if (data.fileMimeType && !['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(data.fileMimeType)) {
-        client.emit('error', { message: 'Type de fichier non autorisé' });
+      // Validate content byte length (M02 — prevent multi-byte char DoS)
+      if (data.content && Buffer.byteLength(data.content, 'utf8') > MAX_CONTENT_BYTES) {
+        client.emit('error', { message: 'Message trop long' });
         return;
       }
 
@@ -198,19 +280,18 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         .to(`conversation:${data.conversationId}`)
         .emit('message:new', message);
 
-      // Check if recipient is offline → send push
-      const recipientId = await this.messagingService.getRecipientId(
-        data.conversationId,
-        userId,
-      );
-      const isOnline = await this.redis.get(`presence:${recipientId}`);
-
-      if (!isOnline) {
-        // Get sender name for push notification
-        const sender = await this.prisma.user.findUnique({
+      // Check if recipient is offline → send push (parallel lookups)
+      const [recipientId, sender] = await Promise.all([
+        this.messagingService.getRecipientId(data.conversationId, userId),
+        this.prisma.user.findUnique({
           where: { id: userId },
           select: { firstName: true, lastName: true },
-        });
+        }),
+      ]);
+
+      const isOnline = await this.isUserOnline(recipientId);
+
+      if (!isOnline) {
         const senderName = sender
           ? `${sender.firstName} ${sender.lastName}`.trim()
           : 'Quelqu\'un';
@@ -242,7 +323,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('message:delivered')
   async handleMarkDelivered(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { messageId: string },
+    @MessageBody() data: WsMessageIdDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -270,7 +351,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('message:read')
   async handleMarkRead(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
+    @MessageBody() data: WsConversationIdDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -297,7 +378,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('typing:start')
   async handleTypingStart(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
+    @MessageBody() data: WsConversationIdDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -309,11 +390,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       await this.messagingService.verifyMembership(data.conversationId, userId);
 
       // Set typing flag in Redis with short TTL
-      await this.redis.set(
-        `typing:${data.conversationId}:${userId}`,
-        '1',
-        'EX',
-        TYPING_TTL,
+      await this.safeRedis(
+        () => this.redis.set(`typing:${data.conversationId}:${userId}`, '1', 'EX', TYPING_TTL),
+        'OK',
       );
 
       // Broadcast to conversation (excluding sender)
@@ -332,7 +411,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('typing:stop')
   async handleTypingStop(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
+    @MessageBody() data: WsConversationIdDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -344,7 +423,10 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       await this.messagingService.verifyMembership(data.conversationId, userId);
 
       // Remove typing flag
-      await this.redis.del(`typing:${data.conversationId}:${userId}`);
+      await this.safeRedis(
+        () => this.redis.del(`typing:${data.conversationId}:${userId}`),
+        0,
+      );
 
       // Broadcast to conversation (excluding sender)
       client.to(`conversation:${data.conversationId}`).emit('typing:update', {
@@ -364,7 +446,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('reaction:add')
   async handleReactionAdd(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { messageId: string; emoji: string },
+    @MessageBody() data: WsReactionDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -397,7 +479,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('reaction:remove')
   async handleReactionRemove(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { messageId: string; emoji: string },
+    @MessageBody() data: WsReactionDto,
   ) {
     const userId = client.data.user.userId;
 
@@ -432,18 +514,29 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('auth:refresh')
   async handleAuthRefresh(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { token: string },
+    @MessageBody() data: WsAuthRefreshDto,
   ) {
     const userId = client.data.user.userId;
 
     try {
       const decoded = await this.firebaseAdmin.auth().verifyIdToken(data.token);
 
+      // Verify the token belongs to the same user
+      if (decoded.uid !== client.data.user.uid) {
+        this.logger.warn(`auth:refresh rejected: token uid mismatch for user=${userId}`);
+        client.emit('error', { message: 'Token invalide' });
+        client.disconnect();
+        return;
+      }
+
       // Update the token in handshake for re-auth timer
       client.handshake.auth.token = data.token;
 
-      // Refresh presence
-      await this.redis.set(`presence:${userId}`, 'online', 'EX', PRESENCE_TTL);
+      // Refresh presence TTL
+      await this.safeRedis(
+        () => this.redis.expire(`presence:${userId}`, PRESENCE_TTL),
+        0,
+      );
 
       this.logger.log(`Token refreshed for user=${userId} uid=${decoded.uid}`);
       client.emit('auth:refreshed', { success: true });
@@ -452,5 +545,23 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       client.emit('error', { message: 'Échec du rafraîchissement du token' });
       client.disconnect();
     }
+  }
+
+  // ─── Admin: Force Disconnect ─────────────────────────────
+
+  async disconnectUser(userId: string): Promise<number> {
+    let disconnected = 0;
+    const sockets = await this.server.fetchSockets();
+    for (const socket of sockets) {
+      if (socket.data?.user?.userId === userId) {
+        socket.emit('error', { code: 'ACCOUNT_BANNED', message: 'Votre compte a été désactivé' });
+        socket.disconnect(true);
+        disconnected++;
+      }
+    }
+    if (disconnected > 0) {
+      this.logger.warn(`Disconnected ${disconnected} socket(s) for banned userId=${userId}`);
+    }
+    return disconnected;
   }
 }

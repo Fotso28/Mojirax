@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MessagingGateway } from '../messaging/messaging.gateway';
 import {
   ListUsersDto,
   ListModerationDto,
@@ -23,6 +24,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly messagingGateway: MessagingGateway,
   ) {}
 
   // ─── KPIs ──────────────────────────────────────────────
@@ -516,6 +518,10 @@ export class AdminService {
     ]);
 
     this.logger.warn(`User banned: userId=${userId} by adminId=${adminId}, reason="${dto.reason}", archivedProjects=${archivedProjectIds.length}`);
+
+    // Disconnect active WebSocket sessions
+    await this.messagingGateway.disconnectUser(userId);
+
     return { id: target.id, name: target.name, email: target.email, role: target.role, status: 'BANNED' as const, archivedProjects: archivedProjectIds.length };
   }
 

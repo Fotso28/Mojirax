@@ -11,6 +11,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
   imports: [UploadModule, NotificationsModule],
   controllers: [MessagingController],
   providers: [MessagingService, MessagingGateway, WsAuthGuard, WsRateLimiter],
-  exports: [MessagingService],
+  exports: [MessagingService, MessagingGateway],
 })
 export class MessagingModule {}
