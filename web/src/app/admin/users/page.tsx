@@ -13,6 +13,7 @@ interface UserItem {
   name: string | null;
   email: string;
   role: string;
+  status: string;
   image: string | null;
   createdAt: string;
   _count: { projects: number; transactions: number; notifications: number };
@@ -127,6 +128,12 @@ export default function AdminUsersPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [roleChanging, setRoleChanging] = useState(false);
   const [detailTab, setDetailTab] = useState<'info' | 'activity' | 'searches' | 'visits'>('info');
+  const [banningUserId, setBanningUserId] = useState<string | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banLoading, setBanLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [unbanningUserId, setUnbanningUserId] = useState<string | null>(null);
+  const [unbanLoading, setUnbanLoading] = useState(false);
 
   const PAGE_SIZE = 20;
 
@@ -136,6 +143,7 @@ export default function AdminUsersPage() {
       const params: Record<string, string | number> = { take: PAGE_SIZE, skip: page * PAGE_SIZE };
       if (roleFilter) params.role = roleFilter;
       if (search) params.search = search;
+      if (statusFilter) params.status = statusFilter;
       const { data } = await api.get('/admin/users', { params });
       setUsers(data.users);
       setTotal(data.total);
@@ -144,11 +152,40 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, roleFilter, search]);
+  }, [page, roleFilter, search, statusFilter]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const handleBan = async () => {
+    if (!banningUserId || banReason.length < 5) return;
+    setBanLoading(true);
+    try {
+      await api.patch(`/admin/users/${banningUserId}/ban`, { reason: banReason });
+      setBanningUserId(null);
+      setBanReason('');
+      fetchUsers();
+    } catch {
+      // admin sees the state didn't change
+    } finally {
+      setBanLoading(false);
+    }
+  };
+
+  const handleUnban = async () => {
+    if (!unbanningUserId) return;
+    setUnbanLoading(true);
+    try {
+      await api.patch(`/admin/users/${unbanningUserId}/unban`, {});
+      setUnbanningUserId(null);
+      fetchUsers();
+    } catch {
+      // handled silently
+    } finally {
+      setUnbanLoading(false);
+    }
+  };
 
   const openDetail = async (userId: string) => {
     setDetailLoading(true);
@@ -210,6 +247,15 @@ export default function AdminUsersPage() {
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+              className="h-10 px-3 rounded-lg border border-gray-200 text-sm bg-white"
+            >
+              <option value="">Tous les statuts</option>
+              <option value="ACTIVE">Actif</option>
+              <option value="BANNED">Banni</option>
+            </select>
       </div>
 
       {/* Table */}
@@ -265,19 +311,43 @@ export default function AdminUsersPage() {
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ROLE_COLORS[u.role] || ROLE_COLORS.USER}`}>
                         {u.role}
                       </span>
+                    {u.status === 'BANNED' && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 font-medium">
+                        Banni
+                      </span>
+                    )}
                     </td>
                     <td className="px-5 py-4 text-gray-600">{u._count.projects}</td>
                     <td className="px-5 py-4 text-gray-500 text-xs">
                       {new Date(u.createdAt).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => openDetail(u.id)}
-                        className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-all duration-200"
-                        title="Voir détail"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openDetail(u.id)}
+                          className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-all duration-200"
+                          title="Voir détail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                    {u.role !== 'ADMIN' && (
+                      u.status === 'BANNED' ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setUnbanningUserId(u.id); }}
+                          className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 hover:bg-green-100"
+                        >
+                          Débannir
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setBanningUserId(u.id); }}
+                          className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100"
+                        >
+                          Bannir
+                        </button>
+                      )
+                    )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -584,6 +654,63 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
+        {banningUserId && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Bannir l&apos;utilisateur</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                L&apos;utilisateur sera banni et tous ses projets publiés seront archivés.
+              </p>
+              <textarea
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                placeholder="Raison du bannissement (min. 5 caractères)..."
+                className="w-full h-24 px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => { setBanningUserId(null); setBanReason(''); }}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleBan}
+                  disabled={banReason.length < 5 || banLoading}
+                  className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
+                >
+                  {banLoading ? 'Bannissement...' : 'Confirmer le ban'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {unbanningUserId && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Débannir l&apos;utilisateur</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                L&apos;utilisateur pourra se reconnecter et ses projets archivés lors du ban seront restaurés.
+              </p>
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => setUnbanningUserId(null)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleUnban}
+                  disabled={unbanLoading}
+                  className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
+                >
+                  {unbanLoading ? 'Débannissement...' : 'Confirmer le déban'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
