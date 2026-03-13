@@ -1164,7 +1164,7 @@ export class AdminService {
         adminId,
         action: 'UPDATE_PLAN',
         targetId: id,
-        details: { name: plan.name, changes: dto },
+        details: { name: plan.name, changes: JSON.parse(JSON.stringify(dto)) },
       },
     });
 
@@ -1205,8 +1205,8 @@ export class AdminService {
       data: {
         adminId,
         action: 'REORDER_PLANS',
-        targetId: null,
-        details: { plans: dto.plans },
+        targetId: 'reorder',
+        details: { plans: JSON.parse(JSON.stringify(dto.plans)) },
       },
     });
 
