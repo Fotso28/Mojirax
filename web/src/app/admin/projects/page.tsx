@@ -25,6 +25,7 @@ interface Kpis {
   published: number;
   pendingAi: number;
   rejected: number;
+  archivedByAdmin: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -33,9 +34,10 @@ const STATUS_COLORS: Record<string, string> = {
   REJECTED: 'bg-red-50 text-red-600',
   DRAFT: 'bg-gray-100 text-gray-600',
   ANALYZING: 'bg-blue-50 text-blue-600',
+  REMOVED_BY_ADMIN: 'bg-orange-50 text-orange-600',
 };
 
-const STATUSES = ['', 'PUBLISHED', 'PENDING_AI', 'REJECTED', 'DRAFT', 'ANALYZING'];
+const STATUSES = ['', 'PUBLISHED', 'PENDING_AI', 'REJECTED', 'DRAFT', 'ANALYZING', 'REMOVED_BY_ADMIN'];
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ProjectItem[]>([]);
@@ -46,6 +48,11 @@ export default function AdminProjectsPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [archivingProjectId, setArchivingProjectId] = useState<string | null>(null);
+  const [archiveReason, setArchiveReason] = useState('');
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [restoringProjectId, setRestoringProjectId] = useState<string | null>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const PAGE_SIZE = 20;
 
@@ -57,6 +64,7 @@ export default function AdminProjectsPage() {
         published: res.data.projects.published,
         pendingAi: res.data.projects.pendingAi,
         rejected: res.data.moderation.rejectedToday,
+        archivedByAdmin: res.data.projects.archivedByAdmin,
       }))
       .catch(() => {});
   }, []);
@@ -77,6 +85,35 @@ export default function AdminProjectsPage() {
       setLoading(false);
     }
   }, [page, statusFilter, sectorFilter, search]);
+
+  const handleArchive = async () => {
+    if (!archivingProjectId || archiveReason.length < 5) return;
+    setArchiveLoading(true);
+    try {
+      await api.patch(`/admin/projects/${archivingProjectId}/archive`, { reason: archiveReason });
+      setArchivingProjectId(null);
+      setArchiveReason('');
+      fetchProjects();
+    } catch {
+      // handled silently
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!restoringProjectId) return;
+    setRestoreLoading(true);
+    try {
+      await api.patch(`/admin/projects/${restoringProjectId}/restore`);
+      setRestoringProjectId(null);
+      fetchProjects();
+    } catch {
+      // handled silently
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -165,6 +202,7 @@ export default function AdminProjectsPage() {
                 <th className="text-center px-3 py-3 font-medium text-gray-500" title="Saves"><Bookmark className="w-4 h-4 mx-auto" /></th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Score</th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Date</th>
+                <th className="text-right px-5 py-3 font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -180,7 +218,7 @@ export default function AdminProjectsPage() {
                 ))
               ) : projects.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-gray-500">
+                  <td colSpan={9} className="text-center py-12 text-gray-500">
                     <Briefcase className="w-10 h-10 mx-auto mb-2 text-gray-300" />
                     Aucun projet trouvé
                   </td>
@@ -222,6 +260,26 @@ export default function AdminProjectsPage() {
                     <td className="px-5 py-4 text-gray-500 text-xs">
                       {new Date(p.createdAt).toLocaleDateString('fr-FR')}
                     </td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        {p.status === 'PUBLISHED' && (
+                          <button
+                            onClick={() => setArchivingProjectId(p.id)}
+                            className="text-xs px-2 py-1 rounded bg-orange-50 text-orange-600 hover:bg-orange-100"
+                          >
+                            Archiver
+                          </button>
+                        )}
+                        {p.status === 'REMOVED_BY_ADMIN' && (
+                          <button
+                            onClick={() => setRestoringProjectId(p.id)}
+                            className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 hover:bg-green-100"
+                          >
+                            Restaurer
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -252,6 +310,64 @@ export default function AdminProjectsPage() {
           </div>
         )}
       </div>
+
+      {archivingProjectId && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Archiver le projet</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Le projet sera masqué du feed et des résultats de recherche.
+            </p>
+            <textarea
+              value={archiveReason}
+              onChange={(e) => setArchiveReason(e.target.value)}
+              placeholder="Raison de l'archivage (min. 5 caractères)..."
+              className="w-full h-24 px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => { setArchivingProjectId(null); setArchiveReason(''); }}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleArchive}
+                disabled={archiveReason.length < 5 || archiveLoading}
+                className="px-4 py-2 text-sm text-white bg-orange-600 hover:bg-orange-700 rounded-lg disabled:opacity-50"
+              >
+                {archiveLoading ? 'Archivage...' : "Confirmer l'archivage"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {restoringProjectId && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Restaurer le projet</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Le projet sera de nouveau visible dans le feed et les résultats de recherche.
+            </p>
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setRestoringProjectId(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRestore}
+                disabled={restoreLoading}
+                className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
+              >
+                {restoreLoading ? 'Restauration...' : 'Confirmer la restauration'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
