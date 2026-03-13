@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
@@ -23,6 +25,7 @@ import {
 } from './dto/admin.dto';
 import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
 import { UpdatePushConfigDto } from './dto/update-push-config.dto';
+import { CreatePlanDto, UpdatePlanDto, ReorderPlansDto } from './dto/plan.dto';
 
 @Controller('admin')
 @UseGuards(FirebaseAuthGuard, AdminGuard)
@@ -107,5 +110,40 @@ export class AdminController {
   @Patch('email-config')
   updateEmailConfig(@Body() dto: UpdateEmailConfigDto) {
     return this.adminService.updateEmailConfig(dto);
+  }
+
+  // ─── Pricing Plans ──────────────────────────────────
+
+  @Get('plans')
+  async listPlans() {
+    const plans = await this.adminService.listPlans();
+    return plans.map((p) => ({ ...p, price: Number(p.price) }));
+  }
+
+  @Post('plans')
+  async createPlan(@Request() req, @Body() dto: CreatePlanDto) {
+    const plan = await this.adminService.createPlan(dto, req.user.dbId);
+    return { ...plan, price: Number(plan.price) };
+  }
+
+  @Post('plans/reorder')
+  async reorderPlans(@Request() req, @Body() dto: ReorderPlansDto) {
+    const plans = await this.adminService.reorderPlans(dto, req.user.dbId);
+    return plans.map((p) => ({ ...p, price: Number(p.price) }));
+  }
+
+  @Patch('plans/:id')
+  async updatePlan(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: UpdatePlanDto,
+  ) {
+    const plan = await this.adminService.updatePlan(id, dto, req.user.dbId);
+    return { ...plan, price: Number(plan.price) };
+  }
+
+  @Delete('plans/:id')
+  async deletePlan(@Request() req, @Param('id') id: string) {
+    return this.adminService.deletePlan(id, req.user.dbId);
   }
 }
