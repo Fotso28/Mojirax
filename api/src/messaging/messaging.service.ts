@@ -29,6 +29,65 @@ export class MessagingService {
     }
   }
 
+  /** Find or create a direct conversation between two users */
+  async findOrCreateConversation(userId: string, targetUserId: string) {
+    if (userId === targetUserId) {
+      throw new BadRequestException('Vous ne pouvez pas vous envoyer un message');
+    }
+
+    // Verify both users exist and are ACTIVE
+    const [user, target] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, status: true } }),
+      this.prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true, status: true } }),
+    ]);
+
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+    if (user.status !== 'ACTIVE' || target.status !== 'ACTIVE') {
+      throw new ForbiddenException('Action non autorisée');
+    }
+
+    // Normalize pair: smaller ID = founderId, larger = candidateId
+    const [founderId, candidateId] = userId < targetUserId
+      ? [userId, targetUserId]
+      : [targetUserId, userId];
+
+    const select = {
+      id: true,
+      founderId: true,
+      candidateId: true,
+      lastMessageAt: true,
+      lastMessagePreview: true,
+      founder: { select: { id: true, firstName: true, lastName: true, image: true } },
+      candidate: { select: { id: true, firstName: true, lastName: true, image: true } },
+    };
+
+    // Find existing
+    const existing = await this.prisma.conversation.findUnique({
+      where: { founderId_candidateId: { founderId, candidateId } } as any,
+      select,
+    });
+    if (existing) return existing;
+
+    // Create new — handle race condition (P2002) with catch-and-retry
+    try {
+      const conversation = await this.prisma.conversation.create({
+        data: { founderId, candidateId },
+        select,
+      });
+      this.logger.log('Conversation created', { conversationId: conversation.id, founderId, candidateId });
+      return conversation;
+    } catch (error) {
+      // Concurrent creation — conversation already exists, fetch it
+      if (error?.code === 'P2002') {
+        return this.prisma.conversation.findUnique({
+          where: { founderId_candidateId: { founderId, candidateId } } as any,
+          select,
+        });
+      }
+      throw error;
+    }
+  }
+
   /** Get recipient ID in a conversation */
   async getRecipientId(conversationId: string, senderId: string): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
@@ -148,8 +207,13 @@ export class MessagingService {
   }
 
   /** List user conversations (paginated, max 100, default 20) */
-  async getConversations(userId: string, cursor?: string, limit?: number) {
+  async getConversations(userId: string, cursor?: string, limit?: number, activeConversationId?: string) {
     const take = Math.min(limit || 20, 100);
+
+    // If active param provided, verify membership
+    if (activeConversationId) {
+      await this.verifyMembership(activeConversationId, userId);
+    }
 
     let cursorOption = {};
     if (cursor) {
@@ -163,7 +227,17 @@ export class MessagingService {
     }
 
     const conversations = await this.prisma.conversation.findMany({
-      where: { OR: [{ founderId: userId }, { candidateId: userId }] },
+      where: {
+        AND: [
+          { OR: [{ founderId: userId }, { candidateId: userId }] },
+          {
+            OR: [
+              { lastMessageAt: { not: null } },
+              ...(activeConversationId ? [{ id: activeConversationId }] : []),
+            ],
+          },
+        ],
+      },
       select: {
         id: true, lastMessageAt: true, lastMessagePreview: true,
         founderId: true, candidateId: true,
