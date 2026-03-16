@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MoreHorizontal, MapPin, Briefcase, Calendar, Eye, Bookmark, BookmarkCheck } from 'lucide-react';
+import { MoreHorizontal, MapPin, Briefcase, Calendar, Eye, Bookmark, BookmarkCheck, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
 import { getSectorLabel } from '@/lib/constants/sectors';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
+import { useStartConversation } from '@/hooks/use-start-conversation';
 
 interface ProjectCardProps {
     project: {
@@ -79,6 +81,8 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
     const viewStartRef = useRef<number | null>(null);
     const [isSaved, setIsSaved] = useState(initialSaved);
     const { showToast } = useToast();
+    const { dbUser } = useAuth();
+    const { startConversation, loading: messageLoading } = useStartConversation();
 
     // Sync if initialSaved changes after async load
     useEffect(() => {
@@ -221,6 +225,16 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                         Voir projet
                     </Button>
                 </Link>
+                {dbUser && dbUser.id !== project.founder?.id && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); startConversation(project.founder.id); }}
+                    disabled={messageLoading}
+                    className="flex items-center gap-2 px-4 h-11 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 flex-shrink-0 disabled:opacity-50"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline">Message</span>
+                  </button>
+                )}
                 <button
                     onClick={handleSave}
                     className={`flex items-center gap-2 px-4 sm:px-5 h-11 rounded-xl text-sm sm:text-base font-semibold border transition-all duration-200 flex-shrink-0 ${isSaved
