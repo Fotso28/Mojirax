@@ -41,7 +41,7 @@ export class MessagingService {
       this.prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true, status: true } }),
     ]);
 
-    if (!target) throw new NotFoundException('Utilisateur introuvable');
+    if (!user || !target) throw new NotFoundException('Utilisateur introuvable');
     if (user.status !== 'ACTIVE' || target.status !== 'ACTIVE') {
       throw new ForbiddenException('Action non autorisée');
     }

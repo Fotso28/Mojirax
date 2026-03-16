@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
@@ -21,6 +21,18 @@ interface Conversation {
 }
 
 export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-[calc(100vh-5rem)]">
+        <div className="h-8 w-8 rounded-full border-2 border-kezak-primary border-t-transparent animate-spin" />
+      </div>
+    }>
+      <MessagesPageContent />
+    </Suspense>
+  );
+}
+
+function MessagesPageContent() {
   const { dbUser } = useAuth();
   const { socket, onReconnectRefetch } = useSocket();
   const searchParams = useSearchParams();
