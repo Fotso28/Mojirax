@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, MessageSquare, User, Settings, LogOut, FolderKanban, Rocket, Send } from 'lucide-react';
+import { Home, MessageSquare, User, Settings, LogOut, FolderKanban, Rocket, Send, ShieldCheck, Tags } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -23,13 +23,25 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     useEffect(() => {
         if (!socket || !dbUser?.id) return;
         const currentUserId = dbUser.id;
-        const handler = (message: { senderId: string }) => {
+        const handleNew = (message: { senderId: string }) => {
             if (message.senderId !== currentUserId) {
                 setUnreadCount((c) => c + 1);
             }
         };
-        socket.on('message:new', handler);
-        return () => { socket.off('message:new', handler); };
+        const handleRead = ({ readBy }: { readBy: string }) => {
+            if (readBy === currentUserId) {
+                // Refetch accurate count from server
+                AXIOS_INSTANCE.get('/messages/conversations/unread-count')
+                    .then((res) => setUnreadCount(res.data.count))
+                    .catch(() => {});
+            }
+        };
+        socket.on('message:new', handleNew);
+        socket.on('message:read', handleRead);
+        return () => {
+            socket.off('message:new', handleNew);
+            socket.off('message:read', handleRead);
+        };
     }, [socket, dbUser?.id]);
 
     const isActive = (path: string) => pathname === path;
@@ -55,11 +67,19 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     // Toujours afficher "Mes Candidatures" — un fondateur peut aussi postuler
     dynamicItems.push({ icon: Send, label: 'Mes Candidatures', path: '/applications' });
 
+    // Admin items
+    const adminItems: typeof commonItems = [];
+    if (dbUser?.role === 'ADMIN') {
+        adminItems.push({ icon: ShieldCheck, label: 'Admin', path: '/admin' });
+        adminItems.push({ icon: Tags, label: 'Tarifs', path: '/admin/tarifs' });
+    }
+
     // Insert dynamic items after Dashboard (index 0)
     const navItems = [
         commonItems[0],
         ...dynamicItems,
         ...commonItems.slice(1),
+        ...adminItems,
     ];
 
     const labelClass = expanded ? 'block' : 'hidden md:block';

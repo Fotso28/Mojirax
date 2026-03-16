@@ -26,9 +26,18 @@ export class WsRateLimiter {
     if (!config) return true;
 
     const key = `ratelimit:${userId}:${event}`;
-    const current = await this.redis.incr(key);
 
-    if (current === 1) {
+    // Atomic: INCR + conditional EXPIRE in a single pipeline
+    const pipeline = this.redis.pipeline();
+    pipeline.incr(key);
+    pipeline.ttl(key);
+    const results = await pipeline.exec();
+
+    const current = results?.[0]?.[1] as number ?? 1;
+    const ttl = results?.[1]?.[1] as number ?? -1;
+
+    // If key has no TTL (new key or TTL lost), set it
+    if (ttl < 0) {
       await this.redis.expire(key, config.windowSeconds);
     }
 

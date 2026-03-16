@@ -12,6 +12,7 @@ import {
 import { auth, googleProvider } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
+import { requestPushPermission, getDeviceInfo, onForegroundMessage } from '@/lib/fcm';
 
 interface AuthContextType {
     user: User | null;
@@ -78,8 +79,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         setDbUser(profileData);
                         localStorage.setItem('db_user', JSON.stringify(profileData));
                     }
-                } catch (err) {
-                    console.error("Background sync failed", err);
+
+                    // 3. Register FCM push token (fire & forget)
+                    registerFcmToken();
+                } catch (err: any) {
+                    // Background sync failed — silent unless 401
+                    // If sync fails with 401, sign out to break the loop
+                    if (err?.response?.status === 401) {
+                        await signOut(auth);
+                    }
                 }
             } else {
                 if (typeof window !== 'undefined') {
@@ -95,12 +103,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => unsubscribe();
     }, []);
 
+    // Register FCM token for push notifications
+    const registerFcmToken = async () => {
+        try {
+            const token = await requestPushPermission();
+            if (!token) return;
+
+            const alreadySent = localStorage.getItem('fcm_token');
+            if (alreadySent === token) return; // Déjà enregistré
+
+            const { device, browser } = getDeviceInfo();
+            await axiosInstance.post('/notifications/push/subscribe', { token, device, browser });
+            localStorage.setItem('fcm_token', token);
+        } catch {
+            // Silently fail — push is optional
+        }
+    };
+
+    // Listen for foreground FCM messages
+    useEffect(() => {
+        if (!user) return;
+
+        const unsubscribe = onForegroundMessage((payload) => {
+            // Show browser notification even when app is focused
+            if (Notification.permission === 'granted') {
+                new Notification(payload.title, {
+                    body: payload.body,
+                    icon: '/icons/icon-192x192.png',
+                });
+            }
+        });
+
+        return unsubscribe;
+    }, [user]);
+
     const signInWithGoogle = async () => {
         setLoading(true);
         try {
             await signInWithPopup(auth, googleProvider);
         } catch (error) {
-            console.error("Error signing in with Google", error);
+            // Google sign-in failed
             setLoading(false);
             throw error;
         }
@@ -111,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
-            console.error("Error signing in with email", error);
+            // Email sign-in failed
             setLoading(false);
             throw error;
         }
@@ -122,7 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             await createUserWithEmailAndPassword(auth, email, password);
         } catch (error) {
-            console.error("Error signing up with email", error);
+            // Email sign-up failed
             setLoading(false);
             throw error;
         }
@@ -136,16 +178,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 localStorage.setItem('db_user', JSON.stringify(data));
             }
         } catch (error) {
-            console.error('Failed to refresh db user', error);
+            // Failed to refresh db user
         }
     };
 
     const logout = async () => {
         try {
+            // Unregister FCM token before signing out
+            const fcmToken = localStorage.getItem('fcm_token');
+            if (fcmToken) {
+                await axiosInstance.delete('/notifications/push/unsubscribe', { data: { token: fcmToken } }).catch(() => {});
+                localStorage.removeItem('fcm_token');
+            }
+
             await signOut(auth);
             router.push('/');
         } catch (error) {
-            console.error("Error signing out", error);
+            // Sign-out failed
         }
     };
 

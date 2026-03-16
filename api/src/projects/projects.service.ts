@@ -8,6 +8,7 @@ import { ModerationService } from '../moderation/moderation.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { MatchingService } from '../matching/matching.service';
+import { FiltersService } from '../filters/filters.service';
 
 function slugify(text: string): string {
     return text
@@ -46,6 +47,7 @@ export class ProjectsService {
         private aiService: AiService,
         private matchingService: MatchingService,
         private moderationService: ModerationService,
+        private filtersService: FiltersService,
     ) { }
 
     // =============================================
@@ -87,15 +89,54 @@ export class ProjectsService {
             excludeIds.push(...ownProjects.map(p => p.id));
         }
 
+        // Semantic skill matching: try vector search, fallback to exact
+        let semanticProjectIds: string[] | null = null;
+
+        if (filters?.skills && filters.skills.length > 0) {
+            const allSemanticIds = new Set<string>();
+            let hasSemanticMatch = false;
+
+            for (const skill of filters.skills) {
+                const skillEmbedding = await this.filtersService.getSkillEmbedding(skill);
+                if (!skillEmbedding) continue;
+
+                hasSemanticMatch = true;
+                const vectorString = `[${skillEmbedding.join(',')}]`;
+                const matches: any[] = await this.prisma.$queryRaw`
+                    SELECT id FROM projects
+                    WHERE status = 'PUBLISHED'
+                      AND description_embedding IS NOT NULL
+                      AND 1 - (description_embedding <=> ${vectorString}::vector) > 0.65
+                `;
+                for (const m of matches) allSemanticIds.add(m.id);
+            }
+
+            if (hasSemanticMatch) {
+                // Fallback exact pour projets sans embedding
+                const exactMatches: any[] = await this.prisma.$queryRaw`
+                    SELECT id FROM projects
+                    WHERE status = 'PUBLISHED'
+                      AND description_embedding IS NULL
+                      AND required_skills && ${filters.skills}::text[]
+                `;
+                for (const m of exactMatches) allSemanticIds.add(m.id);
+                semanticProjectIds = [...allSemanticIds];
+            }
+        }
+
         const projects = await this.prisma.project.findMany({
             where: {
                 ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
                 status: 'PUBLISHED',
-                ...(filters?.sector ? { sector: filters.sector } : {}),
+                ...(filters?.sector ? { sector: { equals: filters.sector, mode: 'insensitive' as Prisma.QueryMode } } : {}),
                 ...(filters?.city ? { city: { contains: filters.city, mode: 'insensitive' as Prisma.QueryMode } } : {}),
-                ...(filters?.skills && filters.skills.length > 0 ? {
-                    requiredSkills: { hasSome: filters.skills }
-                } : {}),
+                // Skills : sémantique si dispo, sinon exact
+                ...(semanticProjectIds !== null
+                    ? { id: { in: semanticProjectIds } }
+                    : filters?.skills && filters.skills.length > 0
+                        ? { requiredSkills: { hasSome: filters.skills } }
+                        : {}
+                ),
             },
             distinct: ['id'],
             include: {

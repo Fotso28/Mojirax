@@ -17,7 +17,8 @@
       "Bash(ls:*)",
       "Bash(# Check the project's founderId vs the current user\ncurl -s http://localhost:3001/projects/cashflow-comptabilite 2>/dev/null | python3 -c \"\nimport sys, json\nd = json.load\\(sys.stdin\\)\nprint\\(f\\\\\"Project ID: {d['id']}\\\\\"\\)\nprint\\(f\\\\\"Founder ID: {d['founderId']}\\\\\"\\)\nprint\\(f\\\\\"Status: {d.get\\('status'\\)}\\\\\"\\)\n\" 2>/dev/null)",
       "Bash(node:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "mcp__context7__query-docs"
     ]
   }
 }

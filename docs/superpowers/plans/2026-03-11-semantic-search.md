@@ -969,9 +969,182 @@ git commit -m "feat: universal search modal in header (projects, people, skills)
 
 ---
 
-## Chunk 5: Finalisation
+## Chunk 5: Sécurité, validation, tests
 
-### Task 10: Commit global + vérification
+### Task 10: Sécurité — Rate limiting + validation des entrées
+
+**Files:**
+- Modify: `api/src/search/search.controller.ts`
+- Modify: `api/src/filters/filters.controller.ts`
+
+- [ ] **Step 1: Ajouter le Throttle sur les endpoints coûteux**
+
+`search/universal` appelle `getEmbedding()` à chaque requête (coût API). Il faut limiter.
+
+```typescript
+// Dans search.controller.ts, ajouter :
+import { Throttle } from '@nestjs/throttler';
+
+// Sur la méthode searchUniversal :
+@Throttle({ default: { limit: 15, ttl: 60000 } }) // 15 requêtes/min max
+@Get('universal')
+async searchUniversal(...)
+```
+
+```typescript
+// Sur la méthode search existante :
+@Throttle({ default: { limit: 15, ttl: 60000 } })
+@Get()
+async search(...)
+```
+
+- [ ] **Step 2: Tronquer le query pour éviter les abus**
+
+Dans `search.service.ts`, au début de `searchUniversal()` :
+```typescript
+async searchUniversal(query: string, userId?: string) {
+    // Sécurité : tronquer les queries trop longues (max 200 chars)
+    const safeQuery = query.slice(0, 200).trim();
+    if (safeQuery.length < 2) return { projects: [], people: [], skills: [] };
+
+    this.logger.log(`Universal search: "${safeQuery}"`);
+    const queryEmbedding = await this.aiService.getEmbedding(safeQuery);
+    // ...
+```
+
+Faire la même chose dans `search()` existant.
+
+- [ ] **Step 3: Valider que les raw queries utilisent les tagged templates Prisma**
+
+Vérifier que TOUTES les requêtes raw utilisent `this.prisma.$queryRaw` avec tagged template literals (jamais `$queryRawUnsafe`). Les variables sont passées via `${variable}` dans le template — Prisma les échappe automatiquement.
+
+**Points à vérifier :**
+- `searchUniversal()` : `${vectorString}::vector` et `${'%' + safeQuery + '%'}` — OK, template literals Prisma
+- `getSkillEmbedding()` : `${skillValue}` — OK
+- `refreshSkillEmbeddings()` : `${vectorString}::vector` — OK
+
+- [ ] **Step 4: Vérifier qu'aucune donnée privée ne fuite**
+
+Dans la requête `people` de `searchUniversal` :
+- **Exposé** : `id`, `firstName`, `lastName`, `name`, `image`, `title` — OK (public)
+- **Non exposé** : `email`, `phone`, `firebaseUid`, `address` — Correct
+- **Vérifier** : La requête ILIKE sur `name` ne doit pas retourner des users non-publiés → Ajouter un filtre dans le fallback texte :
+
+```sql
+-- Dans le UNION ALL people (fallback texte), ajouter :
+AND (u.role = 'FOUNDER' OR cp.status = 'PUBLISHED')
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add api/src/search/ api/src/filters/
+git commit -m "security: add rate limiting, query truncation, and data exposure checks"
+```
+
+### Task 11: Validation — DTO et edge cases
+
+**Files:**
+- Modify: `api/src/search/search.controller.ts`
+- Modify: `api/src/filters/filters.controller.ts`
+
+- [ ] **Step 1: Gérer les edge cases du controller**
+
+```typescript
+// search.controller.ts — searchUniversal
+@Get('universal')
+@Throttle({ default: { limit: 15, ttl: 60000 } })
+async searchUniversal(
+    @Query('q') query: string,
+    @Request() req?: any,
+) {
+    // Validation : query requise, min 2 chars, max 200
+    if (!query || typeof query !== 'string' || query.trim().length < 2) {
+        return { projects: [], people: [], skills: [] };
+    }
+    const userId = req?.user?.uid;
+    return this.searchService.searchUniversal(query.trim(), userId);
+}
+```
+
+```typescript
+// filters.controller.ts — getPopularSkills
+@Get('popular-skills')
+async getPopularSkills(@Query('limit') limit?: string) {
+    const parsed = parseInt(limit || '20', 10);
+    const n = Number.isNaN(parsed) ? 20 : Math.min(Math.max(parsed, 1), 50);
+    return this.filtersService.getPopularSkills(n);
+}
+```
+
+- [ ] **Step 2: Gérer le cas embedding service indisponible**
+
+Dans `searchUniversal()`, si `getEmbedding()` échoue (API down), fallback sur le texte uniquement :
+
+```typescript
+async searchUniversal(query: string, userId?: string) {
+    const safeQuery = query.slice(0, 200).trim();
+    if (safeQuery.length < 2) return { projects: [], people: [], skills: [] };
+
+    let vectorString: string | null = null;
+    try {
+        const queryEmbedding = await this.aiService.getEmbedding(safeQuery);
+        vectorString = `[${queryEmbedding.join(',')}]`;
+    } catch (err) {
+        this.logger.warn(`Embedding generation failed, falling back to text search: ${err.message}`);
+    }
+
+    // Si pas de vector, faire uniquement le fallback ILIKE
+    if (!vectorString) {
+        return this.searchTextOnly(safeQuery, userId);
+    }
+
+    // ... reste du code vectoriel
+}
+
+// Méthode fallback texte uniquement
+private async searchTextOnly(query: string, userId?: string) {
+    const [projects, people] = await Promise.all([
+        this.prisma.$queryRaw`
+            SELECT id, name, slug, pitch, sector, logo_url AS "logoUrl", 0.5 AS similarity
+            FROM projects
+            WHERE status = 'PUBLISHED'
+              AND (LOWER(name) LIKE LOWER(${'%' + query + '%'}) OR LOWER(pitch) LIKE LOWER(${'%' + query + '%'}))
+            LIMIT 5;
+        `,
+        this.prisma.$queryRaw`
+            SELECT u.id, u.first_name AS "firstName", u.last_name AS "lastName",
+                   u.name, u.image, cp.title, 0.5 AS similarity
+            FROM users u
+            LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
+            WHERE (LOWER(u.first_name) LIKE LOWER(${'%' + query + '%'})
+                OR LOWER(u.last_name) LIKE LOWER(${'%' + query + '%'})
+                OR LOWER(u.name) LIKE LOWER(${'%' + query + '%'}))
+              AND (u.role = 'FOUNDER' OR cp.status = 'PUBLISHED')
+            LIMIT 5;
+        `,
+    ]);
+
+    await this.prisma.searchLog.create({
+        data: { query, userId, searchType: 'TEXT_FALLBACK', resultsCount: (projects as any[]).length + (people as any[]).length, topResultIds: [...(projects as any[]).map((p: any) => p.id), ...(people as any[]).map((p: any) => p.id)] },
+    });
+
+    return { projects, people, skills: [] };
+}
+```
+
+- [ ] **Step 3: Gérer le cas feed skills sans embedding disponible**
+
+Dans `getFeed()` de `projects.service.ts`, si `getSkillEmbedding()` retourne null pour tous les skills (embeddings pas encore générés), fallback automatique sur le `hasSome` exact — déjà géré par le `hasSemanticMatch` boolean. Vérifier que c'est le cas.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add api/src/search/ api/src/filters/ api/src/projects/
+git commit -m "feat: add validation, edge case handling, and embedding fallback"
+```
+
+### Task 12: Tests fonctionnels
 
 - [ ] **Step 1: Vérifier la compilation complète**
 
@@ -980,10 +1153,32 @@ cd api && npx tsc --noEmit
 cd ../web && npx tsc --noEmit
 ```
 
-- [ ] **Step 2: Test fonctionnel**
+- [ ] **Step 2: Tests manuels API**
 
-1. Lancer l'API : vérifier les logs "Refreshing skill embeddings..." au démarrage
-2. `GET /filters/popular-skills` → retourne les skills populaires
-3. Filtrer le feed par un skill → vérifier que les résultats sont pertinents
-4. Tester la recherche universelle : taper un nom, un projet, "je veux un développeur react"
-5. Vérifier que les secteurs sont cohérents partout (feed, création, onboarding)
+1. **Démarrage** : Lancer l'API, vérifier les logs `Refreshing skill embeddings...`
+2. **Popular skills** : `GET /filters/popular-skills` → retourne un tableau de skills avec count
+3. **Popular skills vide** : Si aucun projet/candidat n'a de skills, retourne `[]`
+4. **Feed sans filtre** : `GET /projects/feed` → fonctionne comme avant
+5. **Feed avec skill** : `GET /projects/feed?skills=React` → retourne les projets pertinents (matching sémantique si embedding dispo, exact sinon)
+6. **Recherche universelle** : `GET /search/universal?q=développeur react` → retourne projets + personnes + skills
+7. **Recherche par nom** : `GET /search/universal?q=Christian` → retourne la personne "Christian Fotso"
+8. **Recherche vide** : `GET /search/universal?q=a` → retourne `{ projects: [], people: [], skills: [] }`
+9. **Recherche trop longue** : `GET /search/universal?q=aaa...200+chars` → fonctionne (tronqué)
+10. **Secteurs cohérents** : Vérifier que le feed, la création projet, et l'onboarding affichent les mêmes 11 secteurs
+
+- [ ] **Step 3: Tests manuels Frontend**
+
+1. **Filtres feed** : ouvrir les filtres, vérifier que les skills viennent de l'API (pas hardcodés)
+2. **Filtres secteur** : vérifier les 11 secteurs avec labels
+3. **Recherche header desktop** : cliquer sur la barre → modal s'ouvre → taper "fintech" → résultats groupés
+4. **Recherche header mobile** : cliquer l'icône loupe → même modal
+5. **Navigation** : cliquer un résultat projet → navigue vers la page projet
+6. **Navigation personne** : cliquer un résultat personne → navigue vers le profil
+7. **Fermeture** : cliquer hors du modal ou sur X → ferme la recherche
+
+- [ ] **Step 4: Commit final**
+
+```bash
+git add -A
+git commit -m "feat: semantic search — skills vectoriel, recherche universelle, secteurs unifiés"
+```

@@ -98,11 +98,14 @@ export function ProfileForm({ user, onSaved }: ProfileFormProps) {
                     year: e.year || undefined,
                 })),
             };
-            const { data } = await AXIOS_INSTANCE.patch('/users/profile', {
+            await AXIOS_INSTANCE.patch('/users/profile', {
                 firstName, lastName, email, phone, address,
                 founderProfile,
             });
-            onSaved?.(data);
+
+            // Refetch full profile (with relations) to update UI
+            const { data: freshProfile } = await AXIOS_INSTANCE.get('/users/profile');
+            onSaved?.(freshProfile);
             showToast('Profil mis à jour avec succès', 'success');
         } catch {
             showToast('Erreur lors de la sauvegarde', 'error');

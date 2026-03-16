@@ -7,6 +7,7 @@ import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import Link from 'next/link';
 import { Plus, ArrowRight, Calendar, Layers, Globe, Users, Pencil, Trash2, AlertTriangle, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { DeleteBottomSheet } from '@/components/ui/delete-bottom-sheet';
+import { getSectorLabel } from '@/lib/constants/sectors';
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   DRAFT: { label: 'Brouillon', className: 'bg-gray-100 text-gray-600' },
@@ -162,7 +163,7 @@ export default function MyProjectsPage() {
                       {project.sector && (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500">
                           <Globe className="w-3.5 h-3.5" />
-                          {project.sector}
+                          {getSectorLabel(project.sector)}
                         </span>
                       )}
                       {project.stage && (

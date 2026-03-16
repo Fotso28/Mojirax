@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { getFirebaseErrorMessage } from '@/utils/firebase-errors';
 import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
-import { Rocket, Compass, CheckCircle, ArrowRight } from 'lucide-react';
+import { Rocket, Compass, CheckCircle, ArrowRight, Zap, ShieldCheck, Users } from 'lucide-react';
 import { CountrySelect } from '@/components/ui/country-select';
 import { COUNTRIES } from '@/lib/constants/countries';
 
@@ -48,35 +48,6 @@ const CoFounderLogo = () => (
     </div>
 );
 
-const slides = [
-    {
-        title: "Le Hub Premium pour les Fondateurs au Cameroun",
-        description: "MojiraX : Là où les fondateurs se connectent. Propulser la prochaine génération de startups camerounaises.",
-        icon: (
-            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-        )
-    },
-    {
-        title: "Trouvez votre Co-fondateur Idéal",
-        description: "Utilisez notre algorithme de matching pour trouver des partenaires qui partagent votre vision.",
-        icon: (
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-        )
-    },
-    {
-        title: "Élargissez votre Réseau Elite",
-        description: "Rejoignez une communauté d'entrepreneurs passionnés et accédez à des opportunités uniques.",
-        icon: (
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-        )
-    }
-];
 
 export default function LoginPage() {
     const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
@@ -85,8 +56,6 @@ export default function LoginPage() {
     const [step, setStep] = useState<'auth' | 'role'>('auth');
     const [selectedRole, setSelectedRole] = useState<string | null>(null);
     const [isUpdatingRole, setIsUpdatingRole] = useState(false);
-    const [currentSlide, setCurrentSlide] = useState(0);
-
     // Form State
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -108,13 +77,6 @@ export default function LoginPage() {
             router.push('/');
         }
     }, [user, loading, router]);
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % slides.length);
-        }, 5000);
-        return () => clearInterval(timer);
-    }, []);
 
     const handleLogin = async () => {
         setError('');
@@ -416,62 +378,106 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Section Droite : Showcase AI Premium */}
-            <div className="hidden lg:flex bg-[#0B1121] relative flex-col items-center justify-center p-12 overflow-hidden w-full h-full border-l border-white/5">
-                {/* Subtle Grid Background */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_70%,transparent_100%)] opacity-[0.15]"></div>
+            {/* Section Droite : Mise en relation */}
+            <div className="hidden lg:flex bg-gradient-to-b from-white to-slate-50 relative flex-col items-center justify-center p-12 overflow-hidden w-full h-full">
+                {/* Subtle dot pattern */}
+                <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
 
-                <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
-                    {/* Sleek AI Tag */}
-                    <div className="mb-10 inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white/[0.03] border border-white/10 shadow-lg">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></div>
-                        <span className="text-[13px] font-medium text-slate-300 tracking-[0.05em]">PROPULSÉ PAR STITCH AI</span>
-                    </div>
-
-                    <h2 className="text-5xl lg:text-[60px] font-bold text-center text-white mb-6 leading-[1.15] tracking-tight">
-                        L'intelligence <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] via-[#818CF8] to-[#C084FC]">
-                            au service du design.
-                        </span>
+                <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
+                    {/* Title */}
+                    <h2 className="text-3xl lg:text-[36px] font-bold text-center text-slate-900 mb-3 leading-tight tracking-tight">
+                        Trouvez votre <span className="text-blue-600">associé idéal</span>
                     </h2>
-
-                    <p className="text-xl text-slate-400 text-center leading-relaxed mb-16 max-w-[500px] font-light">
-                        MojiraX intègre désormais des capacités avancées de génération d'interface. Créez, itérez et déployez à la vitesse de la pensée.
+                    <p className="text-slate-500 text-center text-[15px] font-medium mb-12 max-w-sm leading-relaxed">
+                        MojiraX connecte les fondateurs visionnaires avec les talents qui feront décoller leur projet.
                     </p>
 
-                    {/* Floating Premium Terminal Animation */}
-                    <div className="w-full max-w-[600px] rounded-[1.25rem] bg-[#161B28] border border-white/10 shadow-2xl overflow-hidden flex flex-col ring-1 ring-white/5">
-                        {/* Terminal Header */}
-                        <div className="h-11 border-b border-white/[0.08] flex items-center px-4 relative bg-[#1A2133]/80">
-                            <div className="flex gap-2 absolute left-4">
-                                <div className="w-3 h-3 rounded-full bg-[#ED6A5E]"></div>
-                                <div className="w-3 h-3 rounded-full bg-[#F4BF4F]"></div>
-                                <div className="w-3 h-3 rounded-full bg-[#61C554]"></div>
+                    {/* Two profile cards with handshake */}
+                    <div className="flex items-center gap-5 mb-14 w-full justify-center">
+                        {/* Founder card */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-left">
+                            <div className="flex items-center gap-3 mb-3.5">
+                                <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">AF</div>
+                                <div>
+                                    <p className="font-semibold text-slate-900 text-[14px] leading-tight">Amina F.</p>
+                                    <p className="text-[12px] text-slate-500 font-medium">Fondatrice</p>
+                                </div>
                             </div>
-                            <div className="flex-1 text-center font-mono text-[13px] text-slate-400/80 font-medium">
-                                stitch-generate --ui
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">FinTech</span>
+                                    <span className="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">Douala</span>
+                                </div>
+                                <p className="text-[12px] text-slate-500 leading-relaxed">Cherche un CTO pour lancer une app de paiement mobile.</p>
                             </div>
                         </div>
 
-                        {/* Animated Code/Blocks */}
-                        <div className="p-7 flex flex-col gap-6 bg-[#0E131F] shadow-inner">
-                            {/* Header fake skeleton */}
-                            <div className="flex gap-4 items-center">
-                                <div className="w-[42px] h-[42px] rounded-full bg-gradient-to-br from-indigo-500/40 to-purple-500/20 border border-indigo-400/20 shadow-[0_0_15px_rgba(99,102,241,0.15)] flex-shrink-0"></div>
-                                <div className="w-[42%] h-3.5 bg-white/[0.06] rounded-full"></div>
-                                <div className="w-[42%] h-3.5 bg-white/[0.06] rounded-full"></div>
+                        {/* Handshake icon center */}
+                        <div className="flex flex-col items-center gap-2 animate-pulse-slow">
+                            <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/25">
+                                <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z" />
+                                </svg>
                             </div>
+                            <span className="text-[11px] font-bold text-blue-600 tracking-wide uppercase">Match</span>
+                        </div>
 
-                            {/* Main large visualizer block */}
-                            <div className="w-full h-48 bg-[#1B2338]/60 rounded-xl border border-white/[0.03] relative flex items-center justify-center shadow-inner mt-1 mb-2">
-                                <div className="w-[72px] h-[72px] border-[4px] border-[#2A3654] border-l-[#3B82F6] rounded-full animate-spin"></div>
+                        {/* Candidate card */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-right">
+                            <div className="flex items-center gap-3 mb-3.5">
+                                <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm flex-shrink-0">KM</div>
+                                <div>
+                                    <p className="font-semibold text-slate-900 text-[14px] leading-tight">Kevin M.</p>
+                                    <p className="text-[12px] text-slate-500 font-medium">Candidat</p>
+                                </div>
                             </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md">Dev Full-Stack</span>
+                                </div>
+                                <p className="text-[12px] text-slate-500 leading-relaxed">5 ans d'expérience, prêt à co-fonder un projet ambitieux.</p>
+                            </div>
+                        </div>
+                    </div>
 
-                            {/* Footer horizontal lines */}
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="h-6 bg-white/[0.04] rounded-md border border-white/[0.02]"></div>
-                                <div className="h-6 bg-white/[0.04] rounded-md border border-white/[0.02]"></div>
-                                <div className="h-6 bg-white/[0.04] rounded-md border border-white/[0.02]"></div>
+                    {/* Match percentage bar */}
+                    <div className="w-full max-w-xs mb-12">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-[13px] font-semibold text-slate-700">Compatibilité</span>
+                            <span className="text-[13px] font-bold text-blue-600">94%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full animate-fill-bar" style={{ width: '94%' }}></div>
+                        </div>
+                    </div>
+
+                    {/* 3 features */}
+                    <div className="grid grid-cols-3 gap-6 w-full">
+                        <div className="flex flex-col items-center text-center gap-2.5">
+                            <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <Zap className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">Matching intelligent</p>
+                                <p className="text-[11px] text-slate-500 font-medium leading-snug">Algorithme de compatibilité avancé</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center text-center gap-2.5">
+                            <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center">
+                                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <div>
+                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">Profils vérifiés</p>
+                                <p className="text-[11px] text-slate-500 font-medium leading-snug">Communauté de confiance</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center text-center gap-2.5">
+                            <div className="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center">
+                                <Users className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div>
+                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">Réseau africain</p>
+                                <p className="text-[11px] text-slate-500 font-medium leading-snug">Fondateurs du continent</p>
                             </div>
                         </div>
                     </div>
@@ -479,26 +485,29 @@ export default function LoginPage() {
             </div>
 
             <style jsx global>{`
-                @keyframes blob {
-                    0% { transform: translate(0px, 0px) scale(1); }
-                    33% { transform: translate(30px, -50px) scale(1.1); }
-                    66% { transform: translate(-20px, 20px) scale(0.9); }
-                    100% { transform: translate(0px, 0px) scale(1); }
+                @keyframes slideInLeft {
+                    from { opacity: 0; transform: translateX(-30px); }
+                    to { opacity: 1; transform: translateX(0); }
                 }
-                @keyframes shimmer {
-                    100% { background-position: -200% 0; }
+                @keyframes slideInRight {
+                    from { opacity: 0; transform: translateX(30px); }
+                    to { opacity: 1; transform: translateX(0); }
                 }
-                .animate-blob {
-                    animation: blob 10s infinite alternate ease-in-out;
+                @keyframes fillBar {
+                    from { width: 0%; }
+                    to { width: 94%; }
                 }
-                .animation-delay-2000 {
-                    animation-delay: 2s;
+                .animate-slide-in-left {
+                    animation: slideInLeft 0.8s ease-out both;
                 }
-                .bg-shimmer {
-                    background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+                .animate-slide-in-right {
+                    animation: slideInRight 0.8s ease-out 0.2s both;
                 }
-                .animate-shimmer {
-                    animation: shimmer 2.5s infinite linear;
+                .animate-fill-bar {
+                    animation: fillBar 1.5s ease-out 0.6s both;
+                }
+                .animate-pulse-slow {
+                    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 }
             `}</style>
         </div>

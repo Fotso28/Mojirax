@@ -4,8 +4,18 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { ConversationItem } from './conversation-item';
 
+interface ConversationSummary {
+  id: string;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  founderId: string;
+  candidateId: string;
+  founder: { id: string; firstName: string; lastName: string; image: string | null };
+  candidate: { id: string; firstName: string; lastName: string; image: string | null };
+}
+
 interface ConversationListProps {
-  conversations: any[];
+  conversations: ConversationSummary[];
   currentUserId: string;
   activeId: string | null;
   onlineUsers: Set<string>;

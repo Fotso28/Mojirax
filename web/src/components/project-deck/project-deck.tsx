@@ -16,6 +16,7 @@ import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
 import { HideRightSidebar } from '@/context/sidebar-context';
 import { cn } from '@/lib/utils';
+import { getSectorLabel } from '@/lib/constants/sectors';
 
 const BASE_TABS = [
     { id: 'vision', label: 'Vision' },
@@ -180,7 +181,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] lg:gap-6 items-start">
                 {/* Main project content */}
-                <div className="flex flex-col bg-white md:rounded-2xl">
+                <div className="flex flex-col bg-white rounded-2xl overflow-hidden">
                     {/* Hero */}
                     <div className="relative bg-gradient-to-br from-kezak-dark to-kezak-primary px-6 pt-5 pb-6 rounded-t-2xl">
                         {/* Top bar: back + actions */}
@@ -241,7 +242,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                         <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-white/10">
                             {project.sector && (
                                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/90 bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-                                    <Briefcase className="w-3 h-3" /> {project.sector}
+                                    <Briefcase className="w-3 h-3" /> {getSectorLabel(project.sector)}
                                 </span>
                             )}
                             {project.stage && (

@@ -10,12 +10,17 @@ interface SocketContextType {
   socket: Socket | null;
   connected: boolean;
   recovered: boolean;
+  joinConversation: (conversationId: string) => void;
+  /** Fires when a reconnection happens without CSR recovery — consumers should refetch data */
+  onReconnectRefetch: (callback: () => void) => () => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   connected: false,
   recovered: false,
+  joinConversation: () => {},
+  onReconnectRefetch: () => () => {},
 });
 
 /** Play a short notification beep using the Web Audio API */
@@ -50,20 +55,36 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [recovered, setRecovered] = useState(false);
   const { dbUser } = useAuth();
   const dbUserIdRef = useRef<string | null>(null);
+  const refetchCallbacksRef = useRef<Set<() => void>>(new Set());
 
   // Keep ref in sync with dbUser.id
   useEffect(() => {
     dbUserIdRef.current = dbUser?.id ?? null;
   }, [dbUser]);
 
-  const handleNewMessage = useCallback((message: { senderId: string }) => {
+  /** Register a callback for reconnect-without-recovery events */
+  const onReconnectRefetch = useCallback((callback: () => void) => {
+    refetchCallbacksRef.current.add(callback);
+    return () => { refetchCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const joinConversation = useCallback((conversationId: string) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('conversation:join', { conversationId });
+    }
+  }, []);
+
+  const handleNewMessage = useCallback((message: { id: string; senderId: string; conversationId: string }) => {
     const currentUserId = dbUserIdRef.current;
-    if (
-      currentUserId &&
-      message.senderId !== currentUserId &&
-      typeof document !== 'undefined' &&
-      document.hidden
-    ) {
+    if (!currentUserId || message.senderId === currentUserId) return;
+
+    // Mark as DELIVERED — the recipient's client received the message via WebSocket
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('message:delivered', { messageId: message.id });
+    }
+
+    // Play notification sound if tab is hidden
+    if (typeof document !== 'undefined' && document.hidden) {
       playNotificationSound();
     }
   }, []);
@@ -91,7 +112,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
       // New connection
       const socket = io(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/messaging`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/messaging`,
         {
           auth: { token },
           reconnection: true,
@@ -103,7 +124,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
       socket.on('connect', () => {
         setConnected(true);
-        setRecovered(socket.recovered);
+        const wasRecovered = socket.recovered;
+        setRecovered(wasRecovered);
+
+        // If not recovered (disconnected > CSR window), notify consumers to refetch data
+        if (!wasRecovered) {
+          for (const cb of refetchCallbacksRef.current) {
+            try { cb(); } catch { /* consumer error — ignore */ }
+          }
+        }
       });
 
       socket.on('disconnect', () => {
@@ -135,7 +164,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, [handleNewMessage]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketInstance, connected, recovered }}>
+    <SocketContext.Provider value={{ socket: socketInstance, connected, recovered, joinConversation, onReconnectRefetch }}>
       {children}
     </SocketContext.Provider>
   );

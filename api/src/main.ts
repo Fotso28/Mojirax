@@ -32,8 +32,10 @@ async function bootstrap() {
       process.env.FRONTEND_URL || 'http://localhost:3000',
       'http://127.0.0.1:3000',
       'http://localhost:3000',
-      'http://localhost:3002',
-      'http://127.0.0.1:3002'
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      'http://localhost:5002',
+      'http://127.0.0.1:5002'
     ],
     credentials: true,
   });
@@ -55,7 +57,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = process.env.API_PORT || process.env.PORT || 3001;
+  const port = process.env.API_PORT || process.env.PORT || 5001;
   await app.listen(port, '0.0.0.0');
   logger.log(`API running on http://localhost:${port}`);
 }

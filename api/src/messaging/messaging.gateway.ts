@@ -6,14 +6,16 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
+  WsException,
 } from '@nestjs/websockets';
-import { UseGuards, Inject, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { UseGuards, UseFilters, Inject, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import * as admin from 'firebase-admin';
 import Redis from 'ioredis';
 
 import { MessagingService } from './messaging.service';
 import { WsAuthGuard } from './ws-auth.guard';
+import { WsExceptionFilter } from './ws-exception.filter';
 import { WsRateLimiter } from './ws-rate-limiter';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -35,11 +37,17 @@ const MAX_CONTENT_BYTES = 20_000; // 20 KB max for message content
 @WebSocketGateway({
   namespace: '/messaging',
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5000',
     credentials: true,
   },
 })
-@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+@UseFilters(new WsExceptionFilter())
+@UsePipes(new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,
+  transform: true,
+  exceptionFactory: (errors) => new WsException(errors),
+}))
 export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -62,22 +70,25 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   private async safeRedis<T>(op: () => Promise<T>, fallback: T): Promise<T> {
     try {
       return await op();
-    } catch (err: any) {
-      this.logger.error(`Redis operation failed: ${err?.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Redis operation failed: ${message}`);
       return fallback;
     }
   }
 
-  /** Increment presence counter — returns new count */
+  /** Increment presence counter (atomic pipeline) */
   private async presenceIncr(userId: string): Promise<void> {
     await this.safeRedis(async () => {
       const key = `presence:${userId}`;
-      await this.redis.incr(key);
-      await this.redis.expire(key, PRESENCE_TTL);
+      const pipeline = this.redis.pipeline();
+      pipeline.incr(key);
+      pipeline.expire(key, PRESENCE_TTL);
+      await pipeline.exec();
     }, undefined);
   }
 
-  /** Decrement presence counter — returns true if user went offline */
+  /** Decrement presence counter (atomic pipeline) — returns true if user went offline */
   private async presenceDecr(userId: string): Promise<boolean> {
     return this.safeRedis(async () => {
       const key = `presence:${userId}`;
@@ -86,7 +97,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         await this.redis.del(key);
         return true;
       }
-      await this.redis.expire(key, PRESENCE_TTL);
+      const pipeline = this.redis.pipeline();
+      pipeline.expire(key, PRESENCE_TTL);
+      await pipeline.exec();
       return false;
     }, true);
   }
@@ -249,25 +262,24 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: WsSendMessageDto,
-  ) {
+  ): Promise<{ status: 'ok'; message: Record<string, unknown> } | { status: 'error'; error: string }> {
     const userId = client.data.user.userId;
 
     try {
       // Rate limit check
       const allowed = await this.rateLimiter.check(userId, 'message:send');
       if (!allowed) {
-        client.emit('error', { message: 'Trop de messages, réessayez dans un instant' });
-        return;
+        return { status: 'error', error: 'Trop de messages, réessayez dans un instant' };
       }
 
       // Validate content byte length (M02 — prevent multi-byte char DoS)
       if (data.content && Buffer.byteLength(data.content, 'utf8') > MAX_CONTENT_BYTES) {
-        client.emit('error', { message: 'Message trop long' });
-        return;
+        return { status: 'error', error: 'Message trop long' };
       }
 
       const message = await this.messagingService.sendMessage(userId, {
         conversationId: data.conversationId,
+        clientMessageId: data.clientMessageId,
         content: data.content,
         fileUrl: data.fileUrl,
         fileName: data.fileName,
@@ -280,41 +292,48 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
         .to(`conversation:${data.conversationId}`)
         .emit('message:new', message);
 
-      // Check if recipient is offline → send push (parallel lookups)
-      const [recipientId, sender] = await Promise.all([
-        this.messagingService.getRecipientId(data.conversationId, userId),
-        this.prisma.user.findUnique({
-          where: { id: userId },
-          select: { firstName: true, lastName: true },
-        }),
-      ]);
+      // Check if recipient is offline → send push (fire-and-forget, non-blocking)
+      this.sendOfflinePush(data.conversationId, userId, data.content).catch(
+        (err) => this.logger.error(`Push pipeline failed: ${err?.message}`),
+      );
 
-      const isOnline = await this.isUserOnline(recipientId);
-
-      if (!isOnline) {
-        const senderName = sender
-          ? `${sender.firstName} ${sender.lastName}`.trim()
-          : 'Quelqu\'un';
-        const body = data.content
-          ? data.content.substring(0, 100)
-          : 'Fichier envoyé';
-
-        this.notificationsService
-          .notify(
-            recipientId,
-            NotificationType.MESSAGE_RECEIVED,
-            `Nouveau message de ${senderName}`,
-            body,
-            { conversationId: data.conversationId, senderId: userId },
-          )
-          .catch((err) =>
-            this.logger.error(`Push failed: ${err.message}`),
-          );
-      }
+      // Return ack to sender — confirms server processed the message
+      return { status: 'ok', message };
     } catch (err: any) {
       this.logger.error(`message:send failed: ${err?.message}`);
-      client.emit('error', { message: err?.message || 'Erreur d\'envoi du message' });
+      return { status: 'error', error: err?.message || 'Erreur d\'envoi du message' };
     }
+  }
+
+  /** Send push notification to offline recipient (fire-and-forget helper) */
+  private async sendOfflinePush(
+    conversationId: string,
+    senderId: string,
+    content?: string,
+  ): Promise<void> {
+    const [recipientId, sender] = await Promise.all([
+      this.messagingService.getRecipientId(conversationId, senderId),
+      this.prisma.user.findUnique({
+        where: { id: senderId },
+        select: { firstName: true, lastName: true },
+      }),
+    ]);
+
+    const isOnline = await this.isUserOnline(recipientId);
+    if (isOnline) return;
+
+    const senderName = sender
+      ? `${sender.firstName} ${sender.lastName}`.trim()
+      : 'Quelqu\'un';
+    const body = content ? content.substring(0, 100) : 'Fichier envoyé';
+
+    await this.notificationsService.notify(
+      recipientId,
+      NotificationType.MESSAGE_RECEIVED,
+      `Nouveau message de ${senderName}`,
+      body,
+      { conversationId, senderId },
+    );
   }
 
   // ─── Delivery Receipt ─────────────────────────────────────

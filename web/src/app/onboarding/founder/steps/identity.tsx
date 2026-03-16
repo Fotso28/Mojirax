@@ -2,18 +2,7 @@
 
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
-
-const SECTORS = [
-    { value: 'FINTECH', label: 'Fintech' },
-    { value: 'HEALTHTECH', label: 'Santé / HealthTech' },
-    { value: 'ECOMMERCE', label: 'E-commerce' },
-    { value: 'EDTECH', label: 'EdTech' },
-    { value: 'SAAS', label: 'SaaS / B2B' },
-    { value: 'MARKETPLACE', label: 'Marketplace' },
-    { value: 'IMPACT', label: 'Impact Social' },
-    { value: 'AI', label: 'IA / Data' },
-    { value: 'OTHER', label: 'Autre' },
-];
+import { SECTORS } from '@/lib/constants/sectors';
 
 export function FounderIdentityStep() {
     const { data, updateData, nextStep } = useOnboarding();

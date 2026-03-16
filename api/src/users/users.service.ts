@@ -43,6 +43,9 @@ export class UsersService {
                         resumeUrl: true,
                         githubUrl: true,
                         portfolioUrl: true,
+                        languages: true,
+                        certifications: true,
+                        hasCofounded: true,
                         qualityScore: true,
                         profileCompleteness: true,
                         status: true,
@@ -220,7 +223,13 @@ export class UsersService {
                 userId: user.id,
                 title: dto.title,
                 bio: bio || '',
-                skills: dto.mainCompetence ? [dto.mainCompetence] : [],
+                skills: dto.skills && dto.skills.length > 0 ? dto.skills : (dto.mainCompetence ? [dto.mainCompetence] : []),
+                languages: dto.languages || [],
+                certifications: dto.certifications || [],
+                location: dto.location || null,
+                linkedinUrl: dto.linkedinUrl || null,
+                githubUrl: dto.githubUrl || null,
+                portfolioUrl: dto.portfolioUrl || null,
                 yearsOfExperience: dto.yearsExp ? (yearsMap[dto.yearsExp] ?? 0) : null,
                 remoteOnly: dto.locationPref === 'REMOTE',
                 desiredSectors: dto.projectPref ? [dto.projectPref] : [],
@@ -270,17 +279,35 @@ export class UsersService {
 
         const updateData: Record<string, any> = { status: 'ANALYZING' };
 
-        if (dto.title) updateData.title = dto.title;
+        if (dto.title !== undefined) updateData.title = dto.title || '';
+        if (dto.bio !== undefined) updateData.bio = dto.bio || '';
         if (dto.shortPitch || dto.longPitch || dto.vision || dto.achievements) {
-            updateData.bio = [dto.shortPitch, dto.longPitch, dto.vision, dto.achievements]
-                .filter(Boolean)
-                .join('\n\n');
+            // Recalculate bio from pitch fields only if no explicit bio provided
+            if (dto.bio === undefined) {
+                updateData.bio = [dto.shortPitch, dto.longPitch, dto.vision, dto.achievements]
+                    .filter(Boolean)
+                    .join('\n\n');
+            }
         }
-        if (dto.mainCompetence) updateData.skills = [dto.mainCompetence];
-        if (dto.yearsExp) updateData.yearsOfExperience = yearsMap[dto.yearsExp] ?? 0;
-        if (dto.locationPref) updateData.remoteOnly = dto.locationPref === 'REMOTE';
-        if (dto.projectPref) updateData.desiredSectors = [dto.projectPref];
-        if (dto.availability) updateData.availability = dto.availability;
+        // Full skills array takes priority over legacy mainCompetence
+        if (dto.skills !== undefined) {
+            updateData.skills = dto.skills.length > 0 ? dto.skills : [];
+        } else if (dto.mainCompetence) {
+            updateData.skills = [dto.mainCompetence];
+        }
+        if (dto.languages !== undefined) updateData.languages = dto.languages;
+        if (dto.certifications !== undefined) updateData.certifications = dto.certifications;
+        if (dto.location !== undefined) updateData.location = dto.location || null;
+        if (dto.linkedinUrl !== undefined) updateData.linkedinUrl = dto.linkedinUrl || null;
+        if (dto.githubUrl !== undefined) updateData.githubUrl = dto.githubUrl || null;
+        if (dto.portfolioUrl !== undefined) updateData.portfolioUrl = dto.portfolioUrl || null;
+        if (dto.yearsExp !== undefined) updateData.yearsOfExperience = dto.yearsExp ? (yearsMap[dto.yearsExp] ?? 0) : null;
+        if (dto.locationPref !== undefined) {
+            updateData.remoteOnly = dto.locationPref === 'REMOTE';
+            updateData.locationPref = dto.locationPref || null;
+        }
+        if (dto.projectPref !== undefined) updateData.desiredSectors = dto.projectPref ? [dto.projectPref] : [];
+        if (dto.availability !== undefined) updateData.availability = dto.availability || null;
         // Wizard-sourced fields
         if (dto.shortPitch !== undefined) updateData.shortPitch = dto.shortPitch || null;
         if (dto.longPitch !== undefined) updateData.longPitch = dto.longPitch || null;
@@ -288,7 +315,6 @@ export class UsersService {
         if (dto.roleType !== undefined) updateData.roleType = dto.roleType || null;
         if (dto.commitmentType !== undefined) updateData.commitmentType = dto.commitmentType || null;
         if (dto.collabPref !== undefined) updateData.collabPref = dto.collabPref || null;
-        if (dto.locationPref !== undefined) updateData.locationPref = dto.locationPref || null;
         if (dto.hasCofounded !== undefined) updateData.hasCofounded = dto.hasCofounded || null;
 
         const profile = await this.prisma.candidateProfile.update({

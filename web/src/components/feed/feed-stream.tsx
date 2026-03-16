@@ -105,15 +105,18 @@ export function FeedStream() {
     }, []);
 
     // Initial load + refresh on navigation (e.g. returning from project creation)
+    // Wait for Firebase user to be ready before calling authenticated endpoint
     useEffect(() => {
+        if (!user) return;
         setProjects([]);
         setNextCursor(null);
         setHasMore(true);
         loadFeed(null, filters);
-    }, [loadFeed, filters, pathname]);
+    }, [user, loadFeed, filters, pathname]);
 
     // Refresh feed when window regains focus (e.g. after creating a project)
     useEffect(() => {
+        if (!user) return;
         const handleFocus = () => {
             setProjects([]);
             setNextCursor(null);
@@ -122,7 +125,7 @@ export function FeedStream() {
         };
         window.addEventListener('focus', handleFocus);
         return () => window.removeEventListener('focus', handleFocus);
-    }, [loadFeed, filters]);
+    }, [user, loadFeed, filters]);
 
     // Infinite scroll observer
     useEffect(() => {
@@ -148,8 +151,8 @@ export function FeedStream() {
         setHasMore(true);
     }, []);
 
-    // Loading skeleton
-    if (isLoading) {
+    // Loading skeleton (show while waiting for user auth or initial data)
+    if (isLoading && user) {
         return (
             <div className="space-y-6 max-w-2xl mx-auto">
                 <FeedFilters onFilterChange={handleFilterChange} />

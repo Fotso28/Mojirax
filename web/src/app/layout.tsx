@@ -8,8 +8,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MojiraX | Where founders connect",
-  description: "Le réseau premium pour les entrepreneurs au Cameroun. MojiraX : Là où les fondateurs se connectent.",
+  title: "MojiraX | Trouvez votre cofondateur idéal en Afrique",
+  description: "Rejoignez la plateforme de référence pour connecter porteurs de projet et cofondateurs en Afrique francophone et dans la diaspora.",
+  openGraph: {
+    title: "MojiraX | Trouvez votre cofondateur idéal en Afrique",
+    description: "Rejoignez la plateforme de référence pour connecter porteurs de projet et cofondateurs en Afrique francophone et dans la diaspora.",
+    siteName: "MojiraX",
+    locale: "fr_FR",
+    type: "website",
+  },
 };
 
 import { AuthProvider } from "@/context/auth-context";

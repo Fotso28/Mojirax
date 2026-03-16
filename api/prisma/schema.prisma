@@ -876,21 +876,22 @@ model Conversation {
 }
 
 model Message {
-  id             String            @id @default(uuid())
-  conversationId String            @map("conversation_id")
-  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String            @map("sender_id")
-  sender         User              @relation("SentMessages", fields: [senderId], references: [id])
-  content        String?
-  fileUrl        String?           @map("file_url")
-  fileName       String?           @map("file_name")
-  fileSize       Int?              @map("file_size")
-  fileMimeType   String?           @map("file_mime_type")
-  status         MessageStatus     @default(SENT)
-  deliveredAt    DateTime?         @map("delivered_at")
-  readAt         DateTime?         @map("read_at")
-  reactions      MessageReaction[]
-  createdAt      DateTime          @default(now()) @map("created_at")
+  id              String            @id @default(uuid())
+  conversationId  String            @map("conversation_id")
+  conversation    Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String            @map("sender_id")
+  sender          User              @relation("SentMessages", fields: [senderId], references: [id])
+  clientMessageId String?           @unique @map("client_message_id")
+  content         String?
+  fileUrl         String?           @map("file_url")
+  fileName        String?           @map("file_name")
+  fileSize        Int?              @map("file_size")
+  fileMimeType    String?           @map("file_mime_type")
+  status          MessageStatus     @default(SENT)
+  deliveredAt     DateTime?         @map("delivered_at")
+  readAt          DateTime?         @map("read_at")
+  reactions       MessageReaction[]
+  createdAt       DateTime          @default(now()) @map("created_at")
 
   @@index([conversationId, createdAt])
   @@map("messages")

@@ -39,9 +39,10 @@ export class MessagingService {
     return conversation.founderId === senderId ? conversation.candidateId : conversation.founderId;
   }
 
-  /** Send a message and update conversation */
+  /** Send a message and update conversation (idempotent via clientMessageId) */
   async sendMessage(senderId: string, dto: {
     conversationId: string;
+    clientMessageId?: string;
     content?: string;
     fileUrl?: string;
     fileName?: string;
@@ -52,17 +53,42 @@ export class MessagingService {
       throw new BadRequestException('Le message doit contenir du texte ou un fichier');
     }
 
+    // Idempotency: if clientMessageId provided and already exists, return existing message
+    if (dto.clientMessageId) {
+      const existing = await this.prisma.message.findUnique({
+        where: { clientMessageId: dto.clientMessageId },
+        select: {
+          id: true, conversationId: true, senderId: true,
+          content: true, fileUrl: true, fileName: true,
+          fileSize: true, fileMimeType: true, status: true,
+          createdAt: true,
+        },
+      });
+      if (existing) {
+        this.logger.log(`Idempotent hit: clientMessageId=${dto.clientMessageId}`);
+        return existing;
+      }
+    }
+
     await this.verifyMembership(dto.conversationId, senderId);
 
     const preview = dto.content
       ? dto.content.substring(0, 100)
       : `📎 ${dto.fileName || 'Fichier'}`;
 
+    const messageSelect = {
+      id: true, conversationId: true, senderId: true,
+      content: true, fileUrl: true, fileName: true,
+      fileSize: true, fileMimeType: true, status: true,
+      createdAt: true,
+    };
+
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
           conversationId: dto.conversationId,
           senderId,
+          clientMessageId: dto.clientMessageId || null,
           content: dto.content,
           fileUrl: dto.fileUrl,
           fileName: dto.fileName,
@@ -70,12 +96,7 @@ export class MessagingService {
           fileMimeType: dto.fileMimeType,
           status: 'SENT',
         },
-        select: {
-          id: true, conversationId: true, senderId: true,
-          content: true, fileUrl: true, fileName: true,
-          fileSize: true, fileMimeType: true, status: true,
-          createdAt: true,
-        },
+        select: messageSelect,
       }),
       this.prisma.conversation.update({
         where: { id: dto.conversationId },
@@ -92,6 +113,19 @@ export class MessagingService {
     await this.verifyMembership(conversationId, userId);
 
     const take = Math.min(limit || 20, 100);
+
+    let cursorOption = {};
+    if (cursor) {
+      // Validate cursor exists to avoid Prisma crash on deleted cursor
+      const exists = await this.prisma.message.findUnique({
+        where: { id: cursor },
+        select: { id: true },
+      });
+      if (exists) {
+        cursorOption = { cursor: { id: cursor }, skip: 1 };
+      }
+    }
+
     const messages = await this.prisma.message.findMany({
       where: { conversationId },
       select: {
@@ -103,7 +137,7 @@ export class MessagingService {
       },
       orderBy: { createdAt: 'desc' },
       take: take + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...cursorOption,
     });
 
     const hasMore = messages.length > take;
@@ -116,6 +150,18 @@ export class MessagingService {
   /** List user conversations (paginated, max 100, default 20) */
   async getConversations(userId: string, cursor?: string, limit?: number) {
     const take = Math.min(limit || 20, 100);
+
+    let cursorOption = {};
+    if (cursor) {
+      const exists = await this.prisma.conversation.findUnique({
+        where: { id: cursor },
+        select: { id: true },
+      });
+      if (exists) {
+        cursorOption = { cursor: { id: cursor }, skip: 1 };
+      }
+    }
+
     const conversations = await this.prisma.conversation.findMany({
       where: { OR: [{ founderId: userId }, { candidateId: userId }] },
       select: {
@@ -126,7 +172,7 @@ export class MessagingService {
       },
       orderBy: { lastMessageAt: { sort: 'desc', nulls: 'last' } },
       take: take + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...cursorOption,
     });
 
     const hasMore = conversations.length > take;
@@ -232,11 +278,13 @@ export class MessagingService {
     });
   }
 
-  /** Get all conversation IDs for a user (for socket room join) */
+  /** Get conversation IDs for a user (for socket room join, capped at 500) */
   async getUserConversationIds(userId: string): Promise<string[]> {
     const conversations = await this.prisma.conversation.findMany({
       where: { OR: [{ founderId: userId }, { candidateId: userId }] },
       select: { id: true },
+      orderBy: { lastMessageAt: { sort: 'desc', nulls: 'last' } },
+      take: 500,
     });
     return conversations.map((c) => c.id);
   }

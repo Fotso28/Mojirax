@@ -43,12 +43,19 @@ export function ConversationItem({ conversation, currentUserId, isActive, isOnli
     >
       <div className="relative flex-shrink-0">
         {other.image ? (
-          <img src={other.image} alt={name} className="h-12 w-12 rounded-full object-cover" />
-        ) : (
-          <div className="h-12 w-12 rounded-full bg-kezak-light flex items-center justify-center text-kezak-primary font-semibold">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
+          <img
+            src={other.image}
+            alt={name}
+            className="h-12 w-12 rounded-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+        <div className={`h-12 w-12 rounded-full bg-kezak-light flex items-center justify-center text-kezak-primary font-semibold ${other.image ? 'hidden' : ''}`}>
+          {name.charAt(0).toUpperCase()}
+        </div>
         <OnlineBadge isOnline={isOnline} />
       </div>
       <div className="flex-1 min-w-0">

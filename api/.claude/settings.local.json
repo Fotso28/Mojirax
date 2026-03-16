@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(taskkill //PID 13856 //T //F && taskkill //PID 18080 //T //F)"
+      "Bash(taskkill //PID 13856 //T //F && taskkill //PID 18080 //T //F)",
+      "Bash(npx prisma:*)"
     ]
   }
 }

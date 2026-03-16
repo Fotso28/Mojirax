@@ -29,6 +29,8 @@ import {
 import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
 import { UpdatePushConfigDto } from './dto/update-push-config.dto';
 import { CreatePlanDto, UpdatePlanDto, ReorderPlansDto } from './dto/plan.dto';
+import { CreateFaqDto, UpdateFaqDto, ReorderFaqsDto } from './dto/faq.dto';
+import { CreateTestimonialDto, UpdateTestimonialDto, ReorderTestimonialsDto } from './dto/testimonial.dto';
 
 @Controller('admin')
 @UseGuards(FirebaseAuthGuard, AdminGuard)
@@ -183,5 +185,59 @@ export class AdminController {
   @Delete('plans/:id')
   async deletePlan(@Request() req, @Param('id') id: string) {
     return this.adminService.deletePlan(id, req.user.dbId);
+  }
+
+  // ─── FAQ ──────────────────────────────────────────────
+
+  @Get('faqs')
+  listFaqs() {
+    return this.adminService.listFaqs();
+  }
+
+  @Post('faqs')
+  createFaq(@Request() req, @Body() dto: CreateFaqDto) {
+    return this.adminService.createFaq(dto, req.user.dbId);
+  }
+
+  @Post('faqs/reorder')
+  reorderFaqs(@Request() req, @Body() dto: ReorderFaqsDto) {
+    return this.adminService.reorderFaqs(dto, req.user.dbId);
+  }
+
+  @Patch('faqs/:id')
+  updateFaq(@Request() req, @Param('id') id: string, @Body() dto: UpdateFaqDto) {
+    return this.adminService.updateFaq(id, dto, req.user.dbId);
+  }
+
+  @Delete('faqs/:id')
+  deleteFaq(@Request() req, @Param('id') id: string) {
+    return this.adminService.deleteFaq(id, req.user.dbId);
+  }
+
+  // ─── Testimonials ─────────────────────────────────────
+
+  @Get('testimonials')
+  listTestimonials() {
+    return this.adminService.listTestimonials();
+  }
+
+  @Post('testimonials')
+  createTestimonial(@Request() req, @Body() dto: CreateTestimonialDto) {
+    return this.adminService.createTestimonial(dto, req.user.dbId);
+  }
+
+  @Post('testimonials/reorder')
+  reorderTestimonials(@Request() req, @Body() dto: ReorderTestimonialsDto) {
+    return this.adminService.reorderTestimonials(dto, req.user.dbId);
+  }
+
+  @Patch('testimonials/:id')
+  updateTestimonial(@Request() req, @Param('id') id: string, @Body() dto: UpdateTestimonialDto) {
+    return this.adminService.updateTestimonial(id, dto, req.user.dbId);
+  }
+
+  @Delete('testimonials/:id')
+  deleteTestimonial(@Request() req, @Param('id') id: string) {
+    return this.adminService.deleteTestimonial(id, req.user.dbId);
   }
 }

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MoJiraX | Community &amp; Energy Edition</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              purple: '#7C3AED',
+              blue: '#2563EB',
+              dark: '#0F172A',
+              offwhite: '#F8FAFC',
+            }
+          },
+          borderRadius: {
+            '4xl': '2rem',
+            '5xl': '3rem',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-animations">
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(2deg); }
+    }
+    .animate-float { animation: float 4s ease-in-out infinite; }
+    
+    @keyframes slow-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-slow-spin { animation: slow-spin 20s linear infinite; }
+
+    .blob-shape {
+      border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    }
+    
+    .glass-light {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-brand-offwhite text-brand-dark font-sans antialiased overflow-x-hidden">
+<!-- BEGIN: MainHeader -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+<nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-blue rounded-xl flex items-center justify-center shadow-lg shadow-brand-purple/20">
+<span class="text-white font-black text-xl">M</span>
+</div>
+<span class="font-bold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-dark to-gray-600">MoJiraX</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-8 mr-4">
+<a class="text-sm font-semibold text-gray-600 hover:text-brand-purple transition-colors" href="#how-it-works">Processus</a>
+<a class="text-sm font-semibold text-gray-600 hover:text-brand-purple transition-colors" href="#pricing">Tarifs</a>
+</div>
+<button class="hidden sm:block text-sm font-bold text-brand-purple px-4 py-2 hover:bg-brand-purple/5 rounded-lg transition-colors">FR</button>
+<a class="bg-brand-dark text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-brand-purple transition-all shadow-md" href="#">Connexion</a>
+</div>
+</nav>
+</header>
+<!-- END: MainHeader -->
+<main>
+<!-- BEGIN: HeroSection -->
+<section class="relative pt-32 pb-24 lg:pt-48 lg:pb-40 overflow-hidden">
+<!-- Background Elements -->
+<div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-brand-purple/5 blob-shape animate-slow-spin"></div>
+<div class="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[500px] h-[500px] bg-brand-blue/5 blob-shape animate-slow-spin" style="animation-direction: reverse;"></div>
+<div class="max-w-7xl mx-auto px-4 relative z-10">
+<div class="grid lg:grid-cols-2 gap-16 items-center">
+<div class="text-left">
+<span class="inline-block px-4 py-1.5 mb-6 rounded-full bg-brand-purple/10 text-brand-purple text-xs font-bold uppercase tracking-wider">La plus grande communauté d'entrepreneurs</span>
+<h1 class="text-5xl lg:text-7xl font-extrabold mb-6 leading-[1.1] text-brand-dark">
+            Bâtissez le futur de <span class="text-brand-purple italic">l'Afrique</span>, ensemble.
+          </h1>
+<p class="text-xl text-gray-600 mb-10 max-w-lg leading-relaxed">
+            Trouvez le co-fondateur qui partage votre énergie et votre vision. MoJiraX connecte les esprits les plus brillants du continent.
+          </p>
+<div class="flex flex-col sm:flex-row gap-4 mb-12">
+<button class="bg-brand-purple text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-brand-purple/40 transition-all hover:-translate-y-1">
+              Trouver un partenaire
+            </button>
+<div class="flex -space-x-3 items-center">
+<img alt="User 1" class="w-10 h-10 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHbXMTQYon0-Z2KsQD7H6QG9FfSf0wiScNnaLqPZAW0CECy2YgM2Dj3GqA2zIFbI3lEzYd538yRuXkXjOhjYotgnX_i3nz1_Q96MrgzpnYStaIPQ4rlSF75VXWVHzDOXxm94ukgoVw_bCwtDt8c9I8H3uRAUiptoPqQuTYdfHupnJ7Ie0gnDy4Shm8f5rtmNlsP2kgSBKnXk4-CIe7Cj5niSLUOUF_APp2E9cT8hwHqmFDGqlvtjQfzG67CkkHFcmcTMaC4BZdz-kP"/>
+<img alt="User 2" class="w-10 h-10 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeNczJzgwQZ6qZ6WCd2OCWEd_dox_BgCiS7xMfcVqOGVaaecaPs8tqHEYMgJ228ryR2UgM5gFb4MYq5HrpqV037pPjC9-aBy-Nojtidor-uhGpwoXJZOWFTEdE3u2JEgu01SJdVEWLLJah0N7x7raWtmDIz90ViBCi4ZsrnUDz1lf9qwsvRw1EMFL79gyOnEiZRQt5kaw1NXMCjyaYio-HtGCPhaREXjdiezcRKdYbOfK8LwfkJewMaLcxGpPKcuRMWGDiEw34hWmN"/>
+<img alt="User 3" class="w-10 h-10 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9TSyhLjEE5IJz7tKuQO9gRRk5VR1lUF50Dw_4OlCcnKI7iUKKjgbMchyWaWD16s4OZ63_Sr6T6YGt5kekCC5pLYr8j7E8vkcxTCWG10DHJdRIkL4azKF5dbN-_OR7Jnu4-C3zPU9o3vsfi70ZTYDcZSFc7VeHqcJgMZqyBazHxsFdKBTxhk2WuyPIsXMJokoXoXMP2IDTW7BbXV6evdr-IKO7LyootK2JlOqTmLMK0s6KIOhN9tsbWQ7lYTJ6NThiYYaV3mHJZ5AJ"/>
+<span class="pl-5 text-sm font-semibold text-gray-500">+1.2k actifs ce matin</span>
+</div>
+</div>
+</div>
+<div class="relative">
+<!-- Main Visual Card -->
+<div class="relative z-20 glass-light p-8 rounded-[2.5rem] shadow-2xl border-white/50">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-red-400"></div>
+<div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+<div class="w-3 h-3 rounded-full bg-green-400"></div>
+</div>
+<div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Match Intelligence</div>
+</div>
+<!-- Dynamic Match Animation -->
+<div class="flex items-center justify-around py-10 relative">
+<div class="relative group">
+<div class="absolute inset-0 bg-brand-purple/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
+<img alt="Entrepreneur" class="relative w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-xl animate-float" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe7vDKvcUAjEYPnyS9K2LBvwHyrwItYKpl9ksW0Kah63IO2-CfgT6c5giOfCxLJaPs9IDhpdYdo_gAx_e4bA7vz5FckHvCPmTGzjvTdrBue-JNJ86NFK2oB1i2iVyILnhf9rBvKS8jmSzHEZc9dDw47bwTLHvP-mi_hWhERBmnJd2r4F4cWIUqFIKOEYhgy8jDZNLND2ZKOWFIl6OVWQkAlC2pnK8NV-PIBVcVYZOB9mgQ1EkHnVU-DMV-c7d3uxsVM_eSjTADC0CX"/>
+</div>
+<div class="relative">
+<div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg text-brand-purple z-10 relative">
+<span class="material-symbols-outlined font-bold">favorite</span>
+</div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-brand-purple/30 to-transparent"></div>
+</div>
+<div class="relative group">
+<div class="absolute inset-0 bg-brand-blue/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
+<img alt="CTO" class="relative w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-xl animate-float" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsLllK1OD7A6-W-XtaB5dUAVqaQhnqr7KljQMNC5vGH9CON5IZTAdwUdn-1ThWDoi0xTSvIjKn6MTSRDuPLPLPBUCjxg_W7B3Vq5uj4x6Crwu-9df8DRkz1HG5TrXWeVHP9EDeHYBxnkljhEQAS6QTOi9i7V1ZPr8F7zQC0c0PZ02ZNNR1zxytn9lV3aVRyPOwBaqp7M_bFSb1YeoKMFjtdwV0XLwB5WAMbKWLoQaf9lj4Hv5ygJMFPxDSFG82igVc9c6xqI3GwGic" style="animation-delay: -2s"/>
+</div>
+</div>
+<div class="bg-brand-dark/5 p-6 rounded-3xl border border-brand-dark/5">
+<div class="flex items-center justify-between mb-2">
+<span class="text-sm font-bold text-brand-dark">Compatibilité Vision</span>
+<span class="text-sm font-black text-brand-purple">98%</span>
+</div>
+<div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+<div class="bg-brand-purple h-full w-[98%]"></div>
+</div>
+</div>
+</div>
+<!-- Floating Lifestyle Image 1 -->
+<div class="absolute -top-10 -right-10 w-48 h-64 rounded-3xl overflow-hidden shadow-2xl border-8 border-white animate-float hidden lg:block" style="animation-duration: 6s">
+<img alt="Meeting" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB8sPeJkhoZ8UUrm6a6vqV8gxhjQ9z8yvJ2YOyQTLbXrIBFWsOesF0xkIqv--kh8_4LFgpDx0vRYc8xaP6ljJJCtyddaOEu0X6B8nn4ij5kgHU5sJM-yo1gejiBM_LR-ifb5OqKhu18_JqFnyxB8XuzppgTbRyZlYRJjo9vXLFykScd1FAw9fTtRs_FPwmsTtT3_aVEajtnsHvWziOoAF-ALeQTRc4hs00WFIMNDih1FoJ2J0dl-eBJqY6J8EJvpS2PoM82IpsgODc"/>
+</div>
+<!-- Floating Lifestyle Image 2 -->
+<div class="absolute -bottom-12 -left-12 w-56 h-40 rounded-3xl overflow-hidden shadow-2xl border-8 border-white animate-float hidden lg:block" style="animation-delay: -1s; animation-duration: 5s">
+<img alt="Teamwork" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCV6rThQt-DbfY12odiZox8wvQI7xBwy8Oz8Ig0oPtkTSasLJde-kZNveNwwL_v83uLQkZCbSICRz3Yc9WxI4DA7DwN6NCNrsW_fF6kXEk0oMOt-xZDv0P3hGKrH5HMTSPDXLRMqhpMZ4ZPWt17RiM26I-BOVERqxb6JRb_SpmK7OF2ddgskO-90t9UON_cKkhbYqIjxlsZDSup8Ld1SlrbCWkZ8IEU9951_rBgwf66F_7fENcF3u0vvuij0vrnuyB25JES6bUtGsvJ"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: FeaturesGrid (Energy focus) -->
+<section class="py-24 bg-white relative">
+<div class="max-w-7xl mx-auto px-4">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+<div class="max-w-xl">
+<h2 class="text-4xl font-extrabold mb-4 text-brand-dark">L'énergie d'un écosystème <span class="text-brand-blue">dynamique</span></h2>
+<p class="text-lg text-gray-500">Plus qu'une application, MoJiraX est le moteur de votre réussite entrepreneuriale.</p>
+</div>
+<a class="group flex items-center gap-2 font-bold text-brand-purple" href="#">
+          Voir tous les profils 
+          <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+<!-- Card 1 -->
+<div class="group p-10 rounded-[2.5rem] bg-brand-offwhite hover:bg-brand-purple hover:text-white transition-all duration-500 shadow-sm hover:shadow-2xl hover:shadow-brand-purple/20">
+<div class="w-16 h-16 bg-brand-purple/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center mb-8 transition-colors">
+<span class="material-symbols-outlined text-3xl text-brand-purple group-hover:text-white">hub</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">Réseau Intelligent</h3>
+<p class="text-gray-500 group-hover:text-white/80 leading-relaxed">Notre algorithme identifie non seulement les compétences, mais aussi la synergie culturelle et énergétique entre fondateurs.</p>
+</div>
+<!-- Card 2 -->
+<div class="group p-10 rounded-[2.5rem] bg-brand-offwhite hover:bg-brand-blue hover:text-white transition-all duration-500 shadow-sm hover:shadow-2xl hover:shadow-brand-blue/20">
+<div class="w-16 h-16 bg-brand-blue/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center mb-8 transition-colors">
+<span class="material-symbols-outlined text-3xl text-brand-blue group-hover:text-white">verified_user</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">Elite Vérifiée</h3>
+<p class="text-gray-500 group-hover:text-white/80 leading-relaxed">Chaque membre passe par un processus de validation pour garantir un environnement de confiance et de haute qualité.</p>
+</div>
+<!-- Card 3 -->
+<div class="group p-10 rounded-[2.5rem] bg-brand-offwhite hover:bg-brand-dark hover:text-white transition-all duration-500 shadow-sm hover:shadow-2xl hover:shadow-brand-dark/20">
+<div class="w-16 h-16 bg-brand-dark/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center mb-8 transition-colors">
+<span class="material-symbols-outlined text-3xl text-brand-dark group-hover:text-white">rocket_launch</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">Accélération</h3>
+<p class="text-gray-500 group-hover:text-white/80 leading-relaxed">Des outils exclusifs pour structurer votre premier mois de collaboration et passer de l'idée au prototype.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: FeaturesGrid -->
+<!-- BEGIN: HowItWorks (Bold & Visual) -->
+<section class="py-24 bg-brand-dark text-white overflow-hidden relative" id="how-it-works">
+<!-- Abstract Connection Line Decor -->
+<div class="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">
+<svg class="h-full w-full" viewbox="0 0 400 800"><path d="M400,0 Q300,400 400,800" fill="none" stroke="white" stroke-dasharray="10 10" stroke-width="2"></path></svg>
+</div>
+<div class="max-w-7xl mx-auto px-4 relative z-10">
+<div class="text-center mb-20">
+<h2 class="text-4xl md:text-5xl font-black mb-6">4 étapes vers votre <span class="text-brand-purple">succès</span></h2>
+<div class="w-24 h-1.5 bg-brand-purple mx-auto rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+<!-- Step 1 -->
+<div class="relative group p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+<div class="text-8xl font-black text-white/5 absolute -top-8 -left-4 group-hover:text-brand-purple/20 transition-colors">01</div>
+<div class="w-16 h-16 bg-brand-purple rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-brand-purple/40">
+<span class="material-symbols-outlined text-3xl">edit_note</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Identité</h4>
+<p class="text-gray-400 text-sm leading-relaxed">Créez un profil riche qui met en avant vos réussites et vos aspirations.</p>
+</div>
+<!-- Step 2 -->
+<div class="relative group p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all lg:mt-12">
+<div class="text-8xl font-black text-white/5 absolute -top-8 -left-4 group-hover:text-brand-blue/20 transition-colors">02</div>
+<div class="w-16 h-16 bg-brand-blue rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-brand-blue/40">
+<span class="material-symbols-outlined text-3xl">manage_search</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Vision</h4>
+<p class="text-gray-400 text-sm leading-relaxed">Définissez les critères précis de votre partenaire idéal.</p>
+</div>
+<!-- Step 3 -->
+<div class="relative group p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+<div class="text-8xl font-black text-white/5 absolute -top-8 -left-4 group-hover:text-brand-purple/20 transition-colors">03</div>
+<div class="w-16 h-16 bg-brand-purple rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-brand-purple/40">
+<span class="material-symbols-outlined text-3xl">chat_bubble</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Connexion</h4>
+<p class="text-gray-400 text-sm leading-relaxed">Matchez et entamez des conversations guidées par notre IA.</p>
+</div>
+<!-- Step 4 -->
+<div class="relative group p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all lg:mt-12">
+<div class="text-8xl font-black text-white/5 absolute -top-8 -left-4 group-hover:text-brand-blue/20 transition-colors">04</div>
+<div class="w-16 h-16 bg-brand-blue rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-brand-blue/40">
+<span class="material-symbols-outlined text-3xl">handshake</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Alliance</h4>
+<p class="text-gray-400 text-sm leading-relaxed">Officialisez votre partenariat avec notre cadre de 30 jours.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HowItWorks -->
+<!-- BEGIN: CommunityShowcase (Overlapping Layout) -->
+<section class="py-24 bg-brand-offwhite overflow-hidden">
+<div class="max-w-7xl mx-auto px-4">
+<div class="grid lg:grid-cols-2 gap-20 items-center">
+<div class="relative order-2 lg:order-1">
+<div class="grid grid-cols-2 gap-6 relative z-10">
+<div class="space-y-6">
+<img alt="Work 1" class="w-full h-80 object-cover rounded-[3rem] shadow-xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg_l9JDowtPslMlEsp47gn8MRq6-BPnO3n7CvOfJUwTpHs-7tcFCEDnaMygRhO0DLYm9NvACU304K6gSEzPPHDm_Tn1usX_D1rhiJojtf8O0t4T8AemErz9z6EFA_rN3Le0JZLL1JJvSaY_zy1lDNgY18oqaJzAg02q4vOpMEP6zzjTJOhW3N0QKI9cQdZP2V2KJXPPPSaqCy6HCHE47ekJDbMOy598gk5geGK8cDVwSPAobzV731C99oBSe-Q3wUFG_yStY5he9hA"/>
+<img alt="Work 2" class="w-full h-64 object-cover rounded-[3rem] shadow-xl translate-x-12" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdg2-crXbACCraUAdWsu3KIQB6vz56Qqh7TeFOy4WBBr2fiFonV8xGhM5zirNJHPd9O4H1qOZ4Vf5AW0nuMu78FKIneFwloE17qzi97uiNph_imRqDycegM9ivZTdF3DSmE0MX12El2cNfBFPQMQVuCqv4oVknXuunBcK6RITY6yG-Dl4pLyXKprOqgD1EaqU6lmpGe1dgk7hFQacaFJlf32hGgaF90fGJF4Hmp6vuN3CnywGyMqTHN8btuDgpPhxjTSQ2D7ovwMBd"/>
+</div>
+<div class="space-y-6 pt-12">
+<img alt="Work 3" class="w-full h-64 object-cover rounded-[3rem] shadow-xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAO8dSODoqL-19EASbl822c7ey5vgdWWLTuLyRCKegVxV0BVcXRGalgvmEABo81vVfu_Py5PzibW0bftHPubz15Wt_lf_RP12B1eC1ixZtJI_TBjRz1Ii7YLnp1ImBcbj0SeuK1l42957v7JDUCWqoLsRyQKUnlTrF6IM9p65uGrpsqS5oUwBMTcoQOmxQVKHKTvpAldojNuV4pddaHnJ4uUA_9w3LGHOnlVaRSqAiAQNOhfpzkvellvQxGDqcqmZMs-5BUEaLk2d5S"/>
+<img alt="Work 4" class="w-full h-80 object-cover rounded-[3rem] shadow-xl -translate-x-12" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZJUwWteOmipW9I3-juFHvKwNyPJG38DpQAOvJvz3LRcrwv33lfgAQODtpLCfwlR7EzKWrIqLvX2RmlHrDD9-9VMpW_EGczF7zaPsY6NjGp34FV5TQEOC6UGfUhEByRE7vq7p_s_8nWy0k3F83WeHdHP5B2Nzh3e5CDtTbc_XcTMz2pgb7i1dfv_CNY-OVh70ZYpRLXrSVNxeaOUOlltAALujEaNtpDkMwDSSN1XoE_EXWZUF_SsRhHSUJb37UZtQaDWboY6670NR0"/>
+</div>
+</div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-brand-blue/5 blob-shape -z-10"></div>
+</div>
+<div class="order-1 lg:order-2">
+<h2 class="text-4xl font-extrabold mb-8 leading-tight">Rejoignez une communauté qui <span class="text-brand-purple">bouge</span>.</h2>
+<p class="text-lg text-gray-600 mb-8 leading-relaxed">
+            Nous croyons que les meilleures idées naissent de la collision des talents. Sur MoJiraX, l'énergie est palpable. Des milliers d'entrepreneurs au Ghana, Sénégal, Côte d'Ivoire et Kenya collaborent déjà.
+          </p>
+<ul class="space-y-4 mb-10">
+<li class="flex items-center gap-4">
+<div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+<span class="font-semibold text-gray-700">+500 nouveaux projets lancés par mois</span>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+<span class="font-semibold text-gray-700">Accès à des investisseurs partenaires</span>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+<span class="font-semibold text-gray-700">Événements de networking physiques</span>
+</li>
+</ul>
+<button class="bg-brand-dark text-white px-8 py-4 rounded-2xl font-bold hover:bg-brand-blue transition-colors shadow-lg">En savoir plus sur la communauté</button>
+</div>
+</div>
+</div>
+</section>
+<!-- END: CommunityShowcase -->
+<!-- BEGIN: Pricing (Clean & Bold) -->
+<section class="py-24 bg-white" id="pricing">
+<div class="max-w-5xl mx-auto px-4">
+<div class="text-center mb-16">
+<h2 class="text-4xl font-black mb-4">Investissez dans votre <span class="text-brand-blue">futur</span></h2>
+<p class="text-gray-500">Un abonnement simple pour des opportunités illimitées.</p>
+</div>
+<div class="grid md:grid-cols-2 gap-10">
+<!-- Free -->
+<div class="p-12 rounded-[3rem] bg-brand-offwhite border border-gray-100 hover:border-brand-purple/20 transition-all flex flex-col">
+<h3 class="text-xl font-bold mb-2">MoJiraX Free</h3>
+<div class="text-5xl font-black mb-8">0€<span class="text-lg text-gray-400 font-medium">/mois</span></div>
+<div class="space-y-5 mb-12 flex-grow">
+<div class="flex items-center gap-3 text-gray-600"><span class="material-symbols-outlined text-brand-purple">check_circle</span> 10 swipes par jour</div>
+<div class="flex items-center gap-3 text-gray-600"><span class="material-symbols-outlined text-brand-purple">check_circle</span> Création de profil complète</div>
+<div class="flex items-center gap-3 text-gray-600 opacity-40"><span class="material-symbols-outlined">block</span> Messages illimités</div>
+<div class="flex items-center gap-3 text-gray-600 opacity-40"><span class="material-symbols-outlined">block</span> Badge de vérification</div>
+</div>
+<button class="w-full py-4 rounded-2xl border-2 border-brand-dark font-bold hover:bg-brand-dark hover:text-white transition-all">Démarrer gratuitement</button>
+</div>
+<!-- Pro -->
+<div class="p-12 rounded-[3rem] bg-brand-blue text-white shadow-2xl shadow-brand-blue/30 relative flex flex-col scale-105">
+<div class="absolute top-8 right-8 bg-white text-brand-blue text-[10px] font-black uppercase px-3 py-1 rounded-full">Recommandé</div>
+<h3 class="text-xl font-bold mb-2">MoJiraX Pro</h3>
+<div class="text-5xl font-black mb-8">8,99€<span class="text-lg text-white/60 font-medium">/mois</span></div>
+<div class="space-y-5 mb-12 flex-grow">
+<div class="flex items-center gap-3 text-white"><span class="material-symbols-outlined text-white">check_circle</span> Swipes illimités</div>
+<div class="flex items-center gap-3 text-white"><span class="material-symbols-outlined text-white">check_circle</span> Messages prioritaires</div>
+<div class="flex items-center gap-3 text-white"><span class="material-symbols-outlined text-white">check_circle</span> Badge de vérification Elite</div>
+<div class="flex items-center gap-3 text-white"><span class="material-symbols-outlined text-white">check_circle</span> Support VIP &amp; Conseils</div>
+</div>
+<button class="w-full py-4 rounded-2xl bg-white text-brand-blue font-bold hover:bg-brand-offwhite transition-all shadow-xl">Devenir Pro maintenant</button>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Pricing -->
+<!-- BEGIN: FinalCTA -->
+<section class="py-24 px-4">
+<div class="max-w-6xl mx-auto rounded-[4rem] bg-gradient-to-br from-brand-purple to-brand-blue p-16 md:p-24 text-center text-white relative overflow-hidden shadow-2xl">
+<div class="absolute top-0 left-0 w-full h-full opacity-10">
+<img alt="Pattern" class="w-full h-full object-cover grayscale brightness-0 invert" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIWK9uz3hAmmyiybMZDilEhQN49Ngx3gkg2SHfP1G2UDi_lv4PDCef5p-zo35KEyBVAId6lVdTvWKEdXnZWH5eh-N__jiX5I41UD2R3OSYW-iU6rcoxFQYChhdc45zSU_c8klI0RgqZjkKZg2tet6GdJ1nm_7nZGI6s8di-qDCnbvATUUNRsHaz9QAtgr2biN-BkLrKdknUsRBWN5kXGHf4ll3Wx8A79M-1vW6x1h306ExvxVk7anp8HxomqyDMnbvRGO-WfdNgDRK"/>
+</div>
+<div class="relative z-10 max-w-2xl mx-auto">
+<h2 class="text-4xl md:text-6xl font-black mb-8 leading-tight">L'aventure commence ici.</h2>
+<p class="text-xl opacity-80 mb-12">Ne laissez pas votre projet rester une simple idée. Trouvez la personne qui le transformera en réalité.</p>
+<button class="bg-white text-brand-purple px-12 py-5 rounded-3xl font-black text-xl hover:shadow-2xl hover:scale-105 transition-all">Créer mon profil gratuit</button>
+</div>
+</div>
+</section>
+<!-- END: FinalCTA -->
+</main>
+<!-- BEGIN: Footer -->
+<footer class="bg-white border-t border-gray-100 pt-20 pb-10">
+<div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
+<div class="col-span-1 md:col-span-2">
+<div class="flex items-center gap-2 mb-6">
+<div class="w-8 h-8 bg-brand-purple rounded-lg flex items-center justify-center">
+<span class="text-white font-black">M</span>
+</div>
+<span class="font-bold text-xl tracking-tight">MoJiraX</span>
+</div>
+<p class="text-gray-400 max-w-sm mb-8 leading-relaxed">
+        La plateforme de référence pour les entrepreneurs de l'Afrique francophone et sa diaspora. Construisons ensemble les licornes de demain.
+      </p>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-brand-purple hover:text-white transition-all" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-brand-purple hover:text-white transition-all" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+<a class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-brand-purple hover:text-white transition-all" href="#"><span class="material-symbols-outlined">groups</span></a>
+</div>
+</div>
+<div>
+<h5 class="font-bold mb-6 text-brand-dark">Plateforme</h5>
+<ul class="space-y-4 text-gray-500 text-sm">
+<li><a class="hover:text-brand-purple" href="#">Explorer les profils</a></li>
+<li><a class="hover:text-brand-purple" href="#">Histoires de succès</a></li>
+<li><a class="hover:text-brand-purple" href="#">Processus de match</a></li>
+<li><a class="hover:text-brand-purple" href="#">Blog de l'entrepreneur</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold mb-6 text-brand-dark">Légal</h5>
+<ul class="space-y-4 text-gray-500 text-sm">
+<li><a class="hover:text-brand-purple" href="#">Confidentialité</a></li>
+<li><a class="hover:text-brand-purple" href="#">Conditions d'utilisation</a></li>
+<li><a class="hover:text-brand-purple" href="#">Code de conduite</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-4 pt-8 border-t border-gray-50 text-center">
+<p class="text-xs text-gray-300">© 2024 MoJiraX - Made with energy for African Founders.</p>
+</div>
+</footer>
+<!-- END: Footer -->
+</body></html>

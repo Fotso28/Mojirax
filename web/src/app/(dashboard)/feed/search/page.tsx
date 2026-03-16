@@ -5,16 +5,47 @@ import { Search, ArrowLeft, X, Clock, Target, Users, Trash2 } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
+interface SearchProject {
+    id: string;
+    name: string;
+    slug: string;
+    pitch: string;
+    sector: string;
+    city?: string;
+    country?: string;
+    logoUrl?: string;
+    similarity: number;
+}
+
+interface SearchCandidate {
+    id: string;
+    title?: string;
+    bio?: string;
+    location?: string;
+    skills?: string[];
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    image?: string;
+    similarity: number;
+}
+
 interface SearchResult {
-    projects: any[];
-    candidates: any[];
+    projects: SearchProject[];
+    candidates: SearchCandidate[];
+}
+
+interface SearchHistoryEntry {
+    id: string;
+    query: string;
+    createdAt: string;
 }
 
 export default function SearchPage() {
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult | null>(null);
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<SearchHistoryEntry[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -140,7 +171,7 @@ export default function SearchPage() {
                                     Projets ({results.projects.length})
                                 </h2>
                                 <div className="grid gap-3">
-                                    {results.projects.map((p: any) => (
+                                    {results.projects.map((p) => (
                                         <div
                                             key={p.id}
                                             onClick={() => router.push(`/projects/${p.slug || p.id}`)}
@@ -185,7 +216,7 @@ export default function SearchPage() {
                                     Talents ({results.candidates.length})
                                 </h2>
                                 <div className="grid gap-3">
-                                    {results.candidates.map((c: any) => {
+                                    {results.candidates.map((c) => {
                                         const displayName = c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Candidat';
                                         return (
                                             <div

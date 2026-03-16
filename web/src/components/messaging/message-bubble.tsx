@@ -12,7 +12,7 @@ interface MessageBubbleProps {
     fileName: string | null;
     fileSize: number | null;
     fileMimeType: string | null;
-    status: 'SENT' | 'DELIVERED' | 'READ';
+    status: 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
     createdAt: string;
     senderId: string;
     reactions: { id: string; emoji: string; userId: string }[];

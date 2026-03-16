@@ -26,6 +26,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { FiltersModule } from './filters/filters.module';
 import { RedisModule } from './redis/redis.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { LandingModule } from './landing/landing.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { MessagingModule } from './messaging/messaging.module';
     AdsModule,
     FiltersModule,
     MessagingModule,
+    LandingModule,
   ],
   controllers: [AppController],
   providers: [

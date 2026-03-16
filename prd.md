@@ -1,20 +1,20 @@
 ---
-title: CoMatch PRD
+title: MojiraX PRD
 status: IN_PROGRESS
 author: Oswald (Project Owner)
 date: 2026-01-27
-last_audit: 2026-03-10
+last_audit: 2026-03-11
 classification:
   domain: General
   projectType: web_app
-  complexity: Medium
+  complexity: Medium-High
 ---
 
-# Product Requirements Document (PRD) - CoMatch
+# Product Requirements Document (PRD) - MojiraX
 
 ## 1. Introduction
-**Project Name:** CoMatch
-**Version:** 1.4
+**Project Name:** MojiraX (anciennement CoMatch)
+**Version:** 1.5
 **Vision:** A responsive web platform and PWA to facilitate connections between Project Founders and Candidate Co-founders in Cameroon, using a Freemium model secured by AI moderation and local infrastructure.
 
 ## 2. Goals & Objectives
@@ -65,13 +65,14 @@ classification:
 ## 4. Functional Requirements
 
 ### 4.1 Authentication & User Management
-- **Auth:** Email/Password, Google, LinkedIn (via NextAuth).
-- **Roles:** Explicit selection (Founder or Candidate).
-- **Security:** JWT in HttpOnly Cookies.
+- **Auth:** Email/Password, Google (via Firebase Auth). LinkedIn non implémenté.
+- **Roles:** Explicit selection (Founder, Candidate, Admin).
+- **Security:** Firebase JWT Bearer Token, validé par `FirebaseAuthGuard`.
 - **Profile Management:**
-    - Candidates: Bio, Tech Stack, Experience.
-    - Founders: Project Pitch, MVP Status, Needs.
-    - Media: Photo upload to MinIO.
+    - Candidates: Bio, Tech Stack, Experience, Skills, Pitch, Availability, Location preferences.
+    - Founders: Project Pitch, MVP Status, Needs, founderProfile (JSON).
+    - Admin: Full access via `AdminGuard` (role check en DB).
+    - Media: Photo upload to MinIO (Sharp resize 512x640).
 
 ### 4.2 AI Moderation System
 - **Workflow:** New/Edited profiles -> `PENDING_AI` status.
@@ -96,9 +97,28 @@ classification:
     5. User can now see unmasked details.
 
 ### 4.5 Administration
-- **Dashboard:** KPIs (Signups, Revenue, Conversion).
-- **Configuration:** Toggle hidden fields, Edit AI Prompt.
-- **Finance:** Transaction logs, manual Premium override.
+- **Dashboard:** KPIs (Users, Projects, Applications, Revenue, Engagement, Modération).
+- **User Management:** Liste paginée, détail utilisateur, changement de rôle.
+- **Moderation Queue:** File de modération (profils/projets PENDING_AI), override admin.
+- **AI Configuration:** Provider par action, prompt versioning avec rollback, logs de coûts IA.
+- **Push Notifications Config:** Activation/désactivation par type de notification.
+- **Finance:** Transaction logs, admin action logs.
+- **Frontend:** Dashboard multi-onglets (Overview, Engagement, Revenue, Charts, Notifications).
+
+### 4.6 Publicités (Ads System)
+- **Placements:** Feed (interleaved), Sidebar, Banner (full width), Search results.
+- **Targeting:** Par rôle, secteur, ville, skills.
+- **Frequency Capping:** Max impressions par utilisateur par jour.
+- **Tracking:** Impressions et clics avec viewport duration.
+- **Admin:** Configuration (fréquence insertion feed, randomisation, max sidebar ads).
+- **Frontend:** Composants dédiés (`ad-banner`, `ad-feed-card`, `ad-sidebar`, `ad-search-card`).
+
+### 4.7 Notifications Push (FCM)
+- **Backend:** `PushService` avec Firebase Cloud Messaging.
+- **Token Management:** Enregistrement/désenregistrement tokens FCM par device.
+- **Delivery:** Push automatique à chaque notification créée (fire & forget).
+- **Frontend:** Service worker (`firebase-messaging-sw.js`), permission request, foreground listener.
+- **Config Admin:** Activation/désactivation globale et par type via `/admin/push-config`.
 
 ## 5. Non-Functional Requirements
 - **Architecture:** Next.js (Front), NestJS (Back), PostgreSQL, Docker.
@@ -117,7 +137,7 @@ classification:
 
 ---
 
-## 8. Implementation Status Matrix (Audit: 2026-03-09)
+## 8. Implementation Status Matrix (Audit: 2026-03-11)
 
 > Légende: ✅ Implémenté | 🔶 Partiel | ❌ Non commencé | 📋 Schema/DB only (table existe mais pas de code backend)
 
@@ -126,7 +146,7 @@ classification:
 #### 1.1 Infrastructure & DevOps
 - [x] Monorepo Turborepo (web/ + api/ + packages/types) ✅
 - [x] Docker Compose (PostgreSQL + Redis + MinIO + API + Web) ✅
-- [x] Prisma ORM + migrations (16 tables migrées en DB) ✅
+- [x] Prisma ORM + migrations (26 modèles en DB) ✅
 - [x] PostgreSQL avec extension `pgvector` pour embedding ✅
 - [x] MinIO (S3) pour le stockage fichiers (avatars, logos, documents) ✅
 - [x] Redis configuré (cache, futures queues BullMQ) ✅
@@ -245,13 +265,14 @@ classification:
 ### Phase 2 — Monétisation & Administration
 
 #### 2.1 Paiements (Lygos Pay)
-- 📋 Tables DB créées : `transactions`, `payment_audit_logs`, `unlocks`
+- [x] Tables DB créées : `Transaction`, `PaymentAuditLog`, `Unlock` ✅
+- [x] Système unlock backend (createUnlockFromTransaction, revokeOnRefund, check, list) ✅ `unlock.service.ts`
 - [ ] Module NestJS `PaymentsModule` ❌
-- [ ] Service de paiement (init, webhook, vérification) ❌
+- [ ] Service de paiement (init transaction, webhook callback) ❌
 - [ ] Intégration API Lygos Pay ❌
 - [ ] Modal de paiement frontend ❌
-- [ ] Système unlock (débloquer un profil) ❌
-- [ ] Logs d'audit paiement ❌
+- [ ] Webhook Lygos → createUnlock automatique ❌
+- [ ] Logs d'audit paiement (écriture) ❌
 
 #### 2.2 Candidatures / Applications
 - [x] Module NestJS `ApplicationsModule` ✅ `applications.module.ts`
@@ -269,29 +290,68 @@ classification:
 
 #### 2.3 Notifications
 - [x] Module NestJS `NotificationsModule` ✅ `notifications.module.ts`
-- [x] `GET /notifications` — Liste paginée des notifications ✅
+- [x] `GET /notifications` — Liste paginée des notifications (cursor-based) ✅
 - [x] `GET /notifications/unread-count` — Compteur non-lues ✅
 - [x] `PATCH /notifications/:id/read` — Marquer comme lue ✅
 - [x] `PATCH /notifications/read-all` — Marquer toutes comme lues ✅
 - [x] Dropdown notifications dans le header ✅ `notification-dropdown.tsx`
 - [x] Notifications créées automatiquement (candidature, modération, publication) ✅
-- [ ] Notifications push (PWA / Web Push) ❌
+- [x] Notifications push FCM (Firebase Cloud Messaging) ✅ `push.service.ts`
+- [x] `POST /notifications/push/subscribe` — Enregistrer token FCM ✅
+- [x] `DELETE /notifications/push/unsubscribe` — Supprimer token FCM ✅
+- [x] Service worker frontend (`firebase-messaging-sw.js`) ✅
+- [x] Gestion tokens par device/browser (table `FcmToken`) ✅
+- [x] Config admin push (activation/désactivation par type) ✅ `PushConfig` singleton
 - [ ] Notifications email ❌
 
 #### 2.4 Administration
-- 📋 Table DB créée : `admin_logs`
-- [ ] Module NestJS `AdminModule` ❌
-- [ ] Dashboard admin (KPIs, users, revenue) ❌
-- [ ] File de modération (profils/projets PENDING_AI) ❌
-- [ ] Configuration IA (prompts, seuils) ❌
-- [ ] Gestion transactions manuelles ❌
+- [x] Module NestJS `AdminModule` ✅ `admin.module.ts`, `admin.controller.ts`, `admin.service.ts`
+- [x] `AdminGuard` — Vérifie `role === ADMIN` en DB ✅ `admin.guard.ts`
+- [x] `GET /admin/kpis` — Dashboard KPIs (users, projets, candidatures, transactions, engagement, visites) ✅
+- [x] `GET /admin/users` — Liste paginée + filtres ✅
+- [x] `GET /admin/users/:id` — Détail utilisateur ✅
+- [x] `PATCH /admin/users/:id/role` — Changement de rôle + log ✅
+- [x] `GET /admin/moderation` — File de modération (PENDING_AI) ✅
+- [x] `PATCH /admin/moderation/:id` — Override modération (approuver/rejeter) + log ✅
+- [x] `GET /admin/transactions` — Historique transactions avec filtres ✅
+- [x] `GET /admin/logs` — Logs d'actions admin ✅
+- [x] `GET /admin/projects` — Liste projets avec filtres ✅
+- [x] `GET/PATCH /admin/push-config` — Configuration notifications push ✅
+- [x] Frontend admin complet ✅ `/admin` (KPIs), `/admin/users`, `/admin/projects`, `/admin/moderation`, `/admin/logs`, `/admin/ai`, `/admin/ads`, `/admin/transactions`
+- [x] Charts et visualisations (Recharts) ✅ Pie charts, bar charts
 
-#### 2.5 Recherche Avancée
+#### 2.5 Configuration IA (AiConfigModule)
+- [x] Module NestJS `AiConfigModule` ✅ `ai-config.module.ts`
+- [x] Singleton `AiConfig` — provider par action, modèles, seuils de modération ✅
+- [x] CRUD prompts IA avec versioning et rollback ✅ `AiPrompt` table
+- [x] Logging appels IA (provider, modèle, durée, tokens, coût estimé) ✅ `AiCallLog` table
+- [x] Frontend monitoring IA ✅ `/admin/ai`
+
+#### 2.6 Système Publicitaire (AdsModule)
+- [x] Module NestJS `AdsModule` ✅ `ads.module.ts`, `ads.controller.ts`, `ads-admin.controller.ts`, `ads.service.ts`
+- [x] Modèles DB : `Ad`, `AdEvent`, `AdConfig` ✅
+- [x] `GET /ads/feed|sidebar|banner|search` — Récupérer ads par placement ✅
+- [x] `POST /ads/event` — Tracker impression/clic ✅
+- [x] Scoring et targeting (rôle, secteurs, villes, skills) ✅
+- [x] Frequency capping (max impressions/user/jour) ✅
+- [x] Frontend composants : `ad-banner`, `ad-feed-card`, `ad-sidebar`, `ad-search-card` ✅
+- [x] Admin ads : `/admin/ads`, `/admin/ads/[id]/stats` ✅
+
+#### 2.7 Recherche Avancée
 - [x] Recherche sémantique via pgvector ✅ `search.service.ts`
-- [x] Logging des recherches ✅ `search_logs` table
+- [x] Recherche universelle (projets + personnes + skills en une requête) ✅ `GET /search/universal`
+- [x] Recherche avec filtres (secteur, ville) ✅ `GET /search`
+- [x] Logging des recherches ✅ `SearchLog` table
 - [x] Historique des recherches utilisateur ✅ `GET /search/history`
 - [x] Suppression de l'historique ✅ `DELETE /search/history`
 - [x] Page de résultats de recherche ✅ `feed/search/page.tsx`
+- [x] Composant recherche dans le header ✅ `universal-search.tsx`
+
+#### 2.8 Filtres & Skills (FiltersModule)
+- [x] Module NestJS `FiltersModule` ✅ `filters.module.ts`
+- [x] `GET /filters/popular-skills` — Top N skills par usage ✅
+- [x] Cache embeddings sémantiques par skill ✅ `FilterEmbedding` table
+- [x] Rafraîchissement automatique des embeddings (scheduled 24h) ✅
 
 ---
 
@@ -306,14 +366,18 @@ classification:
 
 #### 3.2 Sécurité
 - [ ] Audit npm complet ❌
-- [ ] Rate limiting API (@nestjs/throttler) ❌
-- [x] Validation input (class-validator + DTOs typés) 🔶 (la plupart des endpoints, quelques `any` restants)
-- [ ] CORS stricte en production ❌
-- [ ] Helmet.js (headers de sécurité) ❌
+- [x] Rate limiting API (`@nestjs/throttler`) ✅ Global 20 req/60s, overrides par endpoint (auth/sync: 30/60s, feed: 10/60s)
+- [x] Validation input (class-validator + DTOs typés) ✅ `forbidNonWhitelisted: true`, tous les `@Body()` typés
+- [x] CORS stricte en production ✅ Configurée depuis `FRONTEND_URL`
+- [x] Helmet.js (headers de sécurité) ✅ Activé en production uniquement
 - [ ] CSRF protection ❌
 - [x] FirebaseAuthGuard sur tous les endpoints mutants ✅
+- [x] FirebaseAuthOptionalGuard pour endpoints publics avec privacy ✅
+- [x] AdminGuard pour endpoints admin (vérifie role ADMIN en DB) ✅
 - [x] Ownership vérifié via `req.user.uid` ✅
 - [x] Swagger désactivé en production ✅
+- [x] PrivacyInterceptor (masque email, phone, linkedinUrl, etc.) ✅
+- [x] Select explicites sur requêtes publiques (pas de leak de données) ✅
 
 #### 3.3 Performance & SEO
 - [x] URLs SEO-friendly (slugs projet) ✅
@@ -326,48 +390,89 @@ classification:
 #### 3.4 Monitoring & Observabilité
 - [x] Logger NestJS (pas de console.log) ✅
 - [x] Health check basique (`/health`) ✅
+- [x] Tracking comportemental utilisateur (interactions, visites, recherches) ✅ `UserProjectInteraction`, `UserVisit`, `SearchLog`
+- [x] Logs appels IA (provider, modèle, coût, durée) ✅ `AiCallLog`
+- [x] Logs admin (actions, cibles, détails) ✅ `AdminLog`
+- [x] Logs modération (score IA, raison, payload) ✅ `ModerationLog`
+- [x] Tracking publicitaire (impressions, clics, viewport) ✅ `AdEvent`
 - [ ] Health check avancé (DB, MinIO, Firebase) ❌
 - [ ] Analytics (Google Analytics / Mixpanel) ❌
 - [ ] Error tracking (Sentry) ❌
 
 ---
 
-### Résumé Statistique (Audit 2026-03-10)
+### Résumé Statistique (Audit 2026-03-11)
 
 | Métrique | Valeur |
 |---|---|
-| **Phase 1 complétude** | ~97% |
-| **Phase 2 complétude** | ~55% |
-| **Phase 3 complétude** | ~20% |
-| **Complétude globale** | **~62%** |
+| **Phase 1 complétude** | ~98% |
+| **Phase 2 complétude** | ~90% |
+| **Phase 3 complétude** | ~40% |
+| **Complétude globale** | **~80%** |
+| **Modèles Prisma** | 26 |
+| **Endpoints API** | ~70 (25 publics, 30 protégés, 15 admin) |
+| **Guards** | 3 (Firebase, FirebaseOptional, Admin) |
+| **Interceptors** | 1 (Privacy) |
 
-### Modules NestJS actifs (13/16)
+### Modules NestJS actifs (20/21)
 
-| Module | Statut |
-|---|---|
-| AuthModule | ✅ |
-| FirebaseModule | ✅ |
-| UsersModule | ✅ |
-| ProjectsModule | ✅ |
-| ApplicationsModule | ✅ |
-| SearchModule | ✅ |
-| InteractionsModule | ✅ |
-| NotificationsModule | ✅ |
-| DocumentsModule | ✅ |
-| MatchingModule | ✅ |
-| UnlockModule | ✅ |
-| HealthModule | ✅ |
-| PrismaModule | ✅ |
-| PaymentsModule | ❌ |
-| AdminModule | ❌ |
-| MessagingModule | ❌ |
+| Module | Statut | Description |
+|---|---|---|
+| AuthModule | ✅ | Firebase JWT, sync, visits |
+| FirebaseModule | ✅ | Firebase Admin SDK (global) |
+| UsersModule | ✅ | Profils, candidats, onboarding |
+| ProjectsModule | ✅ | CRUD projets, feed, trending |
+| ApplicationsModule | ✅ | Candidatures, acceptation/rejet |
+| SearchModule | ✅ | Recherche sémantique + universelle |
+| InteractionsModule | ✅ | Tracking VIEW, CLICK, SAVE, etc. |
+| NotificationsModule | ✅ | In-app + FCM push |
+| DocumentsModule | ✅ | Upload/analyse documents |
+| MatchingModule | ✅ | Scores compatibilité IA |
+| ModerationModule | ✅ | Modération IA projets/candidats |
+| UnlockModule | ✅ | Privacy wall unlock |
+| AdsModule | ✅ | Publicités ciblées + tracking |
+| AiModule | ✅ | Service IA multi-provider (global) |
+| AiConfigModule | ✅ | Config IA, prompts, logs coûts |
+| FiltersModule | ✅ | Skills populaires, embeddings |
+| UploadModule | ✅ | Upload S3/MinIO + resize |
+| HealthModule | ✅ | Health check |
+| PrismaModule | ✅ | ORM wrapper (global) |
+| AdminModule | ✅ | Dashboard, modération, KPIs |
+| PaymentsModule | ❌ | Intégration Lygos Pay |
 
 ## 9. Priorités Immédiates
 
 1. **PaymentsModule** — Intégration Lygos Pay pour le modèle freemium (Pay-to-Contact)
-2. **AdminModule** — Dashboard admin avec file de modération et KPIs
+2. ~~**AdminModule**~~ ✅ — Dashboard admin complet (KPIs, users, modération, transactions, logs, push config, AI monitoring)
 3. ~~**Privacy Wall backend**~~ ✅ — Interceptor pour masquer les champs sensibles selon le statut premium
 4. ~~**Matching IA**~~ ✅ — Calcul automatique des MatchScores (candidat ↔ projet)
-5. **Tests** — Couverture unitaire et e2e minimale avant lancement
-6. **Sécurité** — Rate limiting, Helmet, CORS stricte en production
-7. **Messagerie** — Système de messages entre fondateurs et candidats acceptés
+5. ~~**Sécurité**~~ ✅ — Rate limiting, Helmet, CORS stricte implémentés
+6. ~~**Notifications push**~~ ✅ — FCM push + service worker + config admin
+7. **Tests** — Couverture unitaire et e2e minimale avant lancement
+8. **Messagerie** — Système de messages entre fondateurs et candidats acceptés
+9. **PWA** — manifest.json, service worker offline, installabilité
+10. **SEO** — SSR pages publiques, sitemap.xml, meta tags dynamiques
+11. **Notifications email** — Emails transactionnels (candidature, modération, etc.)
+
+## 10. Architecture Technique (Résumé)
+
+### Backend (NestJS 11)
+- **20 modules** NestJS actifs, ~70 endpoints
+- **3 guards** : FirebaseAuthGuard, FirebaseAuthOptionalGuard, AdminGuard
+- **1 interceptor** : PrivacyInterceptor (masquage champs sensibles)
+- **Rate limiting** : ThrottlerModule global (20/60s) + overrides par endpoint
+- **IA Multi-Provider** : DeepSeek (primaire) → Claude → GPT, Jina embeddings
+- **Embeddings** : pgvector 1024 dimensions (bio, skills, description, filtres)
+- **Modération** : Score 0-100, légalité automatique, fire-and-forget async
+
+### Frontend (Next.js 16)
+- **~20 pages** (dashboard, admin, onboarding, feed, profils, projet, recherche)
+- **4 contexts** React : Auth, Onboarding, Sidebar, Toast
+- **Composants UI** : Tailwind CSS, Framer Motion, Lucide React, Recharts
+- **Auth** : Firebase SDK + intercepteur Axios (auto-refresh tokens)
+- **Push** : FCM service worker + foreground listener
+
+### Data (PostgreSQL + pgvector)
+- **26 modèles** Prisma
+- **Embeddings vectoriels** : CandidateProfile (bio, skills), Project (description), FilterEmbedding
+- **Tracking** : Interactions (6 types), Visites, Recherches, Events publicitaires, Logs IA

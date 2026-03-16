@@ -86,9 +86,9 @@ export function FounderSidebar({ founder }: FounderSidebarProps) {
 
     return (
         <div className="space-y-0">
-            <div className="bg-white rounded-t-2xl md:rounded-2xl md:border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {/* Photo de profil (grande) */}
-                <div className="relative w-full aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5] bg-gray-100 max-h-[500px] md:max-h-[350px] lg:max-h-none rounded-t-2xl md:rounded-t-2xl overflow-hidden">
+                <div className="relative w-full aspect-[4/5] md:aspect-[4/3] lg:aspect-[4/5] bg-gray-100 max-h-[500px] md:max-h-[350px] lg:max-h-none rounded-t-2xl overflow-hidden">
                     {founder.image ? (
                         <img
                             src={founder.image}

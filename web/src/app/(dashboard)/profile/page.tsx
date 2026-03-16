@@ -114,7 +114,7 @@ export default function ProfilePage() {
                     {isCandidate ? (
                         <CandidateProfileForm user={displayUser} onSaved={handleProfileSaved} />
                     ) : (
-                        <ProfileForm user={displayUser} />
+                        <ProfileForm user={displayUser} onSaved={handleProfileSaved} />
                     )}
                 </div>
 

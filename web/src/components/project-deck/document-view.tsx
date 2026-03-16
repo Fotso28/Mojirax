@@ -29,7 +29,7 @@ const BLOCKS: BlockConfig[] = [
     { key: 'cofounder', label: 'Cofondateur recherché', icon: UserPlus, iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
 ];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 /**
  * Resolve document URL: if relative (starts with /), prefix with API base URL.

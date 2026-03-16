@@ -16,7 +16,7 @@ interface Message {
   fileName: string | null;
   fileSize: number | null;
   fileMimeType: string | null;
-  status: 'SENT' | 'DELIVERED' | 'READ';
+  status: 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
   createdAt: string;
   senderId: string;
   reactions: { id: string; emoji: string; userId: string }[];
@@ -36,6 +36,9 @@ interface ChatViewProps {
 }
 
 const MESSAGES_LIMIT = 20;
+const TYPING_TIMEOUT = 4000; // 4s — slightly longer than server TTL (3s)
+const SEND_TIMEOUT_MS = 8000; // timeout for server ack
+const MAX_SEND_RETRIES = 2; // retry attempts on ack failure
 
 export function ChatView({ conversationId, currentUserId, otherUser, isOnline, onBack }: ChatViewProps) {
   const { socket } = useSocket();
@@ -48,30 +51,40 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(0);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const markedReadRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherName = `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || 'Utilisateur';
 
-  // Load initial messages
-  const loadMessages = useCallback(async (convId: string, cursorParam?: string) => {
+  // Load messages with AbortController
+  const loadMessages = useCallback(async (convId: string, cursorParam?: string, signal?: AbortSignal) => {
     try {
       const params: Record<string, string | number> = { limit: MESSAGES_LIMIT };
       if (cursorParam) params.cursor = cursorParam;
 
-      const { data } = await AXIOS_INSTANCE.get(`/messages/${convId}`, { params });
+      const { data } = await AXIOS_INSTANCE.get(`/messages/${convId}`, { params, signal });
       return data;
-    } catch {
+    } catch (err: any) {
+      if (err?.name === 'CanceledError' || err?.name === 'AbortError') return null;
       return null;
     }
   }, []);
 
-  // Initial load
+  // Initial load with abort on conversation switch
   useEffect(() => {
+    // Cancel previous request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setMessages([]);
     setCursor(null);
@@ -79,7 +92,8 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     markedReadRef.current = false;
     prevLengthRef.current = 0;
 
-    loadMessages(conversationId).then((data) => {
+    loadMessages(conversationId, undefined, controller.signal).then((data) => {
+      if (controller.signal.aborted) return;
       if (data) {
         const msgs: Message[] = (data.items || []).slice().reverse();
         setMessages(msgs);
@@ -89,6 +103,8 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       }
       setLoading(false);
     });
+
+    return () => controller.abort();
   }, [conversationId, loadMessages]);
 
   // Scroll to bottom only for new messages (not load-more)
@@ -101,12 +117,24 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     }
   }, [messages, loadingMore]);
 
-  // Mark as read — only once per conversation open
-  useEffect(() => {
-    if (!socket || !conversationId || markedReadRef.current) return;
-    socket.emit('message:read', { conversationId });
-    markedReadRef.current = true;
+  // Debounced markRead — avoids spamming the server when multiple messages arrive
+  const emitMarkRead = useCallback(() => {
+    if (!socket || !conversationId) return;
+    if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
+    markReadTimerRef.current = setTimeout(() => {
+      socket.emit('message:read', { conversationId });
+      markReadTimerRef.current = null;
+    }, 300);
   }, [socket, conversationId]);
+
+  // Mark as read — only AFTER messages are loaded successfully (not before)
+  useEffect(() => {
+    if (!socket || !conversationId || markedReadRef.current || loading) return;
+    if (messages.length > 0) {
+      emitMarkRead();
+      markedReadRef.current = true;
+    }
+  }, [socket, conversationId, loading, messages.length, emitMarkRead]);
 
   // Socket listeners
   useEffect(() => {
@@ -116,15 +144,28 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       // Ignore messages from other conversations
       if (msg.conversationId && msg.conversationId !== conversationId) return;
 
-      if (msg.senderId !== currentUserId) {
-        // Deliver then read
-        socket.emit('message:delivered', { messageId: msg.id });
-        socket.emit('message:read', { conversationId });
-      }
       setMessages((prev) => {
+        // Dedup: if a message with this real ID already exists (ack arrived before broadcast), skip
+        if (msg.id && !msg.id.startsWith('optimistic-') && prev.some((m) => m.id === msg.id)) {
+          return prev;
+        }
+
+        // Replace optimistic message if it matches (by senderId + content)
+        const optimisticIdx = prev.findIndex(
+          (m) => m.status === 'SENDING' && m.senderId === msg.senderId && m.content === msg.content,
+        );
+        if (optimisticIdx !== -1) {
+          const updated = [...prev];
+          updated[optimisticIdx] = msg;
+          return updated;
+        }
         prevLengthRef.current = prev.length;
         return [...prev, msg];
       });
+
+      if (msg.senderId !== currentUserId) {
+        emitMarkRead();
+      }
     };
 
     const handleStatus = ({ messageId, status }: { messageId: string; status: Message['status'] }) => {
@@ -136,6 +177,17 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     const handleTyping = ({ userId, isTyping: typing }: { userId: string; isTyping: boolean }) => {
       if (userId !== currentUserId) {
         setIsTyping(typing);
+
+        // Auto-clear typing indicator after timeout (safety net)
+        if (typing) {
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), TYPING_TIMEOUT);
+        } else {
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = null;
+          }
+        }
       }
     };
 
@@ -155,8 +207,10 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       socket.off('message:status', handleStatus);
       socket.off('typing:update', handleTyping);
       socket.off('reaction:update', handleReaction);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
     };
-  }, [socket, currentUserId, conversationId]);
+  }, [socket, currentUserId, conversationId, emitMarkRead]);
 
   // Load more (older) messages
   const handleLoadMore = async () => {
@@ -172,12 +226,84 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     setLoadingMore(false);
   };
 
-  // Send text message
+  // Send text message with optimistic UI + server ack + retry
   const handleSend = () => {
     if (!socket || !input.trim()) return;
-    socket.emit('message:send', { conversationId, content: input.trim() });
+    const content = input.trim();
+
+    // Optimistic append
+    const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimisticMsg: Message = {
+      id: optimisticId,
+      content,
+      fileUrl: null,
+      fileName: null,
+      fileSize: null,
+      fileMimeType: null,
+      status: 'SENDING',
+      createdAt: new Date().toISOString(),
+      senderId: currentUserId,
+      reactions: [],
+    };
+    setMessages((prev) => {
+      prevLengthRef.current = prev.length;
+      return [...prev, optimisticMsg];
+    });
+
     setInput('');
     stopTyping();
+
+    // Emit with ack + retry logic (clientMessageId for server-side idempotency)
+    const clientMessageId = `${currentUserId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const payload = { conversationId, content, clientMessageId };
+    let attempt = 0;
+
+    const emitWithRetry = () => {
+      attempt++;
+      socket.timeout(SEND_TIMEOUT_MS).emit(
+        'message:send',
+        payload,
+        (err: Error | null, response: { status: string; message?: Message; error?: string } | undefined) => {
+          if (err) {
+            // Timeout — no ack from server
+            if (attempt <= MAX_SEND_RETRIES) {
+              emitWithRetry();
+              return;
+            }
+            // All retries exhausted — mark FAILED
+            setMessages((prev) =>
+              prev.map((m) => (m.id === optimisticId && m.status === 'SENDING' ? { ...m, status: 'FAILED' as const } : m)),
+            );
+            return;
+          }
+
+          if (response?.status === 'error') {
+            // Server explicitly rejected
+            setMessages((prev) =>
+              prev.map((m) => (m.id === optimisticId && m.status === 'SENDING' ? { ...m, status: 'FAILED' as const } : m)),
+            );
+            return;
+          }
+
+          // Server ack received — replace optimistic with real message
+          // (the message:new broadcast might arrive before or after this ack,
+          //  the handleNewMessage listener handles dedup via senderId+content match)
+          if (response?.message) {
+            setMessages((prev) => {
+              const idx = prev.findIndex((m) => m.id === optimisticId);
+              if (idx !== -1) {
+                const updated = [...prev];
+                updated[idx] = response.message!;
+                return updated;
+              }
+              return prev;
+            });
+          }
+        },
+      );
+    };
+
+    emitWithRetry();
   };
 
   // Handle Enter key
@@ -191,7 +317,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
   // Typing indicators
   const stopTyping = useCallback(() => {
     if (!socket) return;
-    socket.emit('typing:stop', { conversationId });
+    socket.volatile.emit('typing:stop', { conversationId });
     if (typingTimerRef.current) {
       clearTimeout(typingTimerRef.current);
       typingTimerRef.current = null;
@@ -202,7 +328,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     setInput(e.target.value);
     if (!socket) return;
 
-    socket.emit('typing:start', { conversationId });
+    socket.volatile.emit('typing:start', { conversationId });
 
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     typingTimerRef.current = setTimeout(() => {
@@ -210,12 +336,13 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     }, 3000);
   };
 
-  // File upload
+  // File upload with error feedback
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !socket) return;
 
     setUploading(true);
+    setUploadError(null);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -223,16 +350,31 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      socket.emit('message:send', {
+      const fileClientMessageId = `${currentUserId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const filePayload = {
         conversationId,
+        clientMessageId: fileClientMessageId,
         content: null,
         fileUrl: data.fileUrl,
         fileName: data.fileName,
         fileSize: data.fileSize,
         fileMimeType: data.fileMimeType,
-      });
-    } catch {
-      // Upload failed silently
+      };
+
+      socket.timeout(SEND_TIMEOUT_MS).emit(
+        'message:send',
+        filePayload,
+        (ackErr: Error | null, response: { status: string; error?: string } | undefined) => {
+          if (ackErr || response?.status === 'error') {
+            setUploadError(response?.error || 'Le serveur n\'a pas confirmé l\'envoi du fichier');
+            setTimeout(() => setUploadError(null), 5000);
+          }
+        },
+      );
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Échec de l\'envoi du fichier';
+      setUploadError(msg);
+      setTimeout(() => setUploadError(null), 5000);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -266,12 +408,19 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
         </button>
         <div className="relative flex-shrink-0">
           {otherUser.image ? (
-            <img src={otherUser.image} alt={otherName} className="h-10 w-10 rounded-full object-cover" />
-          ) : (
-            <div className="h-10 w-10 rounded-full bg-kezak-light flex items-center justify-center text-kezak-primary font-semibold">
-              {otherName.charAt(0).toUpperCase()}
-            </div>
-          )}
+            <img
+              src={otherUser.image}
+              alt={otherName}
+              className="h-10 w-10 rounded-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`h-10 w-10 rounded-full bg-kezak-light flex items-center justify-center text-kezak-primary font-semibold ${otherUser.image ? 'hidden' : ''}`}>
+            {otherName.charAt(0).toUpperCase()}
+          </div>
           <OnlineBadge isOnline={isOnline} />
         </div>
         <div>
@@ -318,6 +467,16 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
         {isTyping && <TypingIndicator name={otherName} />}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Upload error toast */}
+      {uploadError && (
+        <div className="mx-4 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center justify-between">
+          <span>{uploadError}</span>
+          <button onClick={() => setUploadError(null)} className="ml-2 text-red-400 hover:text-red-600">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Emoji picker overlay */}
       {showEmojiPicker && (

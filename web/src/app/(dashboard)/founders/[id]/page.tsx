@@ -8,6 +8,7 @@ import {
     Linkedin, GraduationCap, Calendar, User, ExternalLink,
     Sparkles, Share2, CheckCircle2,
 } from 'lucide-react';
+import { getSectorLabel } from '@/lib/constants/sectors';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { COUNTRIES } from '@/lib/constants/countries';
 
@@ -108,10 +109,10 @@ export default function FounderPublicProfilePage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto md:py-4 lg:py-6 space-y-6">
+        <div className="max-w-4xl mx-auto py-4 lg:py-6 space-y-6">
 
             {/* ─── HERO ─── */}
-            <div className="bg-white md:rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+            <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
                 {/* Gradient banner */}
                 <div className="relative h-36 sm:h-44 bg-gradient-to-br from-kezak-dark via-kezak-primary to-blue-400">
                     {/* Top bar */}
@@ -220,7 +221,7 @@ export default function FounderPublicProfilePage() {
 
             {/* ─── BIO ─── */}
             {profile.bio && (
-                <div className="bg-white md:rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                     <h2 className="text-lg font-bold text-gray-900 mb-3">A propos</h2>
                     <p className="text-gray-600 leading-relaxed whitespace-pre-line">{profile.bio}</p>
                 </div>
@@ -230,7 +231,7 @@ export default function FounderPublicProfilePage() {
             {((profile.skills && profile.skills.length > 0) || (profile.languages && profile.languages.length > 0)) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {profile.skills && profile.skills.length > 0 && (
-                        <div className="bg-white md:rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
+                        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                                     <Sparkles className="w-4 h-4 text-blue-500" />
@@ -247,7 +248,7 @@ export default function FounderPublicProfilePage() {
                         </div>
                     )}
                     {profile.languages && profile.languages.length > 0 && (
-                        <div className="bg-white md:rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
+                        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
                                     <Globe className="w-4 h-4 text-purple-500" />
@@ -268,7 +269,7 @@ export default function FounderPublicProfilePage() {
 
             {/* ─── PARCOURS PROFESSIONNEL ─── */}
             {profile.experience && profile.experience.length > 0 && (
-                <div className="bg-white md:rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <div className="w-8 h-8 rounded-lg bg-kezak-light flex items-center justify-center">
                             <Briefcase className="w-4 h-4 text-kezak-primary" />
@@ -301,7 +302,7 @@ export default function FounderPublicProfilePage() {
 
             {/* ─── FORMATION ─── */}
             {profile.education && profile.education.length > 0 && (
-                <div className="bg-white md:rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
                             <GraduationCap className="w-4 h-4 text-amber-600" />
@@ -343,7 +344,7 @@ export default function FounderPublicProfilePage() {
                             <Link
                                 key={project.id}
                                 href={`/projects/${project.slug || project.id}`}
-                                className="bg-white md:rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-kezak-primary/20 transition-all group"
+                                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-kezak-primary/20 transition-all group"
                             >
                                 <div className="flex items-start gap-3 mb-3">
                                     <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shrink-0 bg-gray-50">
@@ -373,7 +374,7 @@ export default function FounderPublicProfilePage() {
                                 <div className="flex flex-wrap gap-1.5">
                                     {project.sector && (
                                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100">
-                                            {project.sector}
+                                            {getSectorLabel(project.sector)}
                                         </span>
                                     )}
                                     {project.stage && (
@@ -399,13 +400,6 @@ export default function FounderPublicProfilePage() {
                 </div>
             )}
 
-            {/* Empty state for projects */}
-            {projects.length === 0 && (
-                <div className="bg-white md:rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
-                    <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">Aucun projet publie pour le moment.</p>
-                </div>
-            )}
         </div>
     );
 }

@@ -5,6 +5,7 @@ import { MoreHorizontal, MapPin, Briefcase, Calendar, Eye, Bookmark, BookmarkChe
 import { Button } from '@/components/ui';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
+import { getSectorLabel } from '@/lib/constants/sectors';
 import Link from 'next/link';
 
 interface ProjectCardProps {
@@ -181,7 +182,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                 {project.sector && (
                     <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100">
                         <Briefcase className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{project.sector}</span>
+                        <span>{getSectorLabel(project.sector)}</span>
                     </div>
                 )}
                 {project.location && (

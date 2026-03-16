@@ -20,10 +20,11 @@ interface Conversation {
 
 export default function MessagesPage() {
   const { dbUser } = useAuth();
-  const { socket } = useSocket();
+  const { socket, onReconnectRefetch } = useSocket();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false); // mobile toggle
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -31,10 +32,11 @@ export default function MessagesPage() {
   // Load conversations on mount
   const fetchConversations = useCallback(async () => {
     try {
+      setError(false);
       const { data } = await AXIOS_INSTANCE.get('/messages/conversations');
       setConversations(data?.items ?? data ?? []);
     } catch {
-      // silent
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -43,6 +45,11 @@ export default function MessagesPage() {
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  // Refetch conversations when socket reconnects without CSR recovery
+  useEffect(() => {
+    return onReconnectRefetch(fetchConversations);
+  }, [onReconnectRefetch, fetchConversations]);
 
   // Socket listeners
   useEffect(() => {
@@ -124,6 +131,13 @@ export default function MessagesPage() {
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="h-8 w-8 rounded-full border-2 border-kezak-primary border-t-transparent animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-full gap-2 p-4 text-center">
+            <p className="text-sm text-gray-500">Impossible de charger les conversations</p>
+            <button onClick={fetchConversations} className="text-sm text-kezak-primary hover:underline">
+              Réessayer
+            </button>
           </div>
         ) : (
           <ConversationList

@@ -3,6 +3,7 @@
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
 import { Select } from '@/components/ui/select';
+import { SECTORS } from '@/lib/constants/sectors';
 
 export function ProjectDetailsStep() {
     const { data, updateData, nextStep } = useOnboarding();
@@ -34,15 +35,7 @@ export function ProjectDetailsStep() {
                         label="Secteur"
                         value={data.sector || ''}
                         onChange={(value) => updateData('sector', value)}
-                        options={[
-                            { value: 'FINTECH', label: 'Fintech' },
-                            { value: 'AGRITECH', label: 'Agritech' },
-                            { value: 'HEALTH', label: 'Santé' },
-                            { value: 'EDTECH', label: 'Education' },
-                            { value: 'LOGISTICS', label: 'Logistique' },
-                            { value: 'ECOMMERCE', label: 'E-commerce' },
-                            { value: 'OTHER', label: 'Autre' }
-                        ]}
+                        options={SECTORS.map(s => ({ value: s.value, label: s.label }))}
                     />
                 </div>
 

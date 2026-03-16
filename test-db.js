@@ -1,5 +1,8 @@
 const { Client } = require('pg');
 
+
+// - Email : admin@gmail.com
+// - Mot de passe : MojiraX@Admin2026!
 const credentials = [
     { user: 'admin', password: 'password', database: 'co_founder_db' },
     { user: 'postgres', password: 'password', database: 'postgres' },

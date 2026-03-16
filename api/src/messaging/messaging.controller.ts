@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ParseUUIDPipe,
   Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -46,7 +47,7 @@ export class MessagingController {
   @Get(':conversationId')
   async getMessages(
     @Req() req: any,
-    @Param('conversationId') conversationId: string,
+    @Param('conversationId', ParseUUIDPipe) conversationId: string,
     @Query() dto: GetMessagesDto,
   ) {
     const userId = await this.messagingService.resolveUserId(req.user.uid);

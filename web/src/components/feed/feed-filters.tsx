@@ -1,20 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter, X, ChevronDown, MapPin, Briefcase, Code } from 'lucide-react';
+import { SECTORS } from '@/lib/constants/sectors';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
 interface FeedFiltersProps {
     onFilterChange: (filters: { city?: string; sector?: string; skills?: string[] }) => void;
 }
 
-const SECTORS = ['FINTECH', 'AGRITECH', 'HEALTH', 'EDTECH', 'LOGISTICS', 'ECOMMERCE', 'OTHER'];
-const SKILLS = ['React', 'Node.js', 'Python', 'Marketing', 'Design', 'Sales', 'Finance'];
+interface PopularSkill {
+    value: string;
+    label: string;
+    count: number;
+}
 
 export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [city, setCity] = useState('');
     const [sector, setSector] = useState('');
     const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [popularSkills, setPopularSkills] = useState<PopularSkill[]>([]);
+
+    // Charger les skills populaires depuis l'API
+    useEffect(() => {
+        AXIOS_INSTANCE.get('/filters/popular-skills')
+            .then(({ data }) => setPopularSkills(data))
+            .catch(() => {});
+    }, []);
 
     const handleApply = () => {
         onFilterChange({
@@ -97,7 +110,7 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                                 >
                                     <option value="">Tous les secteurs</option>
                                     {SECTORS.map(s => (
-                                        <option key={s} value={s}>{s}</option>
+                                        <option key={s.value} value={s.value}>{s.label}</option>
                                     ))}
                                 </select>
                             </div>
@@ -108,18 +121,20 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                                     <Code size={14} /> Skills recherchés
                                 </label>
                                 <div className="flex flex-wrap gap-2">
-                                    {SKILLS.map(skill => (
+                                    {popularSkills.length > 0 ? popularSkills.map(skill => (
                                         <button
-                                            key={skill}
-                                            onClick={() => toggleSkill(skill)}
-                                            className={`px-3 py-1 rounded-full text-xs transition-all ${selectedSkills.includes(skill)
+                                            key={skill.value}
+                                            onClick={() => toggleSkill(skill.value)}
+                                            className={`px-3 py-1 rounded-full text-xs transition-all ${selectedSkills.includes(skill.value)
                                                     ? 'bg-kezak-primary text-white'
                                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
-                                            {skill}
+                                            {skill.label}
                                         </button>
-                                    ))}
+                                    )) : (
+                                        <span className="text-xs text-gray-400">Chargement...</span>
+                                    )}
                                 </div>
                             </div>
                         </div>

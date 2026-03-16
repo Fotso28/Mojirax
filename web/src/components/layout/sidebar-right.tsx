@@ -131,7 +131,7 @@ export function SidebarRight() {
                         {candidates.map((c) => (
                             <Link
                                 key={c.id}
-                                href={`/users/${c.userId}/public`}
+                                href={`/founders/${c.userId}`}
                                 className="flex items-start gap-3 group rounded-lg p-1.5 -mx-1.5 hover:bg-gray-50 transition-colors"
                             >
                                 {c.image ? (

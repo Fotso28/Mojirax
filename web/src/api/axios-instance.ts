@@ -2,7 +2,7 @@ import Axios, { AxiosRequestConfig } from 'axios';
 import { auth } from '@/lib/firebase';
 
 export const AXIOS_INSTANCE = Axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 });
 
 // Request interceptor — fresh token on every request

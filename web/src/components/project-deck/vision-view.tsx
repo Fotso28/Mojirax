@@ -1,6 +1,7 @@
 import { Target, Lightbulb, AlertTriangle, Rocket, FileText, Download } from 'lucide-react';
+import { getSectorLabel } from '@/lib/constants/sectors';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 function resolveDocumentUrl(url: string): string {
     if (url.startsWith('/')) return `${API_URL}${url}`;
@@ -68,7 +69,7 @@ export function VisionView({ project }: { project: any }) {
                 {project.sector && (
                     <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
                         <div className="text-xs text-gray-500 mb-1">Secteur</div>
-                        <div className="font-semibold text-gray-900 text-sm">{project.sector}</div>
+                        <div className="font-semibold text-gray-900 text-sm">{getSectorLabel(project.sector)}</div>
                     </div>
                 )}
                 {project.stage && (

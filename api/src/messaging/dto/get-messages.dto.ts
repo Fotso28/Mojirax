@@ -1,9 +1,9 @@
-import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsUUID, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetMessagesDto {
   @IsOptional()
-  @IsString()
+  @IsUUID()
   cursor?: string;
 
   @IsOptional()

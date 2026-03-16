@@ -169,9 +169,16 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
             // 2. Save candidate profile via PATCH
             await AXIOS_INSTANCE.patch('/users/candidate-profile', {
                 title,
+                bio,
                 shortPitch,
                 longPitch,
-                mainCompetence: skills[0] || '',
+                skills,
+                languages,
+                certifications,
+                location,
+                linkedinUrl,
+                githubUrl,
+                portfolioUrl,
                 yearsExp,
                 vision,
                 locationPref,
@@ -181,7 +188,6 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
                 roleType,
                 commitmentType,
                 hasCofounded,
-                achievements: '',
             });
 
             // 3. Refresh profile data

@@ -6,6 +6,7 @@ import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Rocket, Briefcase, MapPin, Clock, ChevronRight, Inbox } from 'lucide-react';
+import { getSectorLabel } from '@/lib/constants/sectors';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     PENDING: { label: 'En attente', className: 'bg-amber-100 text-amber-700' },
@@ -158,7 +159,7 @@ export default function ApplicationsPage() {
                                             {project?.sector && (
                                                 <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500">
                                                     <Briefcase className="w-3.5 h-3.5" />
-                                                    {project.sector}
+                                                    {getSectorLabel(project.sector)}
                                                 </span>
                                             )}
                                             {project?.stage && (

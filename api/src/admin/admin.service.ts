@@ -16,6 +16,8 @@ import {
 } from './dto/admin.dto';
 import { UpdateEmailConfigDto } from './dto/update-email-config.dto';
 import { CreatePlanDto, UpdatePlanDto, ReorderPlansDto } from './dto/plan.dto';
+import { CreateFaqDto, UpdateFaqDto, ReorderFaqsDto } from './dto/faq.dto';
+import { CreateTestimonialDto, UpdateTestimonialDto, ReorderTestimonialsDto } from './dto/testimonial.dto';
 
 @Injectable()
 export class AdminService {
@@ -1212,5 +1214,207 @@ export class AdminService {
 
     this.logger.log('Plans reordered');
     return this.listPlans();
+  }
+
+  // ─── FAQ CRUD ────────────────────────────────────────
+
+  async listFaqs() {
+    return this.prisma.faq.findMany({ orderBy: { order: 'asc' } });
+  }
+
+  async createFaq(dto: CreateFaqDto, adminId: string) {
+    const faq = await this.prisma.faq.create({
+      data: {
+        question: dto.question,
+        answer: dto.answer,
+        isActive: dto.isActive ?? true,
+        order: dto.order ?? 0,
+      },
+    });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'CREATE_FAQ',
+        targetId: faq.id,
+        details: { question: faq.question },
+      },
+    });
+
+    this.logger.log(`FAQ created: ${faq.id}`);
+    return faq;
+  }
+
+  async updateFaq(id: string, dto: UpdateFaqDto, adminId: string) {
+    const existing = await this.prisma.faq.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('FAQ not found');
+
+    const faq = await this.prisma.faq.update({
+      where: { id },
+      data: {
+        ...(dto.question !== undefined && { question: dto.question }),
+        ...(dto.answer !== undefined && { answer: dto.answer }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.order !== undefined && { order: dto.order }),
+      },
+    });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'UPDATE_FAQ',
+        targetId: id,
+        details: { question: faq.question, changes: JSON.parse(JSON.stringify(dto)) },
+      },
+    });
+
+    this.logger.log(`FAQ updated: ${id}`);
+    return faq;
+  }
+
+  async deleteFaq(id: string, adminId: string) {
+    const existing = await this.prisma.faq.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('FAQ not found');
+
+    await this.prisma.faq.delete({ where: { id } });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'DELETE_FAQ',
+        targetId: id,
+        details: { question: existing.question },
+      },
+    });
+
+    this.logger.log(`FAQ deleted: ${id}`);
+    return { success: true };
+  }
+
+  async reorderFaqs(dto: ReorderFaqsDto, adminId: string) {
+    await this.prisma.$transaction(
+      dto.faqs.map((item) =>
+        this.prisma.faq.update({
+          where: { id: item.id },
+          data: { order: item.order },
+        }),
+      ),
+    );
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'REORDER_FAQS',
+        targetId: 'reorder',
+        details: { faqs: JSON.parse(JSON.stringify(dto.faqs)) },
+      },
+    });
+
+    this.logger.log('FAQs reordered');
+    return this.listFaqs();
+  }
+
+  // ─── Testimonials CRUD ───────────────────────────────
+
+  async listTestimonials() {
+    return this.prisma.testimonial.findMany({ orderBy: { order: 'asc' } });
+  }
+
+  async createTestimonial(dto: CreateTestimonialDto, adminId: string) {
+    const testimonial = await this.prisma.testimonial.create({
+      data: {
+        name: dto.name,
+        role: dto.role,
+        location: dto.location,
+        quote: dto.quote,
+        imageUrl: dto.imageUrl ?? '',
+        isActive: dto.isActive ?? true,
+        order: dto.order ?? 0,
+      },
+    });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'CREATE_TESTIMONIAL',
+        targetId: testimonial.id,
+        details: { name: testimonial.name },
+      },
+    });
+
+    this.logger.log(`Testimonial created: ${testimonial.id}`);
+    return testimonial;
+  }
+
+  async updateTestimonial(id: string, dto: UpdateTestimonialDto, adminId: string) {
+    const existing = await this.prisma.testimonial.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Testimonial not found');
+
+    const testimonial = await this.prisma.testimonial.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.role !== undefined && { role: dto.role }),
+        ...(dto.location !== undefined && { location: dto.location }),
+        ...(dto.quote !== undefined && { quote: dto.quote }),
+        ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.order !== undefined && { order: dto.order }),
+      },
+    });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'UPDATE_TESTIMONIAL',
+        targetId: id,
+        details: { name: testimonial.name, changes: JSON.parse(JSON.stringify(dto)) },
+      },
+    });
+
+    this.logger.log(`Testimonial updated: ${id}`);
+    return testimonial;
+  }
+
+  async deleteTestimonial(id: string, adminId: string) {
+    const existing = await this.prisma.testimonial.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Testimonial not found');
+
+    await this.prisma.testimonial.delete({ where: { id } });
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'DELETE_TESTIMONIAL',
+        targetId: id,
+        details: { name: existing.name },
+      },
+    });
+
+    this.logger.log(`Testimonial deleted: ${id}`);
+    return { success: true };
+  }
+
+  async reorderTestimonials(dto: ReorderTestimonialsDto, adminId: string) {
+    await this.prisma.$transaction(
+      dto.testimonials.map((item) =>
+        this.prisma.testimonial.update({
+          where: { id: item.id },
+          data: { order: item.order },
+        }),
+      ),
+    );
+
+    await this.prisma.adminLog.create({
+      data: {
+        adminId,
+        action: 'REORDER_TESTIMONIALS',
+        targetId: 'reorder',
+        details: { testimonials: JSON.parse(JSON.stringify(dto.testimonials)) },
+      },
+    });
+
+    this.logger.log('Testimonials reordered');
+    return this.listTestimonials();
   }
 }
