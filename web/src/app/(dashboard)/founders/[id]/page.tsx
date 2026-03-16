@@ -6,8 +6,10 @@ import Link from 'next/link';
 import {
     Loader2, ArrowLeft, MapPin, Briefcase, Mail, Phone, Globe,
     Linkedin, GraduationCap, Calendar, User, ExternalLink,
-    Sparkles, Share2, CheckCircle2,
+    Sparkles, Share2, CheckCircle2, MessageCircle,
 } from 'lucide-react';
+import { useStartConversation } from '@/hooks/use-start-conversation';
+import { useAuth } from '@/context/auth-context';
 import { getSectorLabel } from '@/lib/constants/sectors';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { COUNTRIES } from '@/lib/constants/countries';
@@ -43,6 +45,8 @@ export default function FounderPublicProfilePage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
     const { showToast } = useToast();
+    const { dbUser } = useAuth();
+    const { startConversation, loading: messageLoading } = useStartConversation();
     const [user, setUser] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -163,6 +167,16 @@ export default function FounderPublicProfilePage() {
                                     </span>
                                 )}
                             </div>
+                            {dbUser && dbUser.id !== user.id && (
+                                <button
+                                    onClick={() => startConversation(user.id)}
+                                    disabled={messageLoading}
+                                    className="flex items-center gap-2 px-5 h-[44px] rounded-xl text-sm font-semibold bg-kezak-primary text-white hover:bg-kezak-primary/90 transition-all duration-200 shadow-lg shadow-blue-500/20 disabled:opacity-50 mt-3"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    Envoyer un message
+                                </button>
+                            )}
                         </div>
                     </div>
 
