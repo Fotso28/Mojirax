@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Body,
   Param,
   Query,
   Req,
@@ -14,10 +15,13 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { MessagingService } from './messaging.service';
 import { UploadService } from '../upload/upload.service';
 import { GetMessagesDto } from './dto/get-messages.dto';
+import { CreateConversationDto } from './dto/create-conversation.dto';
+import { GetConversationsQueryDto } from './dto/get-conversations-query.dto';
 
 @ApiTags('messages')
 @ApiBearerAuth()
@@ -31,10 +35,17 @@ export class MessagingController {
     private readonly uploadService: UploadService,
   ) {}
 
-  @Get('conversations')
-  async getConversations(@Req() req: any, @Query() dto: GetMessagesDto) {
+  @Post('conversations')
+  @Throttle({ default: { limit: 10, ttl: 3600000 } })
+  async createConversation(@Req() req: any, @Body() dto: CreateConversationDto) {
     const userId = await this.messagingService.resolveUserId(req.user.uid);
-    return this.messagingService.getConversations(userId, dto.cursor, dto.limit);
+    return this.messagingService.findOrCreateConversation(userId, dto.targetUserId);
+  }
+
+  @Get('conversations')
+  async getConversations(@Req() req: any, @Query() dto: GetConversationsQueryDto) {
+    const userId = await this.messagingService.resolveUserId(req.user.uid);
+    return this.messagingService.getConversations(userId, dto.cursor, dto.limit, dto.active);
   }
 
   @Get('conversations/unread-count')
