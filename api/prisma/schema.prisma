@@ -860,8 +860,8 @@ model FilterEmbedding {
 
 model Conversation {
   id                 String      @id @default(uuid())
-  applicationId      String      @unique @map("application_id")
-  application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId      String?     @unique @map("application_id")
+  application        Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   founderId          String      @map("founder_id")
   founder            User        @relation("FounderConversations", fields: [founderId], references: [id], onDelete: Cascade)
   candidateId        String      @map("candidate_id")
@@ -872,6 +872,7 @@ model Conversation {
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
+  @@unique([founderId, candidateId])
   @@map("conversations")
 }
 
