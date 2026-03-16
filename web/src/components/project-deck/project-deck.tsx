@@ -9,7 +9,8 @@ import { DocumentView } from './document-view';
 import { FounderSidebar } from './founder-sidebar';
 import { ApplyModal } from '@/components/applications/apply-modal';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
-import { Loader2, ArrowLeft, Share2, Bookmark, BookmarkCheck, MapPin, Briefcase, Users, CheckCircle2, AlertCircle, Pencil, Clock, XCircle, FileEdit } from 'lucide-react';
+import { Loader2, ArrowLeft, Share2, Bookmark, BookmarkCheck, MapPin, Briefcase, Users, CheckCircle2, AlertCircle, Pencil, Clock, XCircle, FileEdit, MessageCircle } from 'lucide-react';
+import { useStartConversation } from '@/hooks/use-start-conversation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -62,6 +63,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
     const router = useRouter();
     const { user, dbUser } = useAuth();
     const { showToast } = useToast();
+    const { startConversation, loading: messageLoading } = useStartConversation();
     const viewStartRef = useRef(Date.now());
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -399,42 +401,54 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                 Modifier le projet
                             </Link>
                         ) : (
-                            hasApplied ? (
-                                <button
-                                    disabled
-                                    className="inline-flex items-center gap-2 bg-gray-100 text-gray-500 px-6 py-3 rounded-xl font-semibold cursor-not-allowed"
-                                >
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    Déjà postulé
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        if (!user) {
-                                            router.push('/login');
-                                            return;
-                                        }
-                                        // Check profile completeness before opening modal
-                                        const fp = (dbUser?.founderProfile ?? {}) as any;
-                                        const missing: string[] = [];
-                                        if (!dbUser?.firstName) missing.push('Prénom');
-                                        if (!dbUser?.lastName) missing.push('Nom');
-                                        if (!fp.title) missing.push('Titre professionnel');
-                                        if (!fp.bio) missing.push('Bio');
-                                        if (!fp.skills || fp.skills.length === 0) missing.push('Compétences');
+                            <div className="flex items-center gap-2">
+                                {dbUser && dbUser.id !== project.founderId && (
+                                    <button
+                                        onClick={() => startConversation(project.founderId)}
+                                        disabled={messageLoading}
+                                        className="flex items-center gap-2 px-5 h-[44px] rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+                                    >
+                                        <MessageCircle className="w-4 h-4" />
+                                        Message
+                                    </button>
+                                )}
+                                {hasApplied ? (
+                                    <button
+                                        disabled
+                                        className="inline-flex items-center gap-2 bg-gray-100 text-gray-500 px-6 py-3 rounded-xl font-semibold cursor-not-allowed"
+                                    >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Déjà postulé
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            if (!user) {
+                                                router.push('/login');
+                                                return;
+                                            }
+                                            // Check profile completeness before opening modal
+                                            const fp = (dbUser?.founderProfile ?? {}) as any;
+                                            const missing: string[] = [];
+                                            if (!dbUser?.firstName) missing.push('Prénom');
+                                            if (!dbUser?.lastName) missing.push('Nom');
+                                            if (!fp.title) missing.push('Titre professionnel');
+                                            if (!fp.bio) missing.push('Bio');
+                                            if (!fp.skills || fp.skills.length === 0) missing.push('Compétences');
 
-                                        if (missing.length > 0) {
-                                            setProfileWarning(missing);
-                                            return;
-                                        }
-                                        setProfileWarning(null);
-                                        setShowApplyModal(true);
-                                    }}
-                                    className="bg-kezak-dark text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-kezak-dark/20 hover:bg-kezak-dark/80 hover:-translate-y-0.5 transition-all active:scale-95"
-                                >
-                                    Postuler
-                                </button>
-                            )
+                                            if (missing.length > 0) {
+                                                setProfileWarning(missing);
+                                                return;
+                                            }
+                                            setProfileWarning(null);
+                                            setShowApplyModal(true);
+                                        }}
+                                        className="bg-kezak-dark text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-kezak-dark/20 hover:bg-kezak-dark/80 hover:-translate-y-0.5 transition-all active:scale-95"
+                                    >
+                                        Postuler
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
