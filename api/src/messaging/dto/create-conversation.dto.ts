@@ -1,6 +1,7 @@
-import { IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class CreateConversationDto {
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   targetUserId: string;
 }
