@@ -52,7 +52,7 @@ export function MessageBubble({ message, isMine, onReact, onRemoveReact, current
             {isMine && <MessageStatus status={message.status} />}
           </div>
         </div>
-        {message.reactions.length > 0 && (
+        {message.reactions?.length > 0 && (
           <EmojiReactions
             reactions={message.reactions}
             messageId={message.id}
