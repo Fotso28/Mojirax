@@ -20,6 +20,8 @@ interface Message {
   createdAt: string;
   senderId: string;
   reactions: { id: string; emoji: string; userId: string }[];
+  uploadProgress?: number;
+  _retryFile?: File;
 }
 
 interface ChatViewProps {
@@ -39,6 +41,14 @@ const MESSAGES_LIMIT = 20;
 const TYPING_TIMEOUT = 4000; // 4s — slightly longer than server TTL (3s)
 const SEND_TIMEOUT_MS = 8000; // timeout for server ack
 const MAX_SEND_RETRIES = 2; // retry attempts on ack failure
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export function ChatView({ conversationId, currentUserId, otherUser, isOnline, onBack }: ChatViewProps) {
   const { socket } = useSocket();
@@ -50,7 +60,6 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
   const [hasMore, setHasMore] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -150,9 +159,14 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           return prev;
         }
 
-        // Replace optimistic message if it matches (by senderId + content)
+        // Replace optimistic message if it matches (by senderId + content for text, or senderId + fileName for files)
         const optimisticIdx = prev.findIndex(
-          (m) => m.status === 'SENDING' && m.senderId === msg.senderId && m.content === msg.content,
+          (m) =>
+            (m.status === 'SENDING' || m.status === 'FAILED') &&
+            m.senderId === msg.senderId &&
+            (m.content
+              ? m.content === msg.content
+              : m.fileName != null && m.fileName === msg.fileName),
         );
         if (optimisticIdx !== -1) {
           const updated = [...prev];
@@ -336,25 +350,60 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
     }, 3000);
   };
 
-  // File upload with error feedback
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !socket) return;
+  // File upload with optimistic UI (WhatsApp/Telegram style)
+  const uploadFileWithOptimistic = useCallback(async (file: File, existingOptimisticId?: string) => {
+    if (!socket) return;
 
-    setUploading(true);
-    setUploadError(null);
+    // Create or reuse optimistic message
+    const optimisticId = existingOptimisticId || `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    if (!existingOptimisticId) {
+      const optimisticMsg: Message = {
+        id: optimisticId,
+        content: null,
+        fileUrl: null,
+        fileName: file.name,
+        fileSize: file.size,
+        fileMimeType: file.type,
+        status: 'SENDING',
+        createdAt: new Date().toISOString(),
+        senderId: currentUserId,
+        reactions: [],
+        uploadProgress: 0,
+        _retryFile: file,
+      };
+      setMessages((prev) => {
+        prevLengthRef.current = prev.length;
+        return [...prev, optimisticMsg];
+      });
+    } else {
+      // Retry: reset status to SENDING
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === optimisticId ? { ...m, status: 'SENDING' as const, uploadProgress: 0 } : m,
+        ),
+      );
+    }
+
     try {
       const formData = new FormData();
       formData.append('file', file);
       const { data } = await AXIOS_INSTANCE.post('/messages/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total ?? progressEvent.loaded));
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === optimisticId ? { ...m, uploadProgress: percent } : m,
+            ),
+          );
+        },
       });
 
       const fileClientMessageId = `${currentUserId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const filePayload = {
         conversationId,
         clientMessageId: fileClientMessageId,
-        content: null,
         fileUrl: data.fileUrl,
         fileName: data.fileName,
         fileSize: data.fileSize,
@@ -364,22 +413,68 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       socket.timeout(SEND_TIMEOUT_MS).emit(
         'message:send',
         filePayload,
-        (ackErr: Error | null, response: { status: string; error?: string } | undefined) => {
+        (ackErr: Error | null, response: { status: string; message?: Message; error?: string } | undefined) => {
           if (ackErr || response?.status === 'error') {
-            setUploadError(response?.error || 'Le serveur n\'a pas confirmé l\'envoi du fichier');
-            setTimeout(() => setUploadError(null), 5000);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === optimisticId ? { ...m, status: 'FAILED' as const, uploadProgress: undefined } : m,
+              ),
+            );
+            return;
+          }
+          // Replace optimistic with server message on ack
+          if (response?.message) {
+            setMessages((prev) => {
+              const idx = prev.findIndex((m) => m.id === optimisticId);
+              if (idx !== -1) {
+                const updated = [...prev];
+                updated[idx] = response.message!;
+                return updated;
+              }
+              return prev;
+            });
           }
         },
       );
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Échec de l\'envoi du fichier';
-      setUploadError(msg);
-      setTimeout(() => setUploadError(null), 5000);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === optimisticId ? { ...m, status: 'FAILED' as const, uploadProgress: undefined } : m,
+        ),
+      );
     }
+  }, [socket, currentUserId, conversationId]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !socket) return;
+
+    // Client-side validation: MIME type (toast for validation errors only)
+    if (!ALLOWED_FILE_TYPES.includes(file.type as (typeof ALLOWED_FILE_TYPES)[number])) {
+      setUploadError('Type de fichier non autorisé. Formats acceptés : PDF, DOCX, JPEG, PNG, WebP.');
+      setTimeout(() => setUploadError(null), 5000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Client-side validation: file size (max 5 MB)
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError('Le fichier est trop volumineux. Taille maximale : 5 Mo.');
+      setTimeout(() => setUploadError(null), 5000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    await uploadFileWithOptimistic(file);
   };
+
+  // Retry a failed file upload
+  const handleRetryFileUpload = useCallback((messageId: string) => {
+    const msg = messages.find((m) => m.id === messageId);
+    if (!msg?._retryFile) return;
+    uploadFileWithOptimistic(msg._retryFile, messageId);
+  }, [messages, uploadFileWithOptimistic]);
 
   // Reactions
   const handleReact = (messageId: string, emoji: string) => {
@@ -460,6 +555,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
               currentUserId={currentUserId}
               onReact={handleReact}
               onRemoveReact={handleRemoveReact}
+              onRetryFileUpload={handleRetryFileUpload}
             />
           ))
         )}
@@ -481,7 +577,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       {/* Emoji picker overlay */}
       {showEmojiPicker && (
         <div className="relative">
-          <div className="absolute bottom-0 right-4 z-20">
+          <div className="absolute bottom-0 left-0 right-0 sm:left-auto sm:right-4 sm:w-auto z-20">
             <EmojiPicker onSelect={handleEmojiSelect} />
           </div>
           <button
@@ -493,26 +589,22 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       )}
 
       {/* Input area */}
-      <div className="flex-shrink-0 border-t border-gray-100 bg-white px-4 py-3">
+      <div className="flex-shrink-0 border-t border-gray-100 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex items-end gap-2">
           {/* File attachment */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={handleFileChange}
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+            title="PDF, DOCX, JPEG, PNG, WebP · 5 Mo max"
+            className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
-            {uploading ? (
-              <div className="h-5 w-5 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
-            ) : (
-              <Paperclip className="h-5 w-5" />
-            )}
+            <Paperclip className="h-5 w-5" />
           </button>
 
           {/* Emoji toggle */}
