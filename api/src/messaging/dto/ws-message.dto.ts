@@ -15,7 +15,7 @@ export class WsSendMessageDto {
   content?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   fileUrl?: string;
 
   @IsOptional()
@@ -30,7 +30,7 @@ export class WsSendMessageDto {
   fileSize?: number;
 
   @IsOptional()
-  @IsIn(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+  @IsIn(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png', 'image/webp'])
   fileMimeType?: string;
 }
 

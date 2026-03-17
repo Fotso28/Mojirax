@@ -11,6 +11,7 @@ export class WsExceptionFilter extends BaseWsExceptionFilter {
     // WsException — expected validation/auth errors
     if (exception instanceof WsException) {
       const error = exception.getError();
+      this.logger.warn(`WS validation error: ${JSON.stringify(error)}`);
       const message = typeof error === 'string' ? error : 'Erreur de validation';
       client.emit('error', { message });
       return;
