@@ -14,6 +14,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   turbopack: {},
   images: {
     remotePatterns: [
@@ -43,6 +44,11 @@ const nextConfig: NextConfig = {
         port: '9000',
         pathname: '/**',
       },
+      // Pattern conditionnel pour MinIO/R2 en production
+      ...(process.env.NEXT_PUBLIC_UPLOAD_HOST ? [{
+        protocol: 'https' as const,
+        hostname: process.env.NEXT_PUBLIC_UPLOAD_HOST,
+      }] : []),
     ],
   },
   async headers() {
@@ -53,6 +59,18 @@ const nextConfig: NextConfig = {
           {
             key: 'Cross-Origin-Opener-Policy',
             value: 'unsafe-none',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
           },
         ],
       },

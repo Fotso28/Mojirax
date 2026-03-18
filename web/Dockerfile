@@ -1,55 +1,55 @@
-FROM node:20-alpine AS builder
-
+# --- Stage 1: Dependencies ---
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy root configuration
-COPY package*.json turbo.json ./
+# --- Stage 2: Build ---
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy packages
-COPY packages/types ./packages/types
+# Les NEXT_PUBLIC_ doivent être disponibles au build
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_FIREBASE_API_KEY
+ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ARG NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+ARG NEXT_PUBLIC_FIREBASE_APP_ID
+ARG NEXT_PUBLIC_FIREBASE_VAPID_KEY
+ARG NEXT_PUBLIC_UPLOAD_HOST
 
-# Copy web application
-COPY apps/web ./apps/web
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY
+ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
+ENV NEXT_PUBLIC_FIREBASE_VAPID_KEY=$NEXT_PUBLIC_FIREBASE_VAPID_KEY
+ENV NEXT_PUBLIC_UPLOAD_HOST=$NEXT_PUBLIC_UPLOAD_HOST
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install dependencies
-RUN npm config set registry https://registry.npmjs.org/ \
-    && npm config set strict-ssl false \
-    && npm config set fetch-retry-maxtimeout 600000 \
-    && npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000
-RUN npm install --no-audit --progress=false
-
-# Build the Web app
-WORKDIR /app/apps/web
-# Disable telemetry during build
-ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
-# Production stage
+# --- Stage 3: Production ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-# Copy standalone output
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
 USER nextjs
+EXPOSE 3000
 
-EXPOSE 5000
-
-ENV PORT 5000
-
-# server.js is located in the corresponding path inside standalone
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "server.js"]

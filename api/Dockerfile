@@ -1,38 +1,31 @@
+# --- Stage 1: Build ---
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Copy root configuration
-COPY package*.json turbo.json ./
-
-# Copy packages
-COPY packages/types ./packages/types
-
-# Copy api application
-COPY apps/api ./apps/api
-
-# Install dependencies
-RUN npm config set fetch-retry-maxtimeout 1200000 \
-    && npm config set fetch-retries 10 \
-    && npm config set fetch-retry-mintimeout 30000 \
-    && npm config set loglevel error
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
 RUN npm ci
-RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
+RUN npx prisma generate
 
-# Build the API
-WORKDIR /app/apps/api
+COPY . .
 RUN npm run build
 
-# Production stage
+# Production deps only
+RUN npm ci --omit=dev --ignore-scripts
+RUN npx prisma generate
+
+# --- Stage 2: Production ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+RUN apk add --no-cache openssl
 
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/prisma ./prisma
+
+ENV NODE_ENV=production
 EXPOSE 5001
 
-CMD ["node", "apps/api/dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
