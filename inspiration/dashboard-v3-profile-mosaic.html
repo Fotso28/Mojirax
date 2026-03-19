@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MojiraX — Dashboard Profile Mosaic</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f8f9fb;
+  color: #1a1a2e;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+ul { list-style: none; }
+
+/* ========== CSS VARIABLES ========== */
+:root {
+  --primary: #0066ff;
+  --primary-hover: #0052cc;
+  --dark: #001f4d;
+  --light: #e6f0ff;
+  --accent: #3399ff;
+  --peach: #fef3e2;
+  --mint: #e8faf5;
+  --lavender: #f0eeff;
+  --sky: #e6f0ff;
+  --warm-yellow: #fff8e1;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --header-h: 64px;
+  --sidebar-w: 260px;
+  --right-sidebar-w: 300px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* ========== HEADER ========== */
+.header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--gray-200);
+  z-index: 100;
+  display: flex; align-items: center;
+  padding: 0 24px;
+}
+.header-inner {
+  width: 100%; max-width: 1600px; margin: 0 auto;
+  display: flex; align-items: center; gap: 16px;
+}
+.logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 18px;
+}
+.logo-text { font-size: 20px; font-weight: 700; color: var(--dark); }
+
+.search-bar {
+  flex: 1; max-width: 480px; position: relative; margin: 0 auto;
+}
+.search-bar input {
+  width: 100%; height: 40px; border-radius: var(--radius-full);
+  border: 1px solid var(--gray-200); background: var(--gray-50);
+  padding: 0 40px 0 16px; font-size: 14px; color: var(--gray-700);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+.search-bar input:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,102,255,0.12);
+}
+.search-bar .search-icon {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--gray-400); font-size: 14px;
+}
+.search-bar .kbd {
+  position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: var(--gray-400); background: var(--gray-100);
+  padding: 2px 6px; border-radius: 4px; border: 1px solid var(--gray-200);
+}
+
+.header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: var(--radius-full);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gray-600); transition: background 0.2s;
+  position: relative;
+}
+.icon-btn:hover { background: var(--gray-100); }
+.icon-btn svg { width: 20px; height: 20px; }
+.badge-dot {
+  position: absolute; top: 8px; right: 8px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ef4444; border: 2px solid #fff;
+}
+.badge-count {
+  position: absolute; top: 4px; right: 2px;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  background: #ef4444; color: #fff; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; border: 2px solid #fff;
+}
+.header-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #764ba2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: box-shadow 0.2s;
+}
+.header-avatar:hover { box-shadow: 0 0 0 3px rgba(0,102,255,0.2); }
+
+.hamburger { display: none; }
+.hamburger svg { width: 24px; height: 24px; color: var(--gray-700); }
+
+/* ========== LEFT SIDEBAR ========== */
+.sidebar-left {
+  position: fixed; top: var(--header-h); left: 0; bottom: 0;
+  width: var(--sidebar-w); padding: 20px 16px;
+  overflow-y: auto; z-index: 50;
+}
+.sidebar-card {
+  background: #fff; border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  padding: 24px 16px;
+}
+.sidebar-section-title {
+  font-size: 13px; font-weight: 700; color: var(--dark);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 2px; padding: 0 8px;
+}
+.sidebar-section-sub {
+  font-size: 12px; color: var(--gray-400);
+  margin-bottom: 16px; padding: 0 8px;
+}
+.nav-list { display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 12px;
+  font-size: 14px; font-weight: 500; color: var(--gray-600);
+  transition: all 0.2s; position: relative;
+}
+.nav-item:hover { background: var(--gray-50); color: var(--gray-800); }
+.nav-item.active {
+  background: var(--light); color: var(--primary); font-weight: 600;
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 2px; background: var(--primary);
+}
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  min-width: 20px; height: 20px; border-radius: 10px;
+  background: #ef4444; color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 6px;
+}
+.nav-divider { height: 1px; background: var(--gray-100); margin: 8px 0; }
+.nav-item.danger { color: #ef4444; }
+.nav-item.danger:hover { background: #fef2f2; }
+
+/* ========== MAIN CONTENT ========== */
+.main-content {
+  margin-left: var(--sidebar-w);
+  margin-right: var(--right-sidebar-w);
+  padding: calc(var(--header-h) + 24px) 32px 100px;
+  min-height: 100vh;
+}
+.feed-header { margin-bottom: 28px; }
+.feed-header h1 {
+  font-size: 28px; font-weight: 800; color: var(--dark);
+  margin-bottom: 4px;
+}
+.feed-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.feed-subtitle { font-size: 14px; color: var(--gray-500); }
+.feed-actions { display: flex; gap: 10px; align-items: center; }
+.btn-talents {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: var(--radius-full);
+  background: var(--dark); color: #fff;
+  font-size: 13px; font-weight: 600;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-talents:hover { background: #002d6b; transform: translateY(-1px); }
+.btn-talents svg { width: 16px; height: 16px; }
+.btn-filter {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--radius-full);
+  background: #fff; color: var(--gray-700);
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--gray-200);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.btn-filter:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,102,255,0.08);
+}
+.btn-filter svg { width: 16px; height: 16px; }
+
+/* ========== MASONRY GRID ========== */
+.masonry {
+  column-count: 3;
+  column-gap: 20px;
+}
+.masonry .card {
+  break-inside: avoid;
+  margin-bottom: 20px;
+  display: inline-block;
+  width: 100%;
+}
+
+/* ========== PROJECT CARD — PROFILE BUBBLE ========== */
+.card {
+  background: #fff;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-100);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  opacity: 0;
+  transform: translateY(30px);
+}
+.card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Banner with wavy bottom */
+.card-banner {
+  height: 80px;
+  position: relative;
+}
+.card-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 30px;
+  background: #fff;
+  clip-path: ellipse(55% 100% at 50% 100%);
+}
+
+/* Founder bubble */
+.founder-bubble-wrap {
+  display: flex; justify-content: center;
+  margin-top: -54px;
+  position: relative; z-index: 2;
+}
+.founder-bubble {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 800; color: #fff;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+  flex-shrink: 0;
+}
+.card:hover .founder-bubble {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(0,102,255,0.25), 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Bounce animation on reveal */
+@keyframes bubbleBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.card.visible .founder-bubble {
+  animation: bubbleBounce 0.6s ease-out forwards;
+}
+
+/* Urgent badge */
+.urgent-badge {
+  position: absolute; top: 12px; right: 12px;
+  background: #ef4444; color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: var(--radius-full);
+  z-index: 3;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Card body */
+.card-body { padding: 8px 20px 20px; }
+
+.founder-name {
+  text-align: center; font-size: 18px; font-weight: 700;
+  color: var(--gray-800); margin-top: 8px;
+}
+.founder-role {
+  text-align: center; font-size: 13px; color: var(--gray-400);
+  font-weight: 500;
+}
+.card-divider {
+  width: 0px; height: 2px; border-radius: 1px;
+  background: var(--primary); margin: 12px auto;
+  transition: width 0.6s ease;
+}
+.card.visible .card-divider { width: 40px; }
+
+.project-name {
+  font-size: 20px; font-weight: 700; color: var(--dark);
+  margin-bottom: 6px;
+}
+.project-pitch {
+  font-size: 14px; color: var(--gray-500); line-height: 1.6;
+  margin-bottom: 14px;
+}
+.pitch-clamp-2 {
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.pitch-clamp-3 {
+  display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Meta pills */
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 12px;
+}
+.meta-pill {
+  font-size: 12px; color: var(--gray-500);
+  background: var(--gray-50);
+  padding: 4px 10px; border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* Tags */
+.tags-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 16px;
+}
+.tag {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: var(--radius-full);
+}
+.tag-blue { background: var(--light); color: var(--primary); }
+.tag-green { background: #e8faf5; color: #059669; }
+.tag-purple { background: #f0eeff; color: #7c3aed; }
+.tag-orange { background: #fef3e2; color: #d97706; }
+.tag-gray { background: var(--gray-100); color: var(--gray-600); }
+
+/* Card actions */
+.card-actions {
+  display: flex; align-items: center; gap: 10px;
+}
+.btn-primary-card {
+  flex: 1; height: 42px; border-radius: 12px;
+  background: var(--primary); color: #fff;
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-primary-card:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-primary-card svg { width: 16px; height: 16px; }
+.btn-bookmark {
+  width: 42px; height: 42px; border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gray-400);
+  transition: all 0.2s;
+}
+.btn-bookmark:hover {
+  border-color: var(--primary); color: var(--primary);
+  background: var(--light);
+}
+.btn-bookmark svg { width: 18px; height: 18px; }
+
+/* ========== RIGHT SIDEBAR ========== */
+.sidebar-right {
+  position: fixed; top: var(--header-h); right: 0; bottom: 0;
+  width: var(--right-sidebar-w); padding: 20px 16px;
+  overflow-y: auto; z-index: 50;
+}
+.right-card {
+  background: #fff; border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  padding: 20px; margin-bottom: 16px;
+}
+.right-card-title {
+  font-size: 15px; font-weight: 700; color: var(--dark);
+  margin-bottom: 14px;
+}
+
+/* Trending */
+.trend-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0;
+}
+.trend-item + .trend-item { border-top: 1px solid var(--gray-100); }
+.trend-rank {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--light); color: var(--primary);
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.trend-info { flex: 1; }
+.trend-name { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+.trend-stats { font-size: 12px; color: var(--gray-400); }
+.trend-score {
+  font-size: 13px; font-weight: 700; color: var(--primary);
+}
+
+/* Profiles to follow */
+.profile-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+}
+.profile-item + .profile-item { border-top: 1px solid var(--gray-100); }
+.profile-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.profile-info { flex: 1; min-width: 0; }
+.profile-name { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+.profile-tags {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px;
+}
+.profile-tag {
+  font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  background: var(--gray-100); color: var(--gray-500);
+}
+.btn-follow {
+  padding: 6px 14px; border-radius: var(--radius-full);
+  border: 1px solid var(--primary); color: var(--primary);
+  font-size: 12px; font-weight: 600; flex-shrink: 0;
+  transition: all 0.2s;
+}
+.btn-follow:hover {
+  background: var(--primary); color: #fff;
+}
+
+.footer-links {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 20px; padding: 0 4px;
+}
+.footer-links a {
+  font-size: 11px; color: var(--gray-400);
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--primary); }
+.footer-copy {
+  font-size: 11px; color: var(--gray-300);
+  margin-top: 8px; padding: 0 4px;
+}
+
+/* ========== MOBILE BOTTOM NAV ========== */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 64px; background: #fff;
+  border-top: 1px solid var(--gray-200);
+  z-index: 100;
+}
+.bottom-nav-inner {
+  display: flex; align-items: center; justify-content: space-around;
+  height: 100%; max-width: 500px; margin: 0 auto;
+}
+.bottom-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 10px; font-weight: 500; color: var(--gray-400);
+  transition: color 0.2s; position: relative;
+  padding: 4px 8px;
+}
+.bottom-nav-item.active { color: var(--primary); }
+.bottom-nav-item svg { width: 22px; height: 22px; }
+.bottom-nav-badge {
+  position: absolute; top: 0; right: 2px;
+  min-width: 16px; height: 16px; border-radius: 8px;
+  background: #ef4444; color: #fff; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+}
+
+/* ========== RESPONSIVE ========== */
+
+/* Tablet: <=1024px — icon sidebar, no right sidebar */
+@media (max-width: 1024px) {
+  .sidebar-left { width: 72px; padding: 16px 8px; }
+  .sidebar-section-title, .sidebar-section-sub, .nav-item span, .nav-badge { display: none; }
+  .nav-item { justify-content: center; padding: 12px; }
+  .nav-item.active::before { display: none; }
+  .sidebar-right { display: none; }
+  .main-content {
+    margin-left: 72px; margin-right: 0;
+    padding-left: 24px; padding-right: 24px;
+  }
+  .masonry { column-count: 2; }
+}
+
+/* Mobile: <=768px */
+@media (max-width: 768px) {
+  .sidebar-left { display: none; }
+  .main-content {
+    margin-left: 0; margin-right: 0;
+    padding: calc(var(--header-h) + 16px) 16px 100px;
+  }
+  .masonry { column-count: 1; }
+  .bottom-nav { display: block; }
+  .search-bar { display: none; }
+  .hamburger { display: flex; }
+  .feed-header h1 { font-size: 22px; }
+  .btn-talents span { display: none; }
+}
+
+/* Small mobile: <=375px */
+@media (max-width: 400px) {
+  .main-content { padding: calc(var(--header-h) + 12px) 12px 80px; }
+  .card-body { padding: 8px 16px 16px; }
+  .founder-bubble { width: 84px; height: 84px; font-size: 34px; }
+  .founder-bubble-wrap { margin-top: -46px; }
+  .project-name { font-size: 18px; }
+}
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="header">
+  <div class="header-inner">
+    <button class="hamburger icon-btn" onclick="document.querySelector('.sidebar-left').classList.toggle('mobile-open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="#" class="logo">
+      <div class="logo-icon">M</div>
+      <span class="logo-text">MojiraX</span>
+    </a>
+    <div class="search-bar">
+      <input type="text" placeholder="Rechercher un projet, un fondateur...">
+      <span class="kbd">Ctrl K</span>
+      <span class="search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="badge-count">3</span>
+      </button>
+      <div class="header-avatar">O</div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== LEFT SIDEBAR ==================== -->
+<aside class="sidebar-left">
+  <div class="sidebar-card">
+    <p class="sidebar-section-title">Mon Espace</p>
+    <p class="sidebar-section-sub">Gérez votre activité</p>
+    <ul class="nav-list">
+      <li>
+        <a href="#" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Accueil</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span>Mes Projets</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span>Mes Candidatures</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Messages</span>
+          <span class="nav-badge">2</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Mon Profil</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Paramètres</span>
+        </a>
+      </li>
+      <li><div class="nav-divider"></div></li>
+      <li>
+        <a href="#" class="nav-item danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Déconnexion</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+<!-- ==================== MAIN CONTENT ==================== -->
+<main class="main-content">
+  <div class="feed-header">
+    <h1>Découvrez les projets</h1>
+    <div class="feed-header-row">
+      <p class="feed-subtitle">Trouvez le projet qui correspond à vos ambitions</p>
+      <div class="feed-actions">
+        <button class="btn-talents">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Voir les Talents</span>
+        </button>
+        <button class="btn-filter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          Filtres
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MASONRY GRID -->
+  <div class="masonry" id="masonry">
+
+    <!-- CARD 1 — TALL — Peach -->
+    <div class="card" data-delay="0">
+      <div class="card-banner" style="background: var(--peach);"></div>
+      <div class="founder-bubble-wrap">
+        <div class="founder-bubble" style="background: linear-gradient(135deg, #667eea, #764ba2);">N</div>
+      </div>
+      <div class="card-body">
+        <p class="founder-name">Nadège Talla</p>
+        <p class="founder-role">Fondateur</p>
+        <div class="card-divider"></div>
+        <h3 class="project-name">DeliverFast</h3>
+        <p class="project-pitch">Livraison express en 2h pour le e-commerce africain via un réseau de moto-taxis certifiés et géolocalisés</p>
+        <div class="meta-row">
+          <span class="meta-pill">Logistique</span>
+          <span class="meta-pill">Douala, Cameroun</span>
+          <span class="meta-pill">MVP</span>
+          <span class="meta-pill">Il y a 18j</span>
+        </div>
+        <div class="tags-row">
+          <span class="tag tag-blue">Cherche: Profil Tech</span>
+          <span class="tag tag-green">Hybride</span>
+          <span class="tag tag-purple">React Native</span>
+          <span class="tag tag-gray">Node.js</span>
+          <span class="tag tag-orange">Géolocalisation</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Voir projet
+          </button>
+          <button class="btn-bookmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2 — SHORT — Mint -->
+    <div class="card" data-delay="100">
+      <div class="card-banner" style="background: var(--mint);"></div>
+      <div class="founder-bubble-wrap">
+        <div class="founder-bubble" style="background: linear-gradient(135deg, #11998e, #38ef7d);">A</div>
+      </div>
+      <div class="card-body">
+        <p class="founder-name">Amina Koné</p>
+        <p class="founder-role">Fondateur</p>
+        <div class="card-divider"></div>
+        <h3 class="project-name">FinPay Africa</h3>
+        <p class="project-pitch pitch-clamp-2">Solution de paiement mobile interopérable pour les marchés francophones</p>
+        <div class="meta-row">
+          <span class="meta-pill">FinTech</span>
+          <span class="meta-pill">Abidjan, Côte d'Ivoire</span>
+          <span class="meta-pill">Traction</span>
+          <span class="meta-pill">5j</span>
+        </div>
+        <div class="tags-row">
+          <span class="tag tag-blue">Cherche: Business</span>
+          <span class="tag tag-orange">Rémunéré</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Voir projet
+          </button>
+          <button class="btn-bookmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3 — TALL — Lavender + Urgent -->
+    <div class="card" data-delay="200">
+      <div class="card-banner" style="background: var(--lavender); position: relative;">
+        <span class="urgent-badge">Urgent</span>
+      </div>
+      <div class="founder-bubble-wrap">
+        <div class="founder-bubble" style="background: linear-gradient(135deg, #f093fb, #f5576c);">S</div>
+      </div>
+      <div class="card-body">
+        <p class="founder-name">Samuel Mbarga</p>
+        <p class="founder-role">Fondateur</p>
+        <div class="card-divider"></div>
+        <h3 class="project-name">EduConnect</h3>
+        <p class="project-pitch">Marketplace de formation professionnelle pour les jeunes diplômés africains</p>
+        <div class="meta-row">
+          <span class="meta-pill">EdTech</span>
+          <span class="meta-pill">Douala, Cameroun</span>
+          <span class="meta-pill">Prototype</span>
+          <span class="meta-pill">Il y a 2j</span>
+        </div>
+        <div class="tags-row">
+          <span class="tag tag-blue">Cherche: Produit</span>
+          <span class="tag tag-green">Hybride</span>
+          <span class="tag tag-purple">React</span>
+          <span class="tag tag-gray">UX Design</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Voir projet
+          </button>
+          <button class="btn-bookmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 4 — SHORT — Sky blue -->
+    <div class="card" data-delay="300">
+      <div class="card-banner" style="background: var(--sky);"></div>
+      <div class="founder-bubble-wrap">
+        <div class="founder-bubble" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">M</div>
+      </div>
+      <div class="card-body">
+        <p class="founder-name">Moussa Diallo</p>
+        <p class="founder-role">Fondateur</p>
+        <div class="card-divider"></div>
+        <h3 class="project-name">AgriTech Sahel</h3>
+        <p class="project-pitch pitch-clamp-2">Plateforme de digitalisation de la chaîne agricole en Afrique de l'Ouest</p>
+        <div class="meta-row">
+          <span class="meta-pill">AgriTech</span>
+          <span class="meta-pill">Dakar, Sénégal</span>
+          <span class="meta-pill">MVP</span>
+          <span class="meta-pill">12j</span>
+        </div>
+        <div class="tags-row">
+          <span class="tag tag-blue">Cherche: Profil Tech</span>
+          <span class="tag tag-orange">Equity</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Voir projet
+          </button>
+          <button class="btn-bookmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 5 — MEDIUM — Warm yellow -->
+    <div class="card" data-delay="400">
+      <div class="card-banner" style="background: var(--warm-yellow);"></div>
+      <div class="founder-bubble-wrap">
+        <div class="founder-bubble" style="background: linear-gradient(135deg, #fa709a, #fee140);">F</div>
+      </div>
+      <div class="card-body">
+        <p class="founder-name">Fatou Ndiaye</p>
+        <p class="founder-role">Fondateur</p>
+        <div class="card-divider"></div>
+        <h3 class="project-name">HealthBridge</h3>
+        <p class="project-pitch pitch-clamp-3">Télémédecine accessible pour les zones rurales d'Afrique centrale</p>
+        <div class="meta-row">
+          <span class="meta-pill">HealthTech</span>
+          <span class="meta-pill">Yaoundé, Cameroun</span>
+          <span class="meta-pill">Idée</span>
+          <span class="meta-pill">Il y a 1j</span>
+        </div>
+        <div class="tags-row">
+          <span class="tag tag-blue">Cherche: Profil Tech</span>
+          <span class="tag tag-orange">Equity</span>
+          <span class="tag tag-green">Telemedicine</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Voir projet
+          </button>
+          <button class="btn-bookmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ==================== RIGHT SIDEBAR ==================== -->
+<aside class="sidebar-right">
+
+  <!-- Trending -->
+  <div class="right-card">
+    <h3 class="right-card-title">Projets tendance</h3>
+    <div class="trend-item">
+      <div class="trend-rank">1</div>
+      <div class="trend-info">
+        <div class="trend-name">MediLink</div>
+        <div class="trend-stats">112 vues &middot; 90 saves</div>
+      </div>
+      <div class="trend-score">90</div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-rank">2</div>
+      <div class="trend-info">
+        <div class="trend-name">DeliverFast</div>
+        <div class="trend-stats">74 vues &middot; 82 saves</div>
+      </div>
+      <div class="trend-score">82</div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-rank">3</div>
+      <div class="trend-info">
+        <div class="trend-name">KmerJobs</div>
+        <div class="trend-stats">40 vues &middot; 65 saves</div>
+      </div>
+      <div class="trend-score">65</div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-rank">4</div>
+      <div class="trend-info">
+        <div class="trend-name">AgriConnect</div>
+        <div class="trend-stats">38 vues &middot; 72 saves</div>
+      </div>
+      <div class="trend-score">72</div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-rank">5</div>
+      <div class="trend-info">
+        <div class="trend-name">MojiraX</div>
+        <div class="trend-stats">57 vues</div>
+      </div>
+      <div class="trend-score">57</div>
+    </div>
+  </div>
+
+  <!-- Profiles to follow -->
+  <div class="right-card">
+    <h3 class="right-card-title">Profils à suivre</h3>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">P</div>
+      <div class="profile-info">
+        <div class="profile-name">Patrick Tchoumi</div>
+        <div class="profile-tags">
+          <span class="profile-tag">Full-Stack</span>
+          <span class="profile-tag">React</span>
+        </div>
+      </div>
+      <button class="btn-follow">Suivre</button>
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #f093fb, #f5576c);">M</div>
+      <div class="profile-info">
+        <div class="profile-name">Marie Fotso</div>
+        <div class="profile-tags">
+          <span class="profile-tag">UX Design</span>
+          <span class="profile-tag">Figma</span>
+        </div>
+      </div>
+      <button class="btn-follow">Suivre</button>
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #11998e, #38ef7d);">J</div>
+      <div class="profile-info">
+        <div class="profile-name">Jean Kamga</div>
+        <div class="profile-tags">
+          <span class="profile-tag">Business</span>
+          <span class="profile-tag">Finance</span>
+        </div>
+      </div>
+      <button class="btn-follow">Suivre</button>
+    </div>
+  </div>
+
+  <div class="footer-links">
+    <a href="#">À propos</a>
+    <a href="#">Aide</a>
+    <a href="#">Confidentialité</a>
+    <a href="#">Conditions</a>
+    <a href="#">Contact</a>
+  </div>
+  <p class="footer-copy">&copy; 2026 MojiraX Inc.</p>
+</aside>
+
+<!-- ==================== MOBILE BOTTOM NAV ==================== -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="#" class="bottom-nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Accueil
+    </a>
+    <a href="#" class="bottom-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Projets
+    </a>
+    <a href="#" class="bottom-nav-item" style="position:relative;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="bottom-nav-badge">2</span>
+      Messages
+    </a>
+    <a href="#" class="bottom-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profil
+    </a>
+    <a href="#" class="bottom-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      Menu
+    </a>
+  </div>
+</nav>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+(function() {
+  // ===== Intersection Observer for card reveal =====
+  const cards = document.querySelectorAll('.card');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const delay = parseInt(entry.target.dataset.delay) || 0;
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, delay);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+  cards.forEach(card => observer.observe(card));
+
+  // ===== Bookmark toggle =====
+  document.querySelectorAll('.btn-bookmark').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const svg = this.querySelector('svg');
+      const isActive = this.classList.toggle('bookmarked');
+      if (isActive) {
+        svg.setAttribute('fill', 'var(--primary)');
+        svg.setAttribute('stroke', 'var(--primary)');
+        this.style.borderColor = 'var(--primary)';
+        this.style.background = 'var(--light)';
+      } else {
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        this.style.borderColor = '';
+        this.style.background = '';
+      }
+    });
+  });
+
+  // ===== Follow toggle =====
+  document.querySelectorAll('.btn-follow').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const isFollowing = this.classList.toggle('following');
+      if (isFollowing) {
+        this.textContent = 'Suivi';
+        this.style.background = 'var(--primary)';
+        this.style.color = '#fff';
+      } else {
+        this.textContent = 'Suivre';
+        this.style.background = '';
+        this.style.color = '';
+      }
+    });
+  });
+
+  // ===== Ctrl+K search focus =====
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      const input = document.querySelector('.search-bar input');
+      if (input) input.focus();
+    }
+  });
+
+  // ===== Mobile sidebar toggle =====
+  // Close sidebar when clicking outside on mobile
+  document.addEventListener('click', function(e) {
+    const sidebar = document.querySelector('.sidebar-left');
+    const hamburger = document.querySelector('.hamburger');
+    if (sidebar.classList.contains('mobile-open') &&
+        !sidebar.contains(e.target) &&
+        !hamburger.contains(e.target)) {
+      sidebar.classList.remove('mobile-open');
+    }
+  });
+})();
+</script>
+
+<style>
+/* Mobile sidebar overlay */
+@media (max-width: 768px) {
+  .sidebar-left.mobile-open {
+    display: block;
+    position: fixed;
+    top: var(--header-h); left: 0; bottom: 0;
+    width: 280px;
+    background: #fff;
+    z-index: 200;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+    padding: 20px 16px;
+    animation: slideIn 0.25s ease;
+  }
+  .sidebar-left.mobile-open .sidebar-section-title,
+  .sidebar-left.mobile-open .sidebar-section-sub,
+  .sidebar-left.mobile-open .nav-item span,
+  .sidebar-left.mobile-open .nav-badge {
+    display: inline;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+}
+</style>
+
+</body>
+</html>

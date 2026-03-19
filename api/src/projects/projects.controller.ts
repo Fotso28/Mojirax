@@ -10,6 +10,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSummaryDto } from './dto/update-summary.dto';
 import { RegenerateBlockDto } from './dto/regenerate-block.dto';
+import { ValidateProjectDto } from './dto/validate-project.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
 import { AiService } from '../ai/ai.service';
@@ -48,8 +49,8 @@ export class ProjectsController {
     @Post('validate')
     @ApiOperation({ summary: 'Validate project data with AI before submission' })
     @ApiResponse({ status: 200, description: 'AI validation feedback returned.' })
-    async validateProject(@Body() body: Record<string, any>) {
-        return this.aiService.validateProject(body);
+    async validateProject(@Body() dto: ValidateProjectDto) {
+        return this.aiService.validateProject(dto);
     }
 
     @ApiBearerAuth()

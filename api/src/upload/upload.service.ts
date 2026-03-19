@@ -4,6 +4,7 @@ import {
     S3Client,
     PutObjectCommand,
     DeleteObjectCommand,
+    GetObjectCommand,
     CreateBucketCommand,
     HeadBucketCommand,
     PutBucketPolicyCommand,
@@ -169,6 +170,26 @@ export class UploadService implements OnModuleInit {
         );
 
         return `${this.publicUrl}/${this.bucket}/${fullKey}`;
+    }
+
+    async getLocalFileBuffer(key: string): Promise<Buffer | null> {
+        try {
+            const response = await this.s3.send(
+                new GetObjectCommand({
+                    Bucket: this.bucket,
+                    Key: key,
+                }),
+            );
+            const stream = response.Body as NodeJS.ReadableStream;
+            const chunks: Buffer[] = [];
+            for await (const chunk of stream) {
+                chunks.push(Buffer.from(chunk));
+            }
+            return Buffer.concat(chunks);
+        } catch (error) {
+            this.logger.warn(`Failed to get file ${key}: ${error.message}`);
+            return null;
+        }
     }
 
     async deleteFile(key: string): Promise<void> {

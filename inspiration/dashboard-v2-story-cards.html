@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MojiraX — Dashboard Story Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #0066ff;
+  --primary-hover: #0055dd;
+  --dark: #001f4d;
+  --light: #e6f0ff;
+  --accent: #3399ff;
+  --header-h: 64px;
+  --sidebar-w: 240px;
+  --right-sidebar-w: 300px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --glass: rgba(255,255,255,0.10);
+  --glass-border: rgba(255,255,255,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f6f9;
+  color: #1a1a2e;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+img { display: block; max-width: 100%; }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.header-logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 18px;
+}
+.header-logo-text {
+  font-weight: 700; font-size: 18px; color: var(--dark);
+  letter-spacing: -0.3px;
+}
+
+.header-search {
+  flex: 1; max-width: 520px; margin: 0 auto;
+  position: relative;
+}
+.header-search input {
+  width: 100%; height: 40px; border-radius: 12px;
+  border: 1px solid #e0e4ea; background: #f7f8fa;
+  padding: 0 44px 0 40px;
+  font-size: 13.5px; color: #333;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.header-search input::placeholder { color: #999; }
+.header-search input:focus {
+  outline: none; border-color: var(--primary);
+  background: #fff; box-shadow: 0 0 0 3px rgba(0,102,255,0.08);
+}
+.header-search .search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: #999; pointer-events: none;
+}
+.header-search .search-shortcut {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: #aaa; background: #eee; padding: 2px 8px;
+  border-radius: 5px; font-weight: 500;
+}
+
+.header-right {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+.header-btn {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #555; transition: all 0.15s;
+  position: relative;
+}
+.header-btn:hover { background: var(--light); color: var(--primary); }
+.header-btn .badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #ff3b30; color: #fff; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+.header-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,102,255,0.15);
+  cursor: pointer;
+}
+
+/* Mobile header buttons */
+.mobile-menu-btn, .mobile-search-btn { display: none; }
+
+/* ============================================================
+   LEFT SIDEBAR
+   ============================================================ */
+.sidebar-left {
+  position: fixed; top: var(--header-h); left: 0; bottom: 0;
+  width: var(--sidebar-w); z-index: 50;
+  padding: 20px 14px;
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+.sidebar-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: #999; padding: 0 12px; margin-bottom: 6px;
+}
+.sidebar-sublabel {
+  font-size: 12px; color: #aaa; padding: 0 12px; margin-bottom: 16px;
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+.sidebar-link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; color: #555;
+  transition: all 0.15s; position: relative;
+}
+.sidebar-link:hover { background: var(--light); color: var(--primary); }
+.sidebar-link.active {
+  background: var(--primary); color: #fff;
+  box-shadow: 0 4px 12px rgba(0,102,255,0.25);
+}
+.sidebar-link .link-badge {
+  margin-left: auto; font-size: 11px; font-weight: 700;
+  background: #ff3b30; color: #fff; padding: 1px 7px;
+  border-radius: 10px; min-width: 20px; text-align: center;
+}
+.sidebar-link.active .link-badge {
+  background: rgba(255,255,255,0.25);
+}
+
+.sidebar-link svg { flex-shrink: 0; }
+
+.sidebar-logout {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; color: #cc3333;
+  transition: all 0.15s; margin-top: auto;
+}
+.sidebar-logout:hover { background: #fff0f0; }
+
+/* ============================================================
+   RIGHT SIDEBAR
+   ============================================================ */
+.sidebar-right {
+  position: fixed; top: var(--header-h); right: 0; bottom: 0;
+  width: var(--right-sidebar-w);
+  padding: 20px 16px; overflow-y: auto;
+}
+
+.widget {
+  background: #fff; border-radius: var(--radius); border: 1px solid #eee;
+  padding: 20px; margin-bottom: 16px;
+}
+.widget-title {
+  font-size: 15px; font-weight: 700; color: var(--dark);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.widget-title svg { color: var(--primary); }
+
+.trend-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid #f5f5f5;
+}
+.trend-item:last-child { border-bottom: none; }
+.trend-rank {
+  width: 24px; height: 24px; border-radius: 7px;
+  background: var(--light); color: var(--primary);
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.trend-info { flex: 1; min-width: 0; }
+.trend-name { font-size: 13.5px; font-weight: 600; color: #222; }
+.trend-stats { font-size: 11.5px; color: #999; margin-top: 2px; }
+.trend-score {
+  font-size: 12px; font-weight: 700; color: var(--primary);
+  background: var(--light); padding: 3px 8px; border-radius: 8px;
+}
+
+.profile-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid #f5f5f5;
+}
+.profile-item:last-child { border-bottom: none; }
+.profile-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.profile-info { flex: 1; }
+.profile-name { font-size: 13px; font-weight: 600; color: #222; }
+.profile-role { font-size: 11.5px; color: #999; }
+.profile-follow-btn {
+  font-size: 12px; font-weight: 600; color: var(--primary);
+  padding: 5px 14px; border-radius: 8px; border: 1.5px solid var(--primary);
+  transition: all 0.15s;
+}
+.profile-follow-btn:hover {
+  background: var(--primary); color: #fff;
+}
+
+.sidebar-footer {
+  padding: 16px 0; font-size: 11px; color: #bbb;
+  text-align: center; line-height: 1.8;
+}
+.sidebar-footer a { color: #999; }
+.sidebar-footer a:hover { color: var(--primary); }
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main-content {
+  margin-left: var(--sidebar-w);
+  margin-right: var(--right-sidebar-w);
+  padding: calc(var(--header-h) + 24px) 28px 40px;
+  min-height: 100vh;
+}
+
+.feed-header {
+  margin-bottom: 24px;
+}
+.feed-title {
+  font-size: 28px; font-weight: 800; color: var(--dark);
+  letter-spacing: -0.5px;
+}
+.feed-subtitle {
+  font-size: 14px; color: #888; margin-top: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.feed-subtitle a {
+  color: var(--primary); font-weight: 600;
+  transition: color 0.15s;
+}
+.feed-subtitle a:hover { color: var(--primary-hover); }
+
+.feed-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 24px; flex-wrap: wrap;
+}
+.filter-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  border: 1.5px solid #e0e4ea; background: #fff;
+  font-size: 13px; font-weight: 600; color: #555;
+  transition: all 0.15s;
+}
+.filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+.filter-btn svg { width: 16px; height: 16px; }
+
+/* Story dots (mobile) */
+.story-dots {
+  display: none;
+  justify-content: center; gap: 6px;
+  margin-bottom: 16px; padding: 8px 0;
+}
+.story-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ddd; transition: all 0.3s;
+}
+.story-dot.active {
+  width: 24px; border-radius: 4px;
+  background: var(--primary);
+}
+
+/* ============================================================
+   CARD GRID
+   ============================================================ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* ============================================================
+   STORY CARDS — THE MAIN EVENT
+   ============================================================ */
+.story-card {
+  position: relative;
+  height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 0.35s ease;
+  transform-style: preserve-3d;
+  perspective: 800px;
+}
+.story-card:hover {
+  transform: scale(1.02) translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+/* CARD BACKGROUNDS */
+.story-card .card-bg {
+  position: absolute; inset: 0;
+  z-index: 0;
+}
+
+/* Card 1: Deep Navy with circles */
+.card-bg.bg-navy {
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+.card-bg.bg-navy::before {
+  content: '';
+  position: absolute;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(0,102,255,0.12);
+  top: -40px; right: -40px;
+  animation: floatCircle1 8s ease-in-out infinite;
+}
+.card-bg.bg-navy::after {
+  content: '';
+  position: absolute;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(51,153,255,0.10);
+  bottom: 120px; left: 20px;
+  animation: floatCircle2 10s ease-in-out infinite;
+}
+
+/* Card 2: Purple Space with diagonal stripes */
+.card-bg.bg-purple {
+  background: linear-gradient(150deg, #0f0c29 0%, #302b63 55%, #24243e 100%);
+}
+.card-bg.bg-purple::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 20px,
+    rgba(255,255,255,0.03) 20px,
+    rgba(255,255,255,0.03) 22px
+  );
+  animation: slideStripes 20s linear infinite;
+}
+.card-bg.bg-purple::after {
+  content: '';
+  position: absolute;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(130,100,255,0.10);
+  top: 30px; right: 30px;
+  animation: floatCircle1 12s ease-in-out infinite;
+}
+
+/* Card 3: Dark with teal accent circle */
+.card-bg.bg-teal {
+  background: linear-gradient(160deg, #232526 0%, #414345 100%);
+}
+.card-bg.bg-teal::before {
+  content: '';
+  position: absolute;
+  width: 260px; height: 260px; border-radius: 50%;
+  background: rgba(56,239,125,0.12);
+  top: -60px; left: -60px;
+  animation: floatCircle2 14s ease-in-out infinite;
+}
+.card-bg.bg-teal::after {
+  content: '';
+  position: absolute;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(56,239,125,0.08);
+  bottom: 180px; right: 40px;
+  animation: floatCircle1 9s ease-in-out infinite;
+}
+
+/* Card 4: Ocean with triangles */
+.card-bg.bg-ocean {
+  background: linear-gradient(155deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+}
+.card-bg.bg-ocean::before {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  border-left: 80px solid transparent;
+  border-right: 80px solid transparent;
+  border-bottom: 140px solid rgba(51,153,255,0.08);
+  top: 20px; right: 20px;
+  animation: floatTriangle 11s ease-in-out infinite;
+}
+.card-bg.bg-ocean::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+  border-bottom: 90px solid rgba(0,102,255,0.06);
+  bottom: 160px; left: 30px;
+  transform: rotate(180deg);
+  animation: floatTriangle 13s ease-in-out infinite reverse;
+}
+
+/* Geometric deco layer — extra shapes via the card itself */
+.story-card .geo-deco {
+  position: absolute; inset: 0; z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* GRADIENT OVERLAY (bottom) */
+.story-card .card-overlay {
+  position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0.02) 30%,
+    rgba(0,0,0,0.45) 60%,
+    rgba(0,0,0,0.85) 100%
+  );
+  transition: opacity 0.3s;
+}
+.story-card:hover .card-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0.02) 30%,
+    rgba(0,0,0,0.35) 55%,
+    rgba(0,0,0,0.80) 100%
+  );
+}
+
+/* CARD CONTENT */
+.card-content {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column;
+  padding: 20px;
+}
+
+/* TOP — Founder info */
+.card-top {
+  display: flex; align-items: center; gap: 10px;
+}
+.founder-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 18px;
+  position: relative;
+  flex-shrink: 0;
+}
+.founder-avatar::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--primary) 0deg,
+    var(--accent) 120deg,
+    #38ef7d 240deg,
+    var(--primary) 360deg
+  );
+  z-index: -1;
+  animation: glowRing 4s linear infinite;
+}
+.founder-avatar::after {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--primary) 0deg,
+    var(--accent) 120deg,
+    #38ef7d 240deg,
+    var(--primary) 360deg
+  );
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.5;
+  animation: glowRing 4s linear infinite;
+}
+.founder-avatar .avatar-inner {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 18px; color: #fff;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  position: relative; z-index: 1;
+}
+.founder-details {
+  display: flex; flex-direction: column;
+}
+.founder-name {
+  font-size: 13.5px; font-weight: 600; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.founder-label {
+  font-size: 11px; color: rgba(255,255,255,0.7); font-weight: 500;
+}
+
+.card-badge {
+  margin-left: auto;
+  padding: 4px 10px; border-radius: 8px;
+  background: #ff3b30; color: #fff;
+  font-size: 11px; font-weight: 700;
+  animation: pulseBadge 2s ease-in-out infinite;
+}
+
+/* BOTTOM — Project info */
+.card-bottom {
+  margin-top: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.card-project-name {
+  font-size: 22px; font-weight: 800; color: #fff;
+  letter-spacing: -0.3px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  line-height: 1.2;
+}
+
+.card-pitch {
+  font-size: 13.5px; color: rgba(255,255,255,0.80);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-meta {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.meta-pill {
+  padding: 4px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.90);
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap;
+}
+.meta-pill svg { width: 12px; height: 12px; opacity: 0.7; }
+
+.card-tags {
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+.tag-pill {
+  padding: 3px 8px; border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 10.5px; font-weight: 500; color: rgba(255,255,255,0.70);
+}
+.tag-pill.tag-highlight {
+  background: rgba(0,102,255,0.25);
+  border-color: rgba(0,102,255,0.3);
+  color: rgba(200,220,255,0.95);
+}
+
+.card-actions {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 4px;
+}
+.card-view-btn {
+  flex: 1;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  background: #fff; color: var(--primary);
+  font-size: 13.5px; font-weight: 700;
+  text-align: center;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.card-view-btn:hover {
+  background: var(--primary); color: #fff;
+  box-shadow: 0 4px 20px rgba(0,102,255,0.35);
+}
+.card-bookmark-btn {
+  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: all 0.2s;
+}
+.card-bookmark-btn:hover {
+  background: rgba(255,255,255,0.20);
+  transform: scale(1.08);
+}
+.card-bookmark-btn.bookmarked {
+  background: rgba(0,102,255,0.3);
+  border-color: rgba(0,102,255,0.4);
+}
+
+/* Hover CTA overlay */
+.card-hover-cta {
+  position: absolute; inset: 0; z-index: 4;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.card-hover-cta span {
+  padding: 10px 24px; border-radius: 12px;
+  background: rgba(0,102,255,0.85);
+  backdrop-filter: blur(12px);
+  color: #fff; font-size: 14px; font-weight: 700;
+  transform: translateY(10px);
+  transition: transform 0.3s;
+}
+.story-card:hover .card-hover-cta {
+  opacity: 1;
+}
+.story-card:hover .card-hover-cta span {
+  transform: translateY(0);
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes floatCircle1 {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-15px, 20px) scale(1.1); }
+}
+@keyframes floatCircle2 {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(20px, -15px) scale(1.08); }
+}
+@keyframes floatTriangle {
+  0%, 100% { transform: translate(0,0) rotate(0deg); }
+  50% { transform: translate(-10px, 15px) rotate(8deg); }
+}
+@keyframes slideStripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 200px 200px; }
+}
+@keyframes glowRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes pulseBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card stagger entrance */
+.story-card { animation: fadeInUp 0.6s ease both; }
+.story-card:nth-child(1) { animation-delay: 0.05s; }
+.story-card:nth-child(2) { animation-delay: 0.15s; }
+.story-card:nth-child(3) { animation-delay: 0.25s; }
+.story-card:nth-child(4) { animation-delay: 0.35s; }
+
+/* ============================================================
+   MOBILE BOTTOM NAV
+   ============================================================ */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 64px; z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0,0,0,0.06);
+  justify-content: space-around; align-items: center;
+  padding: 0 8px;
+}
+.bottom-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 12px; border-radius: 12px;
+  color: #999; transition: all 0.15s;
+  position: relative;
+}
+.bottom-nav-item.active { color: var(--primary); }
+.bottom-nav-item .nav-label {
+  font-size: 10px; font-weight: 600;
+}
+.bottom-nav-item .nav-badge {
+  position: absolute; top: 0; right: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #ff3b30; color: #fff; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+
+/* ============================================================
+   MOBILE SIDEBAR OVERLAY
+   ============================================================ */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  opacity: 0; transition: opacity 0.3s;
+}
+.sidebar-overlay.active {
+  display: block; opacity: 1;
+}
+.sidebar-mobile-panel {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: 280px; background: #fff;
+  padding: 24px 16px;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  overflow-y: auto;
+}
+.sidebar-overlay.active .sidebar-mobile-panel {
+  transform: translateX(0);
+}
+.mobile-panel-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 24px;
+}
+.mobile-close-btn {
+  margin-left: auto;
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #888;
+  transition: background 0.15s;
+}
+.mobile-close-btn:hover { background: #f5f5f5; }
+
+/* ============================================================
+   RESPONSIVE — TABLET (< 1200px)
+   ============================================================ */
+@media (max-width: 1199px) {
+  .sidebar-right { display: none; }
+  .main-content { margin-right: 0; }
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET SMALL (< 900px)
+   ============================================================ */
+@media (max-width: 899px) {
+  .sidebar-left { width: 72px; padding: 20px 8px; }
+  .sidebar-label, .sidebar-sublabel { display: none; }
+  .sidebar-link { justify-content: center; padding: 12px; }
+  .sidebar-link span { display: none; }
+  .sidebar-link .link-badge { display: none; }
+  .sidebar-logout span { display: none; }
+  .sidebar-logout { justify-content: center; padding: 12px; }
+  .main-content { margin-left: 72px; padding-left: 20px; padding-right: 20px; }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE (< 640px)
+   ============================================================ */
+@media (max-width: 639px) {
+  .sidebar-left { display: none; }
+  .main-content {
+    margin-left: 0; margin-right: 0;
+    padding: calc(var(--header-h) + 16px) 16px 80px;
+  }
+
+  .header-search { display: none; }
+  .header-search.mobile-open {
+    display: block; position: absolute;
+    left: 12px; right: 12px; top: 12px;
+    max-width: none;
+  }
+  .mobile-menu-btn, .mobile-search-btn { display: flex; }
+  .header-logo-text { display: none; }
+
+  .card-grid { grid-template-columns: 1fr; gap: 16px; }
+
+  .story-card {
+    height: 85vh;
+    max-height: 600px;
+    min-height: 460px;
+    scroll-snap-align: start;
+  }
+  .card-project-name { font-size: 26px; }
+  .card-pitch { font-size: 14px; }
+  .founder-avatar, .founder-avatar .avatar-inner { width: 52px; height: 52px; }
+
+  .story-dots { display: flex; }
+
+  .bottom-nav { display: flex; }
+
+  .feed-title { font-size: 22px; }
+
+  /* Snap scroll on mobile */
+  .card-grid {
+    scroll-snap-type: y mandatory;
+    max-height: none;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #bbb; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     HEADER
+     ================================================================ -->
+<header class="header">
+  <button class="header-btn mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <div class="header-logo">
+    <div class="header-logo-icon">M</div>
+    <span class="header-logo-text">MojiraX</span>
+  </div>
+
+  <div class="header-search" id="headerSearch">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Rechercher un projet, un talent, une idée...">
+    <span class="search-shortcut">Ctrl K</span>
+  </div>
+
+  <button class="header-btn mobile-search-btn" onclick="toggleMobileSearch()" aria-label="Rechercher">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </button>
+
+  <div class="header-right">
+    <button class="header-btn" aria-label="Notifications">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="badge">3</span>
+    </button>
+    <div class="header-avatar">O</div>
+  </div>
+</header>
+
+<!-- ================================================================
+     LEFT SIDEBAR
+     ================================================================ -->
+<aside class="sidebar-left">
+  <div class="sidebar-label">Mon Espace</div>
+  <div class="sidebar-sublabel">Gérez votre activité</div>
+
+  <nav class="sidebar-nav">
+    <a href="#" class="sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Accueil</span>
+    </a>
+    <a href="#" class="sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span>Mes Projets</span>
+    </a>
+    <a href="#" class="sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Mes Candidatures</span>
+    </a>
+    <a href="#" class="sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+      <span class="link-badge">2</span>
+    </a>
+    <a href="#" class="sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Mon Profil</span>
+    </a>
+    <a href="#" class="sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Paramètres</span>
+    </a>
+  </nav>
+
+  <button class="sidebar-logout">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    <span>Déconnexion</span>
+  </button>
+</aside>
+
+<!-- ================================================================
+     MAIN CONTENT
+     ================================================================ -->
+<main class="main-content">
+  <div class="feed-header">
+    <h1 class="feed-title">Découvrez les projets</h1>
+    <p class="feed-subtitle">
+      Trouvez votre prochain projet ou co-fondateur
+      <span style="color:#ccc">·</span>
+      <a href="#">Voir les Talents &rarr;</a>
+    </p>
+  </div>
+
+  <div class="feed-toolbar">
+    <button class="filter-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+      Filtres
+    </button>
+    <button class="filter-btn" style="border-color:var(--primary);color:var(--primary);background:var(--light)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Tous les secteurs
+    </button>
+  </div>
+
+  <!-- Story dots (mobile) -->
+  <div class="story-dots" id="storyDots">
+    <div class="story-dot active" data-index="0"></div>
+    <div class="story-dot" data-index="1"></div>
+    <div class="story-dot" data-index="2"></div>
+    <div class="story-dot" data-index="3"></div>
+  </div>
+
+  <!-- CARD GRID -->
+  <div class="card-grid" id="cardGrid">
+
+    <!-- ======== CARD 1 — DeliverFast ======== -->
+    <article class="story-card" data-tilt onmouseenter="handleTilt(this, event)" onmousemove="handleTilt(this, event)" onmouseleave="resetTilt(this)">
+      <div class="card-bg bg-navy"></div>
+      <div class="card-overlay"></div>
+      <div class="card-hover-cta"><span>Voir le projet &rarr;</span></div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="founder-avatar">
+            <div class="avatar-inner" style="background: linear-gradient(135deg, #0f3460, #0066ff);">N</div>
+          </div>
+          <div class="founder-details">
+            <div class="founder-name">Nadège Talla</div>
+            <div class="founder-label">Fondateur</div>
+          </div>
+        </div>
+        <div class="card-bottom">
+          <div class="card-project-name">DeliverFast</div>
+          <div class="card-pitch">Livraison express en 2h pour le e-commerce africain via un réseau de moto-taxis certifiés et géolocalisés</div>
+          <div class="card-meta">
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Logistique
+            </span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Douala, Cameroun
+            </span>
+            <span class="meta-pill">MVP</span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              18j
+            </span>
+          </div>
+          <div class="card-tags">
+            <span class="tag-pill tag-highlight">Cherche: Profil Tech</span>
+            <span class="tag-pill">Hybride</span>
+            <span class="tag-pill">React Native</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-view-btn">Voir projet</button>
+            <button class="card-bookmark-btn" onclick="toggleBookmark(event, this)" aria-label="Sauvegarder">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ======== CARD 2 — FinPay Africa ======== -->
+    <article class="story-card" data-tilt onmouseenter="handleTilt(this, event)" onmousemove="handleTilt(this, event)" onmouseleave="resetTilt(this)">
+      <div class="card-bg bg-purple"></div>
+      <div class="card-overlay"></div>
+      <div class="card-hover-cta"><span>Voir le projet &rarr;</span></div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="founder-avatar">
+            <div class="avatar-inner" style="background: linear-gradient(135deg, #302b63, #6c5ce7);">A</div>
+          </div>
+          <div class="founder-details">
+            <div class="founder-name">Amina Koné</div>
+            <div class="founder-label">Fondatrice</div>
+          </div>
+        </div>
+        <div class="card-bottom">
+          <div class="card-project-name">FinPay Africa</div>
+          <div class="card-pitch">Solution de paiement mobile interopérable pour les marchés francophones</div>
+          <div class="card-meta">
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              FinTech
+            </span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Abidjan, Côte d'Ivoire
+            </span>
+            <span class="meta-pill">Traction</span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              5j
+            </span>
+          </div>
+          <div class="card-tags">
+            <span class="tag-pill tag-highlight">Cherche: Business</span>
+            <span class="tag-pill">Rémunéré</span>
+            <span class="tag-pill">Mobile Money</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-view-btn">Voir projet</button>
+            <button class="card-bookmark-btn" onclick="toggleBookmark(event, this)" aria-label="Sauvegarder">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ======== CARD 3 — EduConnect ======== -->
+    <article class="story-card" data-tilt onmouseenter="handleTilt(this, event)" onmousemove="handleTilt(this, event)" onmouseleave="resetTilt(this)">
+      <div class="card-bg bg-teal"></div>
+      <div class="card-overlay"></div>
+      <div class="card-hover-cta"><span>Voir le projet &rarr;</span></div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="founder-avatar">
+            <div class="avatar-inner" style="background: linear-gradient(135deg, #414345, #38ef7d);">S</div>
+          </div>
+          <div class="founder-details">
+            <div class="founder-name">Samuel Mbarga</div>
+            <div class="founder-label">Fondateur</div>
+          </div>
+          <span class="card-badge">Urgent</span>
+        </div>
+        <div class="card-bottom">
+          <div class="card-project-name">EduConnect</div>
+          <div class="card-pitch">Marketplace de formation professionnelle pour les jeunes diplômés africains</div>
+          <div class="card-meta">
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              EdTech
+            </span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Douala, Cameroun
+            </span>
+            <span class="meta-pill">Prototype</span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              2j
+            </span>
+          </div>
+          <div class="card-tags">
+            <span class="tag-pill tag-highlight">Cherche: Produit</span>
+            <span class="tag-pill">Hybride</span>
+            <span class="tag-pill">React</span>
+            <span class="tag-pill">UX Design</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-view-btn">Voir projet</button>
+            <button class="card-bookmark-btn" onclick="toggleBookmark(event, this)" aria-label="Sauvegarder">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ======== CARD 4 — AgriTech Sahel ======== -->
+    <article class="story-card" data-tilt onmouseenter="handleTilt(this, event)" onmousemove="handleTilt(this, event)" onmouseleave="resetTilt(this)">
+      <div class="card-bg bg-ocean"></div>
+      <div class="card-overlay"></div>
+      <div class="card-hover-cta"><span>Voir le projet &rarr;</span></div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="founder-avatar">
+            <div class="avatar-inner" style="background: linear-gradient(135deg, #203a43, #2c5364);">M</div>
+          </div>
+          <div class="founder-details">
+            <div class="founder-name">Moussa Diallo</div>
+            <div class="founder-label">Fondateur</div>
+          </div>
+        </div>
+        <div class="card-bottom">
+          <div class="card-project-name">AgriTech Sahel</div>
+          <div class="card-pitch">Plateforme de digitalisation de la chaîne agricole en Afrique de l'Ouest</div>
+          <div class="card-meta">
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              AgriTech
+            </span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Dakar, Sénégal
+            </span>
+            <span class="meta-pill">MVP</span>
+            <span class="meta-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              12j
+            </span>
+          </div>
+          <div class="card-tags">
+            <span class="tag-pill tag-highlight">Cherche: Profil Tech</span>
+            <span class="tag-pill">Equity</span>
+            <span class="tag-pill">Python</span>
+          </div>
+          <div class="card-actions">
+            <button class="card-view-btn">Voir projet</button>
+            <button class="card-bookmark-btn" onclick="toggleBookmark(event, this)" aria-label="Sauvegarder">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<!-- ================================================================
+     RIGHT SIDEBAR
+     ================================================================ -->
+<aside class="sidebar-right">
+  <!-- Trending -->
+  <div class="widget">
+    <div class="widget-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Projets tendance
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">1</span>
+      <div class="trend-info">
+        <div class="trend-name">MediLink</div>
+        <div class="trend-stats">112 vues &middot; Score 90</div>
+      </div>
+      <span class="trend-score">90</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">2</span>
+      <div class="trend-info">
+        <div class="trend-name">DeliverFast</div>
+        <div class="trend-stats">74 vues &middot; Score 82</div>
+      </div>
+      <span class="trend-score">82</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">3</span>
+      <div class="trend-info">
+        <div class="trend-name">KmerJobs</div>
+        <div class="trend-stats">40 vues &middot; Score 65</div>
+      </div>
+      <span class="trend-score">65</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">4</span>
+      <div class="trend-info">
+        <div class="trend-name">AgriConnect</div>
+        <div class="trend-stats">38 vues &middot; Score 72</div>
+      </div>
+      <span class="trend-score">72</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">5</span>
+      <div class="trend-info">
+        <div class="trend-name">MojiraX</div>
+        <div class="trend-stats">57 vues</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profiles -->
+  <div class="widget">
+    <div class="widget-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Profils à suivre
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #0066ff, #3399ff);">P</div>
+      <div class="profile-info">
+        <div class="profile-name">Patrick Tchoumi</div>
+        <div class="profile-role">Full-Stack Developer</div>
+      </div>
+      <button class="profile-follow-btn" onclick="toggleFollow(this)">Suivre</button>
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #e84393, #fd79a8);">M</div>
+      <div class="profile-info">
+        <div class="profile-name">Marie Fotso</div>
+        <div class="profile-role">UX Designer</div>
+      </div>
+      <button class="profile-follow-btn" onclick="toggleFollow(this)">Suivre</button>
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #00b894, #55efc4);">J</div>
+      <div class="profile-info">
+        <div class="profile-name">Jean Kamga</div>
+        <div class="profile-role">Business Strategist</div>
+      </div>
+      <button class="profile-follow-btn" onclick="toggleFollow(this)">Suivre</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <a href="#">A propos</a> &middot;
+    <a href="#">Aide</a> &middot;
+    <a href="#">Confidentialité</a> &middot;
+    <a href="#">CGU</a><br>
+    &copy; 2026 MojiraX Inc.
+  </div>
+</aside>
+
+<!-- ================================================================
+     MOBILE BOTTOM NAV
+     ================================================================ -->
+<nav class="bottom-nav">
+  <a href="#" class="bottom-nav-item active">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span class="nav-label">Accueil</span>
+  </a>
+  <a href="#" class="bottom-nav-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span class="nav-label">Recherche</span>
+  </a>
+  <a href="#" class="bottom-nav-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <span class="nav-label">Projets</span>
+  </a>
+  <a href="#" class="bottom-nav-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-label">Messages</span>
+    <span class="nav-badge">2</span>
+  </a>
+  <a href="#" class="bottom-nav-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span class="nav-label">Profil</span>
+  </a>
+</nav>
+
+<!-- ================================================================
+     MOBILE SIDEBAR OVERLAY
+     ================================================================ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileMenu(event)">
+  <div class="sidebar-mobile-panel" onclick="event.stopPropagation()">
+    <div class="mobile-panel-header">
+      <div class="header-logo-icon">M</div>
+      <span style="font-weight:700;font-size:18px;color:var(--dark)">MojiraX</span>
+      <button class="mobile-close-btn" onclick="closeMobileMenu()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-label">Mon Espace</div>
+    <div class="sidebar-sublabel">Gérez votre activité</div>
+    <nav style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
+      <a href="#" class="sidebar-link active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Accueil</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span>Mes Projets</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Mes Candidatures</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Messages</span>
+        <span class="link-badge">2</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Mon Profil</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Paramètres</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<!-- ================================================================
+     JAVASCRIPT
+     ================================================================ -->
+<script>
+// 3D tilt effect
+function handleTilt(card, e) {
+  if (window.innerWidth < 640) return;
+  const rect = card.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+  const rotateX = ((y - centerY) / centerY) * -4;
+  const rotateY = ((x - centerX) / centerX) * 4;
+  card.style.transform = `scale(1.02) translateY(-4px) perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+}
+
+function resetTilt(card) {
+  card.style.transform = '';
+}
+
+// Bookmark toggle
+function toggleBookmark(e, btn) {
+  e.stopPropagation();
+  btn.classList.toggle('bookmarked');
+  const svg = btn.querySelector('svg');
+  if (btn.classList.contains('bookmarked')) {
+    svg.setAttribute('fill', 'currentColor');
+  } else {
+    svg.setAttribute('fill', 'none');
+  }
+}
+
+// Follow toggle
+function toggleFollow(btn) {
+  if (btn.textContent === 'Suivre') {
+    btn.textContent = 'Suivi';
+    btn.style.background = 'var(--primary)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--primary)';
+  } else {
+    btn.textContent = 'Suivre';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+}
+
+// Mobile menu
+function toggleMobileMenu() {
+  document.getElementById('sidebarOverlay').classList.toggle('active');
+  document.body.style.overflow = document.getElementById('sidebarOverlay').classList.contains('active') ? 'hidden' : '';
+}
+
+function closeMobileMenu(e) {
+  document.getElementById('sidebarOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Mobile search
+function toggleMobileSearch() {
+  const search = document.getElementById('headerSearch');
+  search.classList.toggle('mobile-open');
+  if (search.classList.contains('mobile-open')) {
+    search.querySelector('input').focus();
+  }
+}
+
+// Story dots — scroll tracking on mobile
+(function() {
+  const grid = document.getElementById('cardGrid');
+  const dots = document.querySelectorAll('.story-dot');
+  if (!grid || !dots.length) return;
+
+  function updateDots() {
+    if (window.innerWidth > 639) return;
+    const cards = grid.querySelectorAll('.story-card');
+    let activeIdx = 0;
+    let minDist = Infinity;
+    const viewportCenter = window.innerHeight / 2;
+
+    cards.forEach((card, i) => {
+      const rect = card.getBoundingClientRect();
+      const cardCenter = rect.top + rect.height / 2;
+      const dist = Math.abs(cardCenter - viewportCenter);
+      if (dist < minDist) {
+        minDist = dist;
+        activeIdx = i;
+      }
+    });
+
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === activeIdx);
+    });
+  }
+
+  window.addEventListener('scroll', updateDots, { passive: true });
+  window.addEventListener('resize', updateDots);
+})();
+
+// Keyboard shortcut Ctrl+K
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    const input = document.querySelector('.header-search input');
+    if (input) input.focus();
+  }
+});
+</script>
+
+</body>
+</html>

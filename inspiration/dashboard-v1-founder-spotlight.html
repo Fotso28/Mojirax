@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MojiraX — Dashboard Fondateur Spotlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#0066ff;--dark:#001f4d;--light:#e6f0ff;--accent:#3399ff;
+  --header-h:64px;--sidebar-w:280px;--sidebar-icon-w:80px;--right-w:300px;
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:20px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.1);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#f5f7fa;color:#1a1a2e;line-height:1.5;overflow-x:hidden}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+
+/* ===== HEADER ===== */
+.header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:rgba(255,255,255,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(0,0,0,.06);z-index:1000;display:flex;align-items:center;padding:0 24px;gap:16px}
+.header-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.header-logo-icon{width:36px;height:36px;background:var(--primary);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px}
+.header-logo-text{font-size:18px;font-weight:700;color:var(--dark);letter-spacing:-.3px}
+.header-search{flex:1;max-width:560px;margin:0 auto;position:relative}
+.header-search input{width:100%;height:40px;border:1px solid #e2e8f0;border-radius:10px;padding:0 16px 0 40px;font-size:14px;background:#f8fafc;transition:all .2s}
+.header-search input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(0,102,255,.1)}
+.header-search input::placeholder{color:#94a3b8}
+.header-search .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8}
+.header-search .kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:#e2e8f0;padding:2px 8px;border-radius:4px;font-size:11px;color:#64748b;font-weight:500}
+.header-right{display:flex;align-items:center;gap:16px;flex-shrink:0}
+.header-bell{position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;transition:background .2s}
+.header-bell:hover{background:var(--light)}
+.header-bell .badge{position:absolute;top:4px;right:4px;width:18px;height:18px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.header-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:box-shadow .2s}
+.header-avatar:hover{box-shadow:0 0 0 3px rgba(0,102,255,.2)}
+.header-hamburger{display:none;width:40px;height:40px;align-items:center;justify-content:center;border-radius:10px;transition:background .2s}
+.header-hamburger:hover{background:var(--light)}
+.header-hamburger span{display:block;width:20px;height:2px;background:#334155;border-radius:2px;transition:all .3s;position:relative}
+.header-hamburger span::before,.header-hamburger span::after{content:'';position:absolute;left:0;width:100%;height:2px;background:#334155;border-radius:2px;transition:all .3s}
+.header-hamburger span::before{top:-6px}
+.header-hamburger span::after{top:6px}
+.header-hamburger.active span{background:transparent}
+.header-hamburger.active span::before{top:0;transform:rotate(45deg)}
+.header-hamburger.active span::after{top:0;transform:rotate(-45deg)}
+.mobile-search-btn{display:none;width:40px;height:40px;align-items:center;justify-content:center;border-radius:10px}
+
+/* ===== LEFT SIDEBAR ===== */
+.sidebar-left{position:fixed;top:calc(var(--header-h) + 16px);left:16px;width:var(--sidebar-w);bottom:16px;display:flex;flex-direction:column;z-index:100}
+.sidebar-card{background:#fff;border-radius:var(--radius-xl);border:1px solid rgba(0,0,0,.05);box-shadow:var(--shadow-sm);padding:24px 16px;display:flex;flex-direction:column;height:100%;overflow-y:auto}
+.sidebar-label{font-size:13px;font-weight:700;color:var(--dark);text-transform:uppercase;letter-spacing:.5px;padding:0 12px;margin-bottom:4px}
+.sidebar-sublabel{font-size:12px;color:#64748b;padding:0 12px;margin-bottom:20px}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px;flex:1}
+.sidebar-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);font-size:14px;font-weight:500;color:#475569;transition:all .2s;position:relative}
+.sidebar-link:hover{background:var(--light);color:var(--primary)}
+.sidebar-link.active{background:var(--light);color:var(--primary);font-weight:600}
+.sidebar-link.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--primary);border-radius:2px}
+.sidebar-link svg{flex-shrink:0}
+.sidebar-link .link-badge{margin-left:auto;background:var(--primary);color:#fff;font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px}
+.sidebar-bottom{margin-top:auto;padding-top:16px;border-top:1px solid #f1f5f9}
+.sidebar-link.logout{color:#ef4444}
+.sidebar-link.logout:hover{background:#fef2f2}
+
+/* ===== MAIN CONTENT ===== */
+.main-layout{margin-top:var(--header-h);padding:24px 16px 24px calc(var(--sidebar-w) + 32px);margin-right:calc(var(--right-w) + 32px)}
+.feed-header{margin-bottom:28px}
+.feed-header h1{font-size:28px;font-weight:800;color:var(--dark);letter-spacing:-.5px}
+.feed-header .subtitle{display:flex;align-items:center;gap:8px;margin-top:4px}
+.feed-header .subtitle p{font-size:15px;color:#64748b}
+.feed-header .subtitle a{color:var(--primary);font-weight:600;font-size:14px;transition:color .2s}
+.feed-header .subtitle a:hover{color:var(--dark)}
+
+/* Filter bar */
+.filter-bar{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.filter-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid #e2e8f0;background:#fff;color:#475569;transition:all .2s}
+.filter-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--light)}
+.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.filter-dropdown{position:absolute;top:calc(100% + 8px);left:0;background:#fff;border-radius:var(--radius-lg);border:1px solid #e2e8f0;box-shadow:var(--shadow-lg);padding:16px;min-width:280px;z-index:50;display:none}
+.filter-dropdown.open{display:block}
+.filter-wrapper{position:relative}
+.filter-group{margin-bottom:12px}
+.filter-group label{display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
+.filter-group select{width:100%;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid #e2e8f0;font-size:13px;color:#334155;background:#f8fafc}
+.filter-group select:focus{outline:none;border-color:var(--primary)}
+
+/* ===== FEATURED FOUNDER BANNER ===== */
+.featured-banner{position:relative;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 40%,#0066ff 100%);border-radius:var(--radius-xl);padding:32px;margin-bottom:28px;overflow:hidden;cursor:pointer;transition:transform .3s}
+.featured-banner:hover{transform:scale(1.005)}
+.featured-banner::before{content:'';position:absolute;top:-50%;right:-20%;width:400px;height:400px;background:radial-gradient(circle,rgba(51,153,255,.25),transparent 70%);pointer-events:none}
+.featured-banner::after{content:'';position:absolute;bottom:-30%;left:10%;width:300px;height:300px;background:radial-gradient(circle,rgba(0,102,255,.15),transparent 70%);pointer-events:none}
+.featured-inner{position:relative;z-index:1;display:flex;align-items:center;gap:24px}
+.featured-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#f97316);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;flex-shrink:0;text-shadow:0 2px 8px rgba(0,0,0,.2);border:3px solid rgba(255,255,255,.2)}
+.featured-content{flex:1}
+.featured-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:8px;border:1px solid rgba(255,255,255,.1)}
+.featured-tag svg{color:#f59e0b}
+.featured-quote{font-size:18px;font-weight:600;color:#fff;line-height:1.4;margin-bottom:4px}
+.featured-name{font-size:14px;color:rgba(255,255,255,.6);font-weight:500}
+.featured-cta{flex-shrink:0;padding:10px 20px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:var(--radius-md);color:#fff;font-size:13px;font-weight:600;transition:all .2s}
+.featured-cta:hover{background:rgba(255,255,255,.25)}
+
+/* ===== PROJECT CARDS — FOUNDER SPOTLIGHT ===== */
+.project-card{background:#fff;border-radius:var(--radius-xl);border:1px solid rgba(0,0,0,.05);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;margin-bottom:20px;transition:box-shadow .3s,transform .3s;opacity:0;transform:translateX(-30px)}
+.project-card.visible{opacity:1;transform:translateX(0)}
+.project-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.project-card.visible:hover{transform:translateY(-2px)}
+
+/* Founder photo area — LEFT */
+.card-founder{width:200px;flex-shrink:0;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 16px;transition:width .4s cubic-bezier(.22,1,.36,1);cursor:pointer}
+.project-card:hover .card-founder{width:220px}
+.card-founder-bg{position:absolute;inset:0;transition:transform .6s cubic-bezier(.22,1,.36,1);z-index:0}
+.project-card:hover .card-founder-bg{transform:scale(1.08)}
+.card-founder-initial{position:relative;z-index:1;width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:3px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;color:#fff;transition:transform .3s,box-shadow .3s}
+.project-card:hover .card-founder-initial{transform:scale(1.08);box-shadow:0 0 30px rgba(255,255,255,.2)}
+.card-founder-name{position:relative;z-index:1;font-size:15px;font-weight:700;color:#fff;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.15)}
+.card-founder-role{position:relative;z-index:1;font-size:12px;font-weight:500;color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.1)}
+
+/* Project info — RIGHT */
+.card-content{flex:1;padding:20px 24px;display:flex;flex-direction:column;position:relative}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.card-project-name{font-size:20px;font-weight:700;color:var(--dark);letter-spacing:-.3px}
+.card-badge-urgent{position:absolute;top:16px;right:16px;background:#fff7ed;color:#ea580c;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #fed7aa;display:flex;align-items:center;gap:4px}
+.card-badge-urgent::before{content:'';width:6px;height:6px;background:#ea580c;border-radius:50%;animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+.card-pitch{font-size:14px;color:#475569;line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;margin-bottom:14px;flex-wrap:wrap}
+.card-meta span{display:flex;align-items:center;gap:4px}
+.card-meta .sep{color:#cbd5e1}
+.card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.card-tag{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:var(--light);color:var(--primary);transition:background .2s,color .2s}
+.card-tag:hover{background:var(--primary);color:#fff}
+.card-tag.highlight{background:#f0fdf4;color:#16a34a}
+.card-tag.neutral{background:#f8fafc;color:#64748b}
+.card-actions{display:flex;align-items:center;gap:10px;margin-top:auto}
+.btn-primary{padding:9px 20px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:var(--dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,102,255,.3)}
+.btn-save{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid #e2e8f0;color:#94a3b8;transition:all .2s;background:#fff}
+.btn-save:hover{border-color:var(--primary);color:var(--primary);background:var(--light)}
+.btn-save.saved{border-color:var(--primary);color:var(--primary);background:var(--light)}
+.btn-save.saved svg{fill:var(--primary)}
+
+/* ===== RIGHT SIDEBAR ===== */
+.sidebar-right{position:fixed;top:calc(var(--header-h) + 16px);right:16px;width:var(--right-w);bottom:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;z-index:100;scrollbar-width:none}
+.sidebar-right::-webkit-scrollbar{display:none}
+.right-card{background:#fff;border-radius:var(--radius-xl);border:1px solid rgba(0,0,0,.05);box-shadow:var(--shadow-sm);padding:20px}
+.right-card-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.right-card-title svg{color:var(--primary)}
+
+/* Trending projects */
+.trending-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9}
+.trending-item:last-child{border-bottom:none}
+.trending-rank{width:22px;height:22px;border-radius:6px;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--primary);flex-shrink:0}
+.trending-name{font-size:13px;font-weight:600;color:#334155;flex:1}
+.trending-stats{text-align:right;font-size:11px;color:#94a3b8}
+.trending-stats strong{color:#475569;font-weight:600}
+
+/* Profiles to follow */
+.profile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+.profile-item:last-child{border-bottom:none}
+.profile-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.profile-info{flex:1;min-width:0}
+.profile-info h4{font-size:13px;font-weight:600;color:#334155}
+.profile-info p{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-follow{padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600;color:var(--primary);background:var(--light);border:1px solid transparent;transition:all .2s}
+.btn-follow:hover{background:var(--primary);color:#fff}
+
+/* Right sidebar footer */
+.right-footer{padding:16px 0 0;font-size:11px;color:#94a3b8}
+.right-footer-links{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:8px}
+.right-footer-links a{color:#94a3b8;transition:color .2s}
+.right-footer-links a:hover{color:var(--primary)}
+
+/* ===== MOBILE BOTTOM NAV ===== */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(255,255,255,.95);backdrop-filter:blur(16px);border-top:1px solid rgba(0,0,0,.06);z-index:1000;align-items:center;justify-content:space-around;padding:0 8px}
+.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:#94a3b8;padding:6px 12px;border-radius:var(--radius-sm);transition:color .2s;position:relative}
+.mobile-nav-item.active{color:var(--primary)}
+.mobile-nav-item .nav-badge{position:absolute;top:0;right:6px;width:16px;height:16px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}
+
+/* ===== MOBILE SIDEBAR OVERLAY ===== */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:500;opacity:0;transition:opacity .3s}
+.sidebar-overlay.open{display:block;opacity:1}
+.sidebar-left.mobile-open{transform:translateX(0) !important;z-index:600}
+
+/* ===== SCROLL ANIMATIONS ===== */
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideContentIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.card-content-animate{animation:slideContentIn .5s ease .15s both}
+
+/* Gradient glow on initial */
+.glow-blue .card-founder-initial{text-shadow:0 0 30px rgba(102,126,234,.6),0 0 60px rgba(118,75,162,.3)}
+.glow-teal .card-founder-initial{text-shadow:0 0 30px rgba(17,153,142,.6),0 0 60px rgba(56,239,125,.3)}
+.glow-rose .card-founder-initial{text-shadow:0 0 30px rgba(240,147,251,.6),0 0 60px rgba(245,87,108,.3)}
+
+/* ===== RESPONSIVE — TABLET ===== */
+@media(max-width:1279px){
+  .sidebar-right{display:none}
+  .main-layout{margin-right:16px}
+}
+@media(max-width:1023px){
+  .sidebar-left{width:var(--sidebar-icon-w);left:8px}
+  .sidebar-label,.sidebar-sublabel,.sidebar-link span,.sidebar-link .link-badge,.sidebar-bottom .sidebar-link span{display:none}
+  .sidebar-card{padding:16px 8px;align-items:center}
+  .sidebar-link{justify-content:center;padding:10px}
+  .sidebar-link.active::before{left:-4px}
+  .main-layout{padding-left:calc(var(--sidebar-icon-w) + 24px)}
+}
+
+/* ===== RESPONSIVE — MOBILE ===== */
+@media(max-width:767px){
+  .header-search{display:none}
+  .header-search.mobile-open{display:block;position:absolute;top:var(--header-h);left:0;right:0;max-width:100%;padding:12px 16px;background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:var(--shadow-md)}
+  .header-search.mobile-open input{height:44px;font-size:15px}
+  .header-search .kbd{display:none}
+  .header-hamburger{display:flex}
+  .mobile-search-btn{display:flex}
+  .sidebar-left{transform:translateX(calc(-100% - 32px));width:var(--sidebar-w);transition:transform .3s cubic-bezier(.22,1,.36,1)}
+  .sidebar-label,.sidebar-sublabel,.sidebar-link span,.sidebar-link .link-badge,.sidebar-bottom .sidebar-link span{display:initial}
+  .sidebar-card{padding:24px 16px;align-items:stretch}
+  .sidebar-link{justify-content:flex-start}
+  .main-layout{padding:20px 16px 80px;margin-right:0}
+  .feed-header h1{font-size:22px}
+  .featured-banner{padding:20px}
+  .featured-inner{flex-direction:column;text-align:center;gap:16px}
+  .featured-avatar{width:56px;height:56px;font-size:24px}
+  .featured-quote{font-size:15px}
+  .featured-cta{align-self:center}
+  /* Cards: vertical layout on mobile */
+  .project-card{flex-direction:column}
+  .card-founder{width:100% !important;height:120px;padding:16px;flex-direction:row;gap:12px}
+  .project-card:hover .card-founder{width:100% !important}
+  .card-founder-initial{width:56px;height:56px;font-size:28px}
+  .card-founder-name{font-size:14px;text-align:left}
+  .card-founder-role{text-align:left}
+  .card-founder-text{display:flex;flex-direction:column;gap:2px}
+  .card-content{padding:16px}
+  .card-project-name{font-size:17px}
+  .mobile-nav{display:flex}
+}
+@media(max-width:374px){
+  .card-meta{font-size:11px}
+  .card-tags{gap:4px}
+  .card-tag{font-size:10px;padding:3px 8px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <button class="header-hamburger" id="hamburgerBtn" aria-label="Menu">
+    <span></span>
+  </button>
+  <a href="#" class="header-logo">
+    <div class="header-logo-icon">M</div>
+    <span class="header-logo-text">MojiraX</span>
+  </a>
+  <div class="header-search" id="headerSearch">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Rechercher un projet, un talent, une idee...">
+    <span class="kbd">Ctrl K</span>
+  </div>
+  <button class="mobile-search-btn" id="mobileSearchBtn" aria-label="Rechercher">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+  </button>
+  <div class="header-right">
+    <button class="header-bell" aria-label="Notifications">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="badge">3</span>
+    </button>
+    <div class="header-avatar">O</div>
+  </div>
+</header>
+
+<!-- ===== SIDEBAR OVERLAY (mobile) ===== -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== LEFT SIDEBAR ===== -->
+<aside class="sidebar-left" id="sidebarLeft">
+  <div class="sidebar-card">
+    <div class="sidebar-label">Mon Espace</div>
+    <div class="sidebar-sublabel">Gerez votre activite</div>
+    <nav class="sidebar-nav">
+      <a href="#" class="sidebar-link active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Accueil</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Mes Projets</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Mes Candidatures</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Messages</span>
+        <span class="link-badge">2</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Mon Profil</span>
+      </a>
+      <a href="#" class="sidebar-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Parametres</span>
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="#" class="sidebar-link logout">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        <span>Deconnexion</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN FEED ===== -->
+<main class="main-layout">
+  <!-- Feed header -->
+  <div class="feed-header">
+    <h1>Decouvrez les projets</h1>
+    <div class="subtitle">
+      <p>Des fondateurs passionnes cherchent leur binome.</p>
+      <a href="#">Voir les Talents &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-wrapper">
+      <button class="filter-btn" id="filterToggle">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filtres
+      </button>
+      <div class="filter-dropdown" id="filterDropdown">
+        <div class="filter-group">
+          <label>Secteur</label>
+          <select><option>Tous les secteurs</option><option>FinTech</option><option>EdTech</option><option>Logistique</option><option>AgriTech</option><option>HealthTech</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Stade</label>
+          <select><option>Tous</option><option>Idee</option><option>Prototype</option><option>MVP</option><option>Traction</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Profil recherche</label>
+          <select><option>Tous</option><option>Tech</option><option>Business</option><option>Produit</option><option>Marketing</option></select>
+        </div>
+        <div class="filter-group" style="margin-bottom:0">
+          <label>Ville</label>
+          <select><option>Toutes</option><option>Douala</option><option>Yaounde</option><option>Abidjan</option><option>Dakar</option></select>
+        </div>
+      </div>
+    </div>
+    <button class="filter-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+      Trier par
+    </button>
+  </div>
+
+  <!-- ===== FEATURED FOUNDER BANNER ===== -->
+  <div class="featured-banner" id="featuredBanner">
+    <div class="featured-inner">
+      <div class="featured-avatar">M</div>
+      <div class="featured-content">
+        <div class="featured-tag">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Fondateur en vedette
+        </div>
+        <p class="featured-quote">&laquo; Je cherche un CTO pour revolutionner l'agriculture en Afrique de l'Ouest &raquo;</p>
+        <p class="featured-name">Moussa Diallo &mdash; AgriConnect</p>
+      </div>
+      <button class="featured-cta">Voir le projet &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ===== PROJECT CARDS ===== -->
+
+  <!-- Card 1: Nadege / DeliverFast -->
+  <div class="project-card glow-blue" data-delay="0">
+    <div class="card-founder" data-gradient="linear-gradient(135deg,#667eea,#764ba2)">
+      <div class="card-founder-bg" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+      <div class="card-founder-initial">N</div>
+      <div class="card-founder-text">
+        <div class="card-founder-name">Nadege Talla</div>
+        <div class="card-founder-role">Fondateur</div>
+      </div>
+    </div>
+    <div class="card-content">
+      <div class="card-top">
+        <h3 class="card-project-name">DeliverFast</h3>
+      </div>
+      <p class="card-pitch">Livraison express en 2h pour le e-commerce africain via un reseau de moto-taxis certifies et geolocalises</p>
+      <div class="card-meta">
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Logistique</span>
+        <span class="sep">&middot;</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Douala, Cameroun</span>
+        <span class="sep">&middot;</span>
+        <span>MVP</span>
+        <span class="sep">&middot;</span>
+        <span>Il y a 18j</span>
+      </div>
+      <div class="card-tags">
+        <span class="card-tag highlight">Cherche: Profil Tech</span>
+        <span class="card-tag neutral">Hybride</span>
+        <span class="card-tag">React Native</span>
+        <span class="card-tag">Node.js</span>
+        <span class="card-tag">Geolocalisation</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Voir projet
+        </button>
+        <button class="btn-save" aria-label="Sauvegarder" data-saved="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: Amina / FinPay Africa -->
+  <div class="project-card glow-teal" data-delay="100">
+    <div class="card-founder" data-gradient="linear-gradient(135deg,#11998e,#38ef7d)">
+      <div class="card-founder-bg" style="background:linear-gradient(135deg,#11998e,#38ef7d)"></div>
+      <div class="card-founder-initial">A</div>
+      <div class="card-founder-text">
+        <div class="card-founder-name">Amina Kone</div>
+        <div class="card-founder-role">Fondatrice</div>
+      </div>
+    </div>
+    <div class="card-content">
+      <div class="card-top">
+        <h3 class="card-project-name">FinPay Africa</h3>
+      </div>
+      <p class="card-pitch">Solution de paiement mobile interoperable pour les marches francophones</p>
+      <div class="card-meta">
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>FinTech</span>
+        <span class="sep">&middot;</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Abidjan, Cote d'Ivoire</span>
+        <span class="sep">&middot;</span>
+        <span>Traction</span>
+        <span class="sep">&middot;</span>
+        <span>Il y a 5j</span>
+      </div>
+      <div class="card-tags">
+        <span class="card-tag highlight">Cherche: Business</span>
+        <span class="card-tag neutral">Remunere</span>
+        <span class="card-tag">Mobile Money</span>
+        <span class="card-tag">API Banking</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Voir projet
+        </button>
+        <button class="btn-save" aria-label="Sauvegarder" data-saved="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Samuel / EduConnect -->
+  <div class="project-card glow-rose" data-delay="200">
+    <div class="card-founder" data-gradient="linear-gradient(135deg,#f093fb,#f5576c)">
+      <div class="card-founder-bg" style="background:linear-gradient(135deg,#f093fb,#f5576c)"></div>
+      <div class="card-founder-initial">S</div>
+      <div class="card-founder-text">
+        <div class="card-founder-name">Samuel Mbarga</div>
+        <div class="card-founder-role">Fondateur</div>
+      </div>
+    </div>
+    <div class="card-content">
+      <div class="card-top">
+        <h3 class="card-project-name">EduConnect</h3>
+      </div>
+      <span class="card-badge-urgent">Urgent</span>
+      <p class="card-pitch">Marketplace de formation professionnelle pour les jeunes diplomes africains</p>
+      <div class="card-meta">
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>EdTech</span>
+        <span class="sep">&middot;</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Douala, Cameroun</span>
+        <span class="sep">&middot;</span>
+        <span>Prototype</span>
+        <span class="sep">&middot;</span>
+        <span>Il y a 2j</span>
+      </div>
+      <div class="card-tags">
+        <span class="card-tag highlight">Cherche: Produit</span>
+        <span class="card-tag neutral">Hybride</span>
+        <span class="card-tag">React</span>
+        <span class="card-tag">UX Design</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Voir projet
+        </button>
+        <button class="btn-save" aria-label="Sauvegarder" data-saved="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== RIGHT SIDEBAR ===== -->
+<aside class="sidebar-right">
+  <!-- Trending -->
+  <div class="right-card">
+    <div class="right-card-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Projets tendance
+    </div>
+    <div class="trending-item">
+      <span class="trending-rank">1</span>
+      <span class="trending-name">MediLink</span>
+      <span class="trending-stats"><strong>112</strong> vues &middot; <strong>90</strong> saves</span>
+    </div>
+    <div class="trending-item">
+      <span class="trending-rank">2</span>
+      <span class="trending-name">DeliverFast</span>
+      <span class="trending-stats"><strong>74</strong> vues &middot; <strong>82</strong> saves</span>
+    </div>
+    <div class="trending-item">
+      <span class="trending-rank">3</span>
+      <span class="trending-name">KmerJobs</span>
+      <span class="trending-stats"><strong>40</strong> vues &middot; <strong>65</strong> saves</span>
+    </div>
+    <div class="trending-item">
+      <span class="trending-rank">4</span>
+      <span class="trending-name">AgriConnect</span>
+      <span class="trending-stats"><strong>38</strong> vues &middot; <strong>72</strong> saves</span>
+    </div>
+    <div class="trending-item">
+      <span class="trending-rank">5</span>
+      <span class="trending-name">MojiraX</span>
+      <span class="trending-stats"><strong>57</strong> vues</span>
+    </div>
+  </div>
+
+  <!-- Profiles to follow -->
+  <div class="right-card">
+    <div class="right-card-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+      Profils a suivre
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">P</div>
+      <div class="profile-info">
+        <h4>Patrick Tchoumi</h4>
+        <p>Full-Stack: React, Node.js, Python</p>
+      </div>
+      <button class="btn-follow">Suivre</button>
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background:linear-gradient(135deg,#ec4899,#f43f5e)">M</div>
+      <div class="profile-info">
+        <h4>Marie Fotso</h4>
+        <p>UX: Figma, Research, Prototyping</p>
+      </div>
+      <button class="btn-follow">Suivre</button>
+    </div>
+    <div class="profile-item">
+      <div class="profile-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">J</div>
+      <div class="profile-info">
+        <h4>Jean Kamga</h4>
+        <p>Business: Sales, Marketing, Strategy</p>
+      </div>
+      <button class="btn-follow">Suivre</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="right-card" style="background:transparent;border:none;box-shadow:none;padding:8px 0">
+    <div class="right-footer">
+      <div class="right-footer-links">
+        <a href="#">A propos</a>
+        <a href="#">Aide</a>
+        <a href="#">Confidentialite</a>
+        <a href="#">CGU</a>
+        <a href="#">Publicite</a>
+      </div>
+      <p>&copy; 2026 MojiraX Inc.</p>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MOBILE BOTTOM NAV ===== -->
+<nav class="mobile-nav">
+  <a href="#" class="mobile-nav-item active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Accueil</span>
+  </a>
+  <a href="#" class="mobile-nav-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    <span>Projets</span>
+  </a>
+  <a href="#" class="mobile-nav-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-badge">2</span>
+    <span>Messages</span>
+  </a>
+  <a href="#" class="mobile-nav-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Profil</span>
+  </a>
+  <a href="#" class="mobile-nav-item" id="mobileMenuBtn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    <span>Menu</span>
+  </a>
+</nav>
+
+<script>
+(function(){
+  // ===== HAMBURGER / MOBILE SIDEBAR =====
+  const hamburger = document.getElementById('hamburgerBtn');
+  const sidebar = document.getElementById('sidebarLeft');
+  const overlay = document.getElementById('sidebarOverlay');
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+  function toggleMobileSidebar(){
+    const isOpen = sidebar.classList.contains('mobile-open');
+    if(isOpen){
+      sidebar.classList.remove('mobile-open');
+      overlay.classList.remove('open');
+      hamburger.classList.remove('active');
+    }else{
+      sidebar.classList.add('mobile-open');
+      overlay.classList.add('open');
+      hamburger.classList.add('active');
+    }
+  }
+  hamburger.addEventListener('click',toggleMobileSidebar);
+  overlay.addEventListener('click',toggleMobileSidebar);
+  if(mobileMenuBtn) mobileMenuBtn.addEventListener('click',function(e){e.preventDefault();toggleMobileSidebar()});
+
+  // ===== MOBILE SEARCH TOGGLE =====
+  const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+  const headerSearch = document.getElementById('headerSearch');
+  if(mobileSearchBtn){
+    mobileSearchBtn.addEventListener('click',function(){
+      headerSearch.classList.toggle('mobile-open');
+      if(headerSearch.classList.contains('mobile-open')){
+        headerSearch.querySelector('input').focus();
+      }
+    });
+  }
+
+  // ===== FILTER DROPDOWN =====
+  const filterToggle = document.getElementById('filterToggle');
+  const filterDropdown = document.getElementById('filterDropdown');
+  filterToggle.addEventListener('click',function(e){
+    e.stopPropagation();
+    filterToggle.classList.toggle('active');
+    filterDropdown.classList.toggle('open');
+  });
+  document.addEventListener('click',function(e){
+    if(!filterDropdown.contains(e.target)&&!filterToggle.contains(e.target)){
+      filterDropdown.classList.remove('open');
+      filterToggle.classList.remove('active');
+    }
+  });
+
+  // ===== SAVE TOGGLE =====
+  document.querySelectorAll('.btn-save').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      const saved = btn.dataset.saved === 'true';
+      btn.dataset.saved = saved ? 'false' : 'true';
+      btn.classList.toggle('saved');
+      // small bounce animation
+      btn.style.transform = 'scale(1.2)';
+      setTimeout(function(){btn.style.transform = 'scale(1)'},200);
+    });
+  });
+
+  // ===== FOLLOW BUTTON TOGGLE =====
+  document.querySelectorAll('.btn-follow').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(btn.textContent === 'Suivre'){
+        btn.textContent = 'Suivi';
+        btn.style.background = 'var(--primary)';
+        btn.style.color = '#fff';
+      }else{
+        btn.textContent = 'Suivre';
+        btn.style.background = 'var(--light)';
+        btn.style.color = 'var(--primary)';
+      }
+    });
+  });
+
+  // ===== SCROLL ANIMATIONS (Intersection Observer) =====
+  const cards = document.querySelectorAll('.project-card');
+  const observerOptions = {threshold:0.15,rootMargin:'0px 0px -40px 0px'};
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        const delay = parseInt(entry.target.dataset.delay)||0;
+        setTimeout(function(){
+          entry.target.classList.add('visible');
+          entry.target.style.transition = 'opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1)';
+        },delay);
+        observer.unobserve(entry.target);
+      }
+    });
+  },observerOptions);
+  cards.forEach(function(card){observer.observe(card)});
+
+  // Featured banner animation
+  const featured = document.getElementById('featuredBanner');
+  if(featured){
+    const fObs = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          featured.style.animation = 'fadeInUp .6s ease both';
+          fObs.unobserve(featured);
+        }
+      });
+    },{threshold:0.2});
+    fObs.observe(featured);
+  }
+
+  // ===== PARALLAX ON FOUNDER GRADIENT =====
+  document.querySelectorAll('.card-founder').forEach(function(founder){
+    founder.addEventListener('mousemove',function(e){
+      const rect = founder.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      const bg = founder.querySelector('.card-founder-bg');
+      if(bg){
+        bg.style.transform = 'scale(1.08) translate('+(-x*12)+'px,'+(-y*12)+'px)';
+      }
+      const initial = founder.querySelector('.card-founder-initial');
+      if(initial){
+        initial.style.transform = 'scale(1.08) translate('+(x*6)+'px,'+(y*6)+'px)';
+      }
+    });
+    founder.addEventListener('mouseleave',function(){
+      const bg = founder.querySelector('.card-founder-bg');
+      if(bg) bg.style.transform = '';
+      const initial = founder.querySelector('.card-founder-initial');
+      if(initial) initial.style.transform = '';
+    });
+  });
+
+  // ===== KEYBOARD SHORTCUT — CTRL+K for search =====
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){
+      e.preventDefault();
+      const input = headerSearch.querySelector('input');
+      // On mobile, open search first
+      if(window.innerWidth < 768){
+        headerSearch.classList.add('mobile-open');
+      }
+      input.focus();
+      input.select();
+    }
+  });
+
+  // ===== SIDEBAR NAV ACTIVE STATE =====
+  document.querySelectorAll('.sidebar-link:not(.logout)').forEach(function(link){
+    link.addEventListener('click',function(e){
+      e.preventDefault();
+      document.querySelectorAll('.sidebar-link').forEach(function(l){l.classList.remove('active')});
+      link.classList.add('active');
+    });
+  });
+
+  // ===== MOBILE BOTTOM NAV ACTIVE STATE =====
+  document.querySelectorAll('.mobile-nav-item').forEach(function(item){
+    item.addEventListener('click',function(e){
+      if(item.id==='mobileMenuBtn') return;
+      e.preventDefault();
+      document.querySelectorAll('.mobile-nav-item').forEach(function(i){i.classList.remove('active')});
+      item.classList.add('active');
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

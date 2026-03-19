@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MojiraX — Découvrez les projets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #0066ff;
+  --primary-hover: #0052cc;
+  --dark: #001f4d;
+  --light: #e6f0ff;
+  --accent: #3399ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --red-500: #ef4444;
+  --red-50: #fef2f2;
+  --orange-500: #f97316;
+  --orange-50: #fff7ed;
+  --amber-500: #f59e0b;
+  --green-500: #22c55e;
+  --radius: 16px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,0.16);
+  --header-h: 64px;
+  --sidebar-w: 260px;
+  --sidebar-icon-w: 72px;
+  --right-sidebar-w: 300px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ========== HEADER ========== */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid var(--gray-200);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; flex-shrink: 0;
+}
+.header-logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0,102,255,0.3);
+}
+.header-logo-text {
+  font-size: 20px; font-weight: 800; color: var(--dark);
+  letter-spacing: -0.5px;
+}
+
+.header-search {
+  flex: 1; max-width: 520px; margin: 0 auto;
+  position: relative;
+}
+.header-search-input {
+  width: 100%; height: 42px; border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  padding: 0 48px 0 40px;
+  font-family: inherit; font-size: 14px; color: var(--gray-700);
+  transition: all 0.2s;
+  outline: none;
+}
+.header-search-input::placeholder { color: var(--gray-400); }
+.header-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,102,255,0.1);
+  background: #fff;
+}
+.header-search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--gray-400); pointer-events: none;
+}
+.header-search-badge {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: var(--gray-100); border: 1px solid var(--gray-200);
+  border-radius: 6px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; color: var(--gray-500);
+  pointer-events: none;
+}
+
+.header-right {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.header-notif {
+  position: relative; width: 40px; height: 40px;
+  border-radius: 12px; border: 1px solid var(--gray-200);
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; color: var(--gray-600);
+}
+.header-notif:hover { border-color: var(--primary); color: var(--primary); background: var(--light); }
+.header-notif-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 20px; height: 20px; border-radius: 10px;
+  background: var(--red-500); color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+.header-avatar {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; font-weight: 700; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform 0.2s;
+}
+.header-avatar:hover { transform: scale(1.05); }
+.header-hamburger {
+  display: none; width: 40px; height: 40px;
+  border-radius: 12px; border: 1px solid var(--gray-200);
+  background: #fff; cursor: pointer;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.header-hamburger span {
+  display: block; width: 18px; height: 2px;
+  background: var(--gray-700); border-radius: 2px;
+  transition: all 0.3s;
+}
+.header-hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
+.header-hamburger.active span:nth-child(2) { opacity: 0; }
+.header-hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
+
+.header-search-mobile {
+  display: none; width: 40px; height: 40px;
+  border-radius: 12px; border: 1px solid var(--gray-200);
+  background: #fff; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--gray-600);
+}
+
+/* ========== LAYOUT ========== */
+.layout {
+  display: flex;
+  padding-top: var(--header-h);
+  min-height: 100vh;
+}
+
+/* ========== LEFT SIDEBAR ========== */
+.sidebar-left {
+  position: sticky; top: var(--header-h);
+  width: var(--sidebar-w); height: calc(100vh - var(--header-h));
+  padding: 20px 12px;
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  z-index: 50;
+}
+.sidebar-left-inner {
+  background: #fff; border-radius: var(--radius);
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  padding: 20px 12px;
+  display: flex; flex-direction: column;
+  flex: 1;
+}
+.sidebar-header {
+  padding: 0 8px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  margin-bottom: 8px;
+}
+.sidebar-header h3 {
+  font-size: 15px; font-weight: 700; color: var(--dark);
+}
+.sidebar-header p {
+  font-size: 12px; color: var(--gray-500); margin-top: 2px;
+}
+.sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 12px;
+  color: var(--gray-600); text-decoration: none;
+  font-size: 14px; font-weight: 500;
+  transition: all 0.2s; position: relative;
+  cursor: pointer; border: 2px solid transparent;
+}
+.sidebar-nav-item:hover {
+  background: var(--gray-50); color: var(--gray-900);
+}
+.sidebar-nav-item.active {
+  background: var(--light); color: var(--primary);
+  font-weight: 600;
+  border-color: var(--primary);
+}
+.sidebar-nav-item svg { flex-shrink: 0; }
+.sidebar-nav-item .nav-label { white-space: nowrap; }
+.sidebar-badge {
+  margin-left: auto;
+  min-width: 20px; height: 20px; border-radius: 10px;
+  background: var(--red-500); color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 6px;
+}
+.sidebar-bottom {
+  margin-top: auto; padding-top: 12px;
+  border-top: 1px solid var(--gray-100);
+}
+.sidebar-logout {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 12px;
+  color: var(--red-500); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  background: none; border: none; width: 100%;
+  font-family: inherit;
+}
+.sidebar-logout:hover { background: var(--red-50); }
+
+/* ========== MAIN FEED ========== */
+.main-feed {
+  flex: 1; min-width: 0;
+  padding: 28px 24px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.feed-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.feed-header-left h1 {
+  font-size: 26px; font-weight: 800; color: var(--dark);
+  letter-spacing: -0.5px;
+}
+.feed-header-left p {
+  font-size: 15px; color: var(--gray-500); margin-top: 4px;
+}
+.feed-header-link {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--primary); font-size: 14px; font-weight: 600;
+  text-decoration: none; padding: 8px 16px;
+  border-radius: 10px; transition: all 0.2s;
+  white-space: nowrap; margin-top: 4px;
+}
+.feed-header-link:hover { background: var(--light); }
+
+/* Filter */
+.filter-bar { margin-bottom: 20px; position: relative; }
+.filter-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 12px;
+  border: 1px solid var(--gray-200); background: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 500;
+  color: var(--gray-700); cursor: pointer;
+  transition: all 0.2s; box-shadow: var(--shadow-sm);
+}
+.filter-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.filter-toggle.active { border-color: var(--primary); color: var(--primary); background: var(--light); }
+.filter-chevron { transition: transform 0.3s; }
+.filter-toggle.active .filter-chevron { transform: rotate(180deg); }
+
+.filter-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: #fff; border-radius: var(--radius);
+  border: 1px solid var(--gray-200); box-shadow: var(--shadow-lg);
+  padding: 20px; z-index: 20;
+  display: none;
+  animation: filterSlide 0.25s ease;
+}
+.filter-panel.open { display: block; }
+@keyframes filterSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.filter-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.filter-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--gray-700); margin-bottom: 6px;
+}
+.filter-input, .filter-select {
+  width: 100%; height: 40px; border-radius: 10px;
+  border: 1px solid var(--gray-200); padding: 0 12px;
+  font-family: inherit; font-size: 14px; color: var(--gray-700);
+  outline: none; transition: border-color 0.2s;
+  background: #fff;
+}
+.filter-input:focus, .filter-select:focus { border-color: var(--primary); }
+.filter-tags-section { margin-top: 16px; }
+.filter-tags-section label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--gray-700); margin-bottom: 8px;
+}
+.filter-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-tag {
+  padding: 6px 14px; border-radius: 20px;
+  background: var(--gray-100); color: var(--gray-600);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; border: 1px solid transparent;
+}
+.filter-tag:hover, .filter-tag.selected {
+  background: var(--light); color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ========== PROJECT CARDS ========== */
+.cards-list { display: flex; flex-direction: column; gap: 20px; }
+
+.project-card {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  opacity: 0;
+  transform: translateY(24px);
+}
+.project-card.visible {
+  opacity: 1; transform: translateY(0);
+}
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.card-gradient-border {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 20px 0 0 20px;
+}
+
+.card-urgent-badge {
+  position: absolute; top: 16px; right: 16px;
+  background: var(--orange-500); color: #fff;
+  font-size: 12px; font-weight: 700;
+  padding: 4px 12px; border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
+  animation: urgentPulse 2s infinite;
+}
+@keyframes urgentPulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(249,115,22,0.3); }
+  50% { box-shadow: 0 2px 16px rgba(249,115,22,0.5); }
+}
+
+.card-content { padding: 24px 24px 20px 28px; }
+
+.card-founder {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.card-founder-avatar {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 18px; color: #fff;
+  flex-shrink: 0;
+}
+.card-founder-info { min-width: 0; }
+.card-founder-name {
+  font-size: 15px; font-weight: 700; color: var(--gray-900);
+}
+.card-founder-role {
+  font-size: 13px; color: var(--gray-500);
+}
+
+.card-project-name {
+  font-size: 22px; font-weight: 800; color: var(--dark);
+  margin-bottom: 8px; letter-spacing: -0.3px;
+}
+.card-pitch {
+  font-size: 15px; color: var(--gray-600); line-height: 1.6;
+  margin-bottom: 14px;
+}
+.card-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--gray-500); margin-bottom: 16px;
+}
+.card-meta-sep { color: var(--gray-300); }
+
+.card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.card-tag {
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+.card-tag-role {
+  background: var(--light); color: var(--primary);
+}
+.card-tag-skill {
+  background: var(--gray-100); color: var(--gray-600);
+}
+.card-tag-label {
+  background: none; color: var(--gray-500);
+  padding-left: 0; font-weight: 500; font-style: italic;
+}
+
+.card-actions {
+  display: flex; gap: 10px;
+}
+.btn-primary {
+  flex: 1; height: 48px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; font-family: inherit; font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,102,255,0.25);
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(0,102,255,0.35);
+  transform: translateY(-1px);
+}
+.btn-save {
+  width: 48px; height: 48px; border-radius: 14px;
+  border: 1.5px solid var(--gray-200); background: #fff;
+  cursor: pointer; color: var(--gray-400);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.btn-save:hover { border-color: var(--primary); color: var(--primary); }
+.btn-save.saved { border-color: var(--primary); color: var(--primary); background: var(--light); }
+
+/* ========== RIGHT SIDEBAR ========== */
+.sidebar-right {
+  position: sticky; top: var(--header-h);
+  width: var(--right-sidebar-w); height: calc(100vh - var(--header-h));
+  padding: 20px 12px 20px 0;
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.widget {
+  background: #fff; border-radius: var(--radius);
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.widget::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+.widget-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 700; color: var(--dark);
+  margin-bottom: 16px;
+}
+.widget-title svg { color: var(--primary); }
+
+.trending-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-50);
+}
+.trending-item:last-child { border-bottom: none; padding-bottom: 0; }
+.trending-rank {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--light); color: var(--primary);
+  font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.trending-info { min-width: 0; flex: 1; }
+.trending-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+.trending-meta {
+  font-size: 12px; color: var(--gray-500); margin-top: 2px;
+}
+.trending-stats {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--gray-400); margin-top: 4px;
+}
+.trending-stat {
+  display: flex; align-items: center; gap: 3px;
+}
+.trending-stat svg { width: 14px; height: 14px; }
+.trending-stat.amber svg { color: var(--amber-500); }
+
+.profile-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-50);
+}
+.profile-item:last-child { border-bottom: none; padding-bottom: 0; }
+.profile-avatar {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
+}
+.profile-info { min-width: 0; }
+.profile-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+.profile-title { font-size: 12px; color: var(--gray-500); }
+.profile-skills {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+}
+.profile-skill {
+  padding: 2px 8px; border-radius: 6px;
+  background: var(--gray-100); color: var(--gray-600);
+  font-size: 11px; font-weight: 500;
+}
+
+.widget-footer {
+  background: #fff; border-radius: var(--radius);
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 20px;
+}
+.widget-footer-links {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 12px;
+}
+.widget-footer-links a {
+  color: var(--gray-400); text-decoration: none;
+  transition: color 0.2s;
+}
+.widget-footer-links a:hover { color: var(--primary); }
+.widget-footer-copy {
+  font-size: 11px; color: var(--gray-400); margin-top: 8px;
+}
+
+/* ========== MOBILE BOTTOM NAV ========== */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 64px; background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--gray-200);
+  z-index: 100;
+  justify-content: space-around; align-items: center;
+  padding: 0 8px;
+}
+.bottom-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: var(--gray-400); font-size: 11px; font-weight: 500;
+  text-decoration: none; padding: 6px 12px; border-radius: 12px;
+  transition: all 0.2s; position: relative;
+  cursor: pointer; background: none; border: none; font-family: inherit;
+}
+.bottom-nav-item.active { color: var(--primary); }
+.bottom-nav-item.active svg { color: var(--primary); }
+.bottom-nav-badge {
+  position: absolute; top: 0; right: 4px;
+  width: 16px; height: 16px; border-radius: 8px;
+  background: var(--red-500); color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ========== MOBILE SLIDE MENU ========== */
+.mobile-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+  z-index: 200; opacity: 0; transition: opacity 0.3s;
+}
+.mobile-overlay.open { display: block; opacity: 1; }
+
+.mobile-menu {
+  position: fixed; top: 0; right: 0;
+  width: 280px; height: 100%;
+  background: #fff; z-index: 201;
+  transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 80px 20px 20px;
+  overflow-y: auto;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+}
+.mobile-menu.open { transform: translateX(0); }
+.mobile-menu .sidebar-nav-item {
+  padding: 14px 16px; font-size: 16px;
+}
+.mobile-menu .sidebar-logout { padding: 14px 16px; font-size: 16px; }
+
+/* ========== RESPONSIVE ========== */
+
+/* Tablet */
+@media (max-width: 1279px) {
+  .sidebar-right { display: none; }
+  .main-feed { max-width: 680px; }
+}
+
+@media (max-width: 1023px) {
+  .sidebar-left { width: var(--sidebar-icon-w); }
+  .sidebar-header { display: none; }
+  .sidebar-nav-item .nav-label { display: none; }
+  .sidebar-nav-item { justify-content: center; padding: 12px; }
+  .sidebar-nav-item svg { width: 22px; height: 22px; }
+  .sidebar-badge { position: absolute; top: 4px; right: 4px; margin-left: 0; }
+  .sidebar-logout .nav-label { display: none; }
+  .sidebar-logout { justify-content: center; }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .sidebar-left { display: none; }
+  .bottom-nav { display: flex; }
+  .main-feed { padding: 20px 16px 88px; }
+  .header-search { display: none; }
+  .header-avatar { display: none; }
+  .header-hamburger { display: flex; }
+  .header-search-mobile { display: flex; }
+
+  .feed-header { flex-direction: column; gap: 8px; }
+  .feed-header-left h1 { font-size: 22px; }
+  .filter-grid { grid-template-columns: 1fr; }
+  .card-content { padding: 20px 20px 16px 24px; }
+  .card-project-name { font-size: 19px; }
+  .card-meta { font-size: 12px; }
+  .card-actions { flex-direction: column; }
+  .btn-save { width: 100%; }
+}
+
+@media (max-width: 374px) {
+  .header { padding: 0 12px; }
+  .main-feed { padding: 16px 12px 88px; }
+  .card-content { padding: 16px 16px 14px 20px; }
+}
+
+/* Stagger animation */
+.project-card:nth-child(1) { transition-delay: 0s; }
+.project-card:nth-child(2) { transition-delay: 0.12s; }
+.project-card:nth-child(3) { transition-delay: 0.24s; }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <a href="#" class="header-logo">
+    <div class="header-logo-icon">M</div>
+    <span class="header-logo-text">MojiraX</span>
+  </a>
+
+  <div class="header-search">
+    <svg class="header-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" class="header-search-input" placeholder="Rechercher un projet, un talent, une idée...">
+    <span class="header-search-badge">Ctrl K</span>
+  </div>
+
+  <div class="header-right">
+    <button class="header-search-mobile" aria-label="Rechercher">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="header-notif" aria-label="Notifications">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="header-notif-badge">3</span>
+    </button>
+    <div class="header-avatar">O</div>
+    <button class="header-hamburger" id="hamburgerBtn" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- ===== MOBILE OVERLAY ===== -->
+<div class="mobile-overlay" id="mobileOverlay"></div>
+<div class="mobile-menu" id="mobileMenu">
+  <nav style="display:flex;flex-direction:column;gap:4px;">
+    <a class="sidebar-nav-item active" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">Accueil</span>
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span class="nav-label">Mes Projets</span>
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <span class="nav-label">Mes Candidatures</span>
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="nav-label">Messages</span>
+      <span class="sidebar-badge">2</span>
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">Mon Profil</span>
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-label">Paramètres</span>
+    </a>
+  </nav>
+  <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--gray-100);">
+    <button class="sidebar-logout">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span class="nav-label">Déconnexion</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== LAYOUT ===== -->
+<div class="layout">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar-left">
+    <div class="sidebar-left-inner">
+      <div class="sidebar-header">
+        <h3>Mon Espace</h3>
+        <p>Gérez votre activité</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="sidebar-nav-item active" href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="nav-label">Accueil</span>
+        </a>
+        <a class="sidebar-nav-item" href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span class="nav-label">Mes Projets</span>
+        </a>
+        <a class="sidebar-nav-item" href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span class="nav-label">Mes Candidatures</span>
+        </a>
+        <a class="sidebar-nav-item" href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="nav-label">Messages</span>
+          <span class="sidebar-badge">2</span>
+        </a>
+        <a class="sidebar-nav-item" href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="nav-label">Mon Profil</span>
+        </a>
+        <a class="sidebar-nav-item" href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="nav-label">Paramètres</span>
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="sidebar-logout">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="nav-label">Déconnexion</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN FEED -->
+  <main class="main-feed">
+    <div class="feed-header">
+      <div class="feed-header-left">
+        <h1>Découvrez les projets</h1>
+        <p>Des fondateurs passionnés cherchent leur binôme.</p>
+      </div>
+      <a href="#" class="feed-header-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Voir les Talents
+      </a>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <button class="filter-toggle" id="filterToggle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filtres
+        <svg class="filter-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="filter-panel" id="filterPanel">
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label>Ville</label>
+            <input type="text" class="filter-input" placeholder="Ex: Douala, Abidjan...">
+          </div>
+          <div class="filter-group">
+            <label>Secteur</label>
+            <select class="filter-select">
+              <option value="">Tous les secteurs</option>
+              <option>FinTech</option>
+              <option>HealthTech</option>
+              <option>EdTech</option>
+              <option>AgriTech</option>
+              <option>Logistique</option>
+              <option>E-commerce</option>
+              <option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-tags-section">
+          <label>Compétences recherchées</label>
+          <div class="filter-tags">
+            <span class="filter-tag" data-skill>React</span>
+            <span class="filter-tag" data-skill>Node.js</span>
+            <span class="filter-tag" data-skill>Python</span>
+            <span class="filter-tag" data-skill>UX Design</span>
+            <span class="filter-tag" data-skill>Mobile</span>
+            <span class="filter-tag" data-skill>Marketing</span>
+            <span class="filter-tag" data-skill>Finance</span>
+            <span class="filter-tag" data-skill>Sales</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="cards-list">
+
+      <!-- CARD 1 -->
+      <article class="project-card">
+        <div class="card-gradient-border"></div>
+        <div class="card-content">
+          <div class="card-founder">
+            <div class="card-founder-avatar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">N</div>
+            <div class="card-founder-info">
+              <div class="card-founder-name">Nadège Talla</div>
+              <div class="card-founder-role">Fondateur</div>
+            </div>
+          </div>
+          <h2 class="card-project-name">DeliverFast</h2>
+          <p class="card-pitch">Livraison express en 2h pour le e-commerce africain via un réseau de moto-taxis certifiés et géolocalisés</p>
+          <div class="card-meta">
+            <span>Logistique</span>
+            <span class="card-meta-sep">|</span>
+            <span>Douala, Cameroun</span>
+            <span class="card-meta-sep">|</span>
+            <span>MVP</span>
+            <span class="card-meta-sep">|</span>
+            <span>Il y a 18j</span>
+          </div>
+          <div class="card-tags">
+            <span class="card-tag card-tag-label">Cherche :</span>
+            <span class="card-tag card-tag-role">Profil Tech</span>
+            <span class="card-tag card-tag-role">Hybride</span>
+            <span class="card-tag card-tag-skill">React Native</span>
+            <span class="card-tag card-tag-skill">Node.js</span>
+            <span class="card-tag card-tag-skill">Géolocalisation</span>
+          </div>
+          <div class="card-actions">
+            <button class="btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Voir projet
+            </button>
+            <button class="btn-save" aria-label="Sauvegarder" data-save>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARD 2 -->
+      <article class="project-card">
+        <div class="card-gradient-border"></div>
+        <div class="card-content">
+          <div class="card-founder">
+            <div class="card-founder-avatar" style="background:linear-gradient(135deg,#ec4899,#f43f5e);">A</div>
+            <div class="card-founder-info">
+              <div class="card-founder-name">Amina Koné</div>
+              <div class="card-founder-role">Fondatrice</div>
+            </div>
+          </div>
+          <h2 class="card-project-name">FinPay Africa</h2>
+          <p class="card-pitch">Solution de paiement mobile interopérable pour les marchés francophones</p>
+          <div class="card-meta">
+            <span>FinTech</span>
+            <span class="card-meta-sep">|</span>
+            <span>Abidjan, Côte d'Ivoire</span>
+            <span class="card-meta-sep">|</span>
+            <span>Traction</span>
+            <span class="card-meta-sep">|</span>
+            <span>Il y a 5j</span>
+          </div>
+          <div class="card-tags">
+            <span class="card-tag card-tag-label">Cherche :</span>
+            <span class="card-tag card-tag-role">Business</span>
+            <span class="card-tag card-tag-role">Rémunéré</span>
+            <span class="card-tag card-tag-skill">Mobile Money</span>
+            <span class="card-tag card-tag-skill">API Banking</span>
+          </div>
+          <div class="card-actions">
+            <button class="btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Voir projet
+            </button>
+            <button class="btn-save" aria-label="Sauvegarder" data-save>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARD 3 -->
+      <article class="project-card">
+        <div class="card-gradient-border"></div>
+        <div class="card-urgent-badge">Urgent</div>
+        <div class="card-content">
+          <div class="card-founder">
+            <div class="card-founder-avatar" style="background:linear-gradient(135deg,#10b981,#14b8a6);">S</div>
+            <div class="card-founder-info">
+              <div class="card-founder-name">Samuel Mbarga</div>
+              <div class="card-founder-role">Fondateur</div>
+            </div>
+          </div>
+          <h2 class="card-project-name">EduConnect</h2>
+          <p class="card-pitch">Marketplace de formation professionnelle pour les jeunes diplômés africains</p>
+          <div class="card-meta">
+            <span>EdTech</span>
+            <span class="card-meta-sep">|</span>
+            <span>Douala, Cameroun</span>
+            <span class="card-meta-sep">|</span>
+            <span>Prototype</span>
+            <span class="card-meta-sep">|</span>
+            <span>Il y a 2j</span>
+          </div>
+          <div class="card-tags">
+            <span class="card-tag card-tag-label">Cherche :</span>
+            <span class="card-tag card-tag-role">Produit</span>
+            <span class="card-tag card-tag-role">Hybride</span>
+            <span class="card-tag card-tag-skill">React</span>
+            <span class="card-tag card-tag-skill">UX Design</span>
+          </div>
+          <div class="card-actions">
+            <button class="btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Voir projet
+            </button>
+            <button class="btn-save" aria-label="Sauvegarder" data-save>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- RIGHT SIDEBAR -->
+  <aside class="sidebar-right">
+
+    <!-- WIDGET: Trending Projects -->
+    <div class="widget">
+      <div class="widget-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Projets tendance
+      </div>
+
+      <div class="trending-item">
+        <div class="trending-rank">1</div>
+        <div class="trending-info">
+          <div class="trending-name">MediLink</div>
+          <div class="trending-meta">HEALTHTECH · MVP</div>
+          <div class="trending-stats">
+            <span class="trending-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              112
+            </span>
+            <span class="trending-stat amber">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              90
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trending-item">
+        <div class="trending-rank">2</div>
+        <div class="trending-info">
+          <div class="trending-name">DeliverFast</div>
+          <div class="trending-meta">LOGISTICS · MVP</div>
+          <div class="trending-stats">
+            <span class="trending-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              74
+            </span>
+            <span class="trending-stat amber">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              82
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trending-item">
+        <div class="trending-rank">3</div>
+        <div class="trending-info">
+          <div class="trending-name">KmerJobs</div>
+          <div class="trending-meta">OTHER · Idea</div>
+          <div class="trending-stats">
+            <span class="trending-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              40
+            </span>
+            <span class="trending-stat amber">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              65
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trending-item">
+        <div class="trending-rank">4</div>
+        <div class="trending-info">
+          <div class="trending-name">AgriConnect</div>
+          <div class="trending-meta">AGRITECH · Idea</div>
+          <div class="trending-stats">
+            <span class="trending-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              38
+            </span>
+            <span class="trending-stat amber">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              72
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trending-item">
+        <div class="trending-rank">5</div>
+        <div class="trending-info">
+          <div class="trending-name">MojiraX</div>
+          <div class="trending-meta">OTHER · MVP_BUILD</div>
+          <div class="trending-stats">
+            <span class="trending-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              57
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIDGET: Profils à suivre -->
+    <div class="widget">
+      <div class="widget-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Profils à suivre
+      </div>
+
+      <div class="profile-item">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#0066ff,#3399ff);">P</div>
+        <div class="profile-info">
+          <div class="profile-name">Patrick Tchoumi</div>
+          <div class="profile-title">Développeur Full-Stack</div>
+          <div class="profile-skills">
+            <span class="profile-skill">React</span>
+            <span class="profile-skill">Node.js</span>
+            <span class="profile-skill">Python</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-item">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#ec4899,#a855f7);">M</div>
+        <div class="profile-info">
+          <div class="profile-name">Marie Fotso</div>
+          <div class="profile-title">UX Designer</div>
+          <div class="profile-skills">
+            <span class="profile-skill">Figma</span>
+            <span class="profile-skill">Research</span>
+            <span class="profile-skill">Prototyping</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-item">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">J</div>
+        <div class="profile-info">
+          <div class="profile-name">Jean Kamga</div>
+          <div class="profile-title">Business Developer</div>
+          <div class="profile-skills">
+            <span class="profile-skill">Sales</span>
+            <span class="profile-skill">Marketing</span>
+            <span class="profile-skill">Strategy</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER LINKS -->
+    <div class="widget-footer">
+      <div class="widget-footer-links">
+        <a href="#">À propos</a>
+        <a href="#">Aide</a>
+        <a href="#">Confidentialité</a>
+        <a href="#">CGU</a>
+        <a href="#">Publicité</a>
+      </div>
+      <div class="widget-footer-copy">© 2026 MojiraX Inc.</div>
+    </div>
+
+  </aside>
+
+</div>
+
+<!-- ===== BOTTOM NAV (mobile) ===== -->
+<nav class="bottom-nav">
+  <button class="bottom-nav-item active">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Accueil</span>
+  </button>
+  <button class="bottom-nav-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span>Projets</span>
+  </button>
+  <button class="bottom-nav-item" style="position:relative;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Messages</span>
+    <span class="bottom-nav-badge">2</span>
+  </button>
+  <button class="bottom-nav-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Profil</span>
+  </button>
+  <button class="bottom-nav-item" id="bottomMenuBtn">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+    <span>Menu</span>
+  </button>
+</nav>
+
+<script>
+(function() {
+  // --- Filter Panel ---
+  const filterToggle = document.getElementById('filterToggle');
+  const filterPanel = document.getElementById('filterPanel');
+
+  filterToggle.addEventListener('click', function() {
+    const isOpen = filterPanel.classList.toggle('open');
+    filterToggle.classList.toggle('active', isOpen);
+  });
+
+  // Close filter when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!filterToggle.contains(e.target) && !filterPanel.contains(e.target)) {
+      filterPanel.classList.remove('open');
+      filterToggle.classList.remove('active');
+    }
+  });
+
+  // Filter tag selection
+  document.querySelectorAll('.filter-tag[data-skill]').forEach(function(tag) {
+    tag.addEventListener('click', function() {
+      tag.classList.toggle('selected');
+    });
+  });
+
+  // --- Save Toggle ---
+  document.querySelectorAll('[data-save]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      btn.classList.toggle('saved');
+      var svg = btn.querySelector('svg path');
+      if (btn.classList.contains('saved')) {
+        svg.setAttribute('fill', 'currentColor');
+      } else {
+        svg.setAttribute('fill', 'none');
+      }
+    });
+  });
+
+  // --- Hamburger / Mobile Menu ---
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+  const bottomMenuBtn = document.getElementById('bottomMenuBtn');
+
+  function openMenu() {
+    hamburgerBtn.classList.add('active');
+    mobileMenu.classList.add('open');
+    mobileOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMenu() {
+    hamburgerBtn.classList.remove('active');
+    mobileMenu.classList.remove('open');
+    mobileOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  hamburgerBtn.addEventListener('click', function() {
+    if (mobileMenu.classList.contains('open')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+  mobileOverlay.addEventListener('click', closeMenu);
+  if (bottomMenuBtn) {
+    bottomMenuBtn.addEventListener('click', openMenu);
+  }
+
+  // --- Scroll Reveal Cards ---
+  function revealCards() {
+    var cards = document.querySelectorAll('.project-card');
+    cards.forEach(function(card) {
+      var rect = card.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 60) {
+        card.classList.add('visible');
+      }
+    });
+  }
+  // Run on load and scroll
+  revealCards();
+  window.addEventListener('scroll', revealCards, { passive: true });
+
+  // --- Keyboard shortcut Ctrl+K for search ---
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      var input = document.querySelector('.header-search-input');
+      if (input) input.focus();
+    }
+  });
+})();
+</script>
+</body>
+</html>

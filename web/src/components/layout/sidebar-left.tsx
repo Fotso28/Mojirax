@@ -61,7 +61,7 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     if (hasProject) {
         dynamicItems.push({ icon: FolderKanban, label: 'Mes Projets', path: '/my-project' });
     } else if (dbUser?.role !== 'CANDIDATE') {
-        dynamicItems.push({ icon: Rocket, label: 'Lancer un projet', path: '/onboarding/project' });
+        dynamicItems.push({ icon: Rocket, label: 'Lancer un projet', path: '/create/project' });
     }
 
     // Toujours afficher "Mes Candidatures" — un fondateur peut aussi postuler

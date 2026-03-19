@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/auth-context';
+import { useRouter } from 'next/navigation';
 import { ProfileHeader } from '@/components/profile/profile-header';
 import { ProfileForm } from '@/components/profile/profile-form';
 import { CandidateProfileForm, StatusBadge, CompletenessBar } from '@/components/profile/candidate-profile-form';
@@ -12,6 +13,7 @@ import { Eye, Send, Star } from 'lucide-react';
 
 export default function ProfilePage() {
     const { user: firebaseUser, loading: isAuthLoading, refreshDbUser } = useAuth();
+    const router = useRouter();
     const { showToast } = useToast();
     const [dbUser, setDbUser] = useState<any>(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -81,7 +83,8 @@ export default function ProfilePage() {
     }
 
     if (!firebaseUser) {
-        return <div>Veuillez vous connecter.</div>;
+        router.replace('/login');
+        return null;
     }
 
     const displayUser = dbUser ? {

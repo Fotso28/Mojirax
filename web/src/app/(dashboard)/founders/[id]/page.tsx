@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
     Loader2, ArrowLeft, MapPin, Briefcase, Mail, Phone, Globe,
     Linkedin, GraduationCap, Calendar, User, ExternalLink,
-    Sparkles, Share2, CheckCircle2, MessageCircle,
+    Sparkles, Share2, CheckCircle2, MessageCircle, Lock,
 } from 'lucide-react';
 import { useStartConversation } from '@/hooks/use-start-conversation';
 import { useAuth } from '@/context/auth-context';
@@ -195,22 +195,32 @@ export default function FounderPublicProfilePage() {
                                 {profile.yearsOfExperience} ans d&apos;exp.
                             </span>
                         )}
-                        {user.email && (
+                        {user.email ? (
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
                                 <Mail className="w-3.5 h-3.5 text-gray-400" />
                                 {user.email}
                             </span>
+                        ) : user._isLocked && (
+                            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                                <Lock className="w-3.5 h-3.5" />
+                                Email masque
+                            </span>
                         )}
-                        {phoneDisplay && (
+                        {phoneDisplay ? (
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
                                 <Phone className="w-3.5 h-3.5 text-gray-400" />
                                 {phoneDisplay}
+                            </span>
+                        ) : user._isLocked && (
+                            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                                <Lock className="w-3.5 h-3.5" />
+                                Telephone masque
                             </span>
                         )}
                     </div>
 
                     {/* Social links */}
-                    {hasLinks && (
+                    {hasLinks ? (
                         <div className="flex items-center gap-2 mt-4">
                             {profile.linkedinUrl && (
                                 <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
@@ -228,6 +238,13 @@ export default function FounderPublicProfilePage() {
                                     <ExternalLink className="w-3 h-3" />
                                 </a>
                             )}
+                        </div>
+                    ) : user._isLocked && (
+                        <div className="flex items-center gap-2 mt-4">
+                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium border border-amber-200">
+                                <Lock className="w-4 h-4" />
+                                Liens sociaux masques
+                            </span>
                         </div>
                     )}
                 </div>

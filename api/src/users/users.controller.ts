@@ -8,6 +8,8 @@ import { UsersService } from './users.service';
 import { CandidateModerationService } from './candidate-moderation.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
+import { SaveOnboardingStateDto } from './dto/save-onboarding-state.dto';
+import { SaveProjectDraftDto } from './dto/save-project-draft.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
 import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
@@ -57,8 +59,8 @@ export class UsersController {
     @UseGuards(FirebaseAuthGuard)
     @Patch('onboarding')
     @ApiOperation({ summary: 'Save onboarding draft state' })
-    async saveOnboardingState(@Request() req, @Body() body: any) {
-        return this.usersService.saveOnboardingState(req.user.uid, body);
+    async saveOnboardingState(@Request() req, @Body() dto: SaveOnboardingStateDto) {
+        return this.usersService.saveOnboardingState(req.user.uid, dto);
     }
 
     @ApiBearerAuth()
@@ -75,8 +77,8 @@ export class UsersController {
     @Patch('creating-projet')
     @ApiOperation({ summary: 'Save project creation draft' })
     @ApiResponse({ status: 200, description: 'Project draft saved successfully.' })
-    async saveProjectDraft(@Request() req, @Body() body: any) {
-        return this.usersService.saveProjectDraft(req.user.uid, body);
+    async saveProjectDraft(@Request() req, @Body() dto: SaveProjectDraftDto) {
+        return this.usersService.saveProjectDraft(req.user.uid, dto);
     }
 
     @ApiBearerAuth()
