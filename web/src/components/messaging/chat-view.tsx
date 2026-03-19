@@ -555,7 +555,6 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
               currentUserId={currentUserId}
               onReact={handleReact}
               onRemoveReact={handleRemoveReact}
-              onRetryFileUpload={handleRetryFileUpload}
             />
           ))
         )}
