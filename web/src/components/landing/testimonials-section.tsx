@@ -47,7 +47,7 @@ export function TestimonialsSection({ testimonials, loading }: Props) {
             </h2>
             <p className="text-base text-gray-500 max-w-xl mx-auto">
               Découvrez les histoires de ceux qui ont trouvé leur cofondateur
-              sur MojiraX
+              sur MoJiraX
             </p>
           </div>
         </Reveal>

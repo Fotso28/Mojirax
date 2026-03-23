@@ -22,7 +22,7 @@ export function LandingHeader() {
             <span className="text-white font-black text-lg">M</span>
           </div>
           <span className="font-bold text-xl tracking-tight text-gray-900">
-            MojiraX
+            MoJiraX
           </span>
         </Link>
 

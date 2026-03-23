@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, MessageSquare, User, Settings, LogOut, FolderKanban, Rocket, Send, ShieldCheck, Tags } from 'lucide-react';
+import { Home, MessageSquare, User, LogOut, FolderKanban, Rocket, Send } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -50,7 +50,6 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
         { icon: Home, label: 'Accueil', path: '/' },
         { icon: MessageSquare, label: 'Messages', path: '/messages' },
         { icon: User, label: 'Mon Profil', path: '/profile' },
-        { icon: Settings, label: 'Paramètres', path: '/settings' },
     ];
 
     // Build dynamic items based on role
@@ -67,19 +66,11 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
     // Toujours afficher "Mes Candidatures" — un fondateur peut aussi postuler
     dynamicItems.push({ icon: Send, label: 'Mes Candidatures', path: '/applications' });
 
-    // Admin items
-    const adminItems: typeof commonItems = [];
-    if (dbUser?.role === 'ADMIN') {
-        adminItems.push({ icon: ShieldCheck, label: 'Admin', path: '/admin' });
-        adminItems.push({ icon: Tags, label: 'Tarifs', path: '/admin/tarifs' });
-    }
-
     // Insert dynamic items after Dashboard (index 0)
     const navItems = [
         commonItems[0],
         ...dynamicItems,
         ...commonItems.slice(1),
-        ...adminItems,
     ];
 
     const labelClass = expanded ? 'block' : 'hidden md:block';
@@ -95,7 +86,7 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            <nav className="flex-1 p-3 space-y-1 overflow-hidden">
                 {navItems.map((item) => (
                     <Link
                         key={item.path}

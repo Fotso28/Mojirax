@@ -17,7 +17,7 @@ export function LandingFooter() {
                   <span className="text-white font-black">M</span>
                 </div>
                 <span className="font-bold text-xl tracking-tight">
-                  MojiraX
+                  MoJiraX
                 </span>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
@@ -123,7 +123,7 @@ export function LandingFooter() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-gray-800 text-center">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} MojiraX. Tous droits réservés.
+            © {new Date().getFullYear()} MoJiraX. Tous droits réservés.
           </p>
         </div>
       </div>

@@ -70,9 +70,9 @@ export function WhyMojiraxSection() {
             <Reveal animation="fade-up" delay={150}>
               <p className="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed">
                 Nous croyons que les meilleures startups naissent de la
-                rencontre des bons talents. Sur MojiraX, des centaines
-                d&apos;entrepreneurs au Cameroun, Sénégal, Côte d&apos;Ivoire
-                et dans la diaspora collaborent déjà.
+                rencontre des talents, sans frontières. Sur MojiraX, des
+                entrepreneurs du monde entier collaborent déjà pour
+                construire l&apos;avenir.
               </p>
             </Reveal>
             <ul className="space-y-4 mb-10">

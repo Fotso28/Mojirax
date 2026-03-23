@@ -60,7 +60,7 @@ export function FaqSection({ faqs, loading }: Props) {
         <Reveal animation="fade-up">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Questions fréquentes
+              FAQ
             </h2>
             <p className="text-base text-gray-500 max-w-xl mx-auto">
               Tout ce que vous devez savoir avant de vous lancer

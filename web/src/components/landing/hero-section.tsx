@@ -188,22 +188,21 @@ export function HeroSection() {
         <div className="text-center max-w-3xl mx-auto mb-16 lg:mb-20">
           <Reveal animation="fade-down" duration={600}>
             <span className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/15 text-white text-xs font-bold border border-white/25 shadow-sm backdrop-blur-sm">
-              La plateforme des fondateurs africains
+              La plateforme des fondateurs ambitieux
             </span>
           </Reveal>
           <Reveal animation="fade-up" delay={100}>
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold mb-6 leading-[1.1] text-white tracking-tight">
-              Trouvez votre cofondateur{' '}
-              <span className="text-kezak-light">idéal</span> —{' '}
+              Vous lancez un projet ou vous avez{' '}
               <br className="hidden sm:block" />
-              lancez votre startup
+              déjà une startup ?{' '}
+              <span className="text-kezak-light">Trouvez les bons associés.</span>
             </h1>
           </Reveal>
           <Reveal animation="fade-up" delay={200}>
             <p className="text-base sm:text-lg text-gray-200 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Notre plateforme connecte les porteurs de projet avec les talents
-              qui correspondent à leur vision — en Afrique francophone et dans
-              la diaspora.
+              MoJiraX vous connecte aux cofondateurs, talents et partenaires
+              pour construire et faire évoluer votre entreprise.
             </p>
           </Reveal>
           <Reveal animation="fade-up" delay={300}>

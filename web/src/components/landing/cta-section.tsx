@@ -18,7 +18,7 @@ export function CtaSection() {
             </h2>
             <p className="text-base sm:text-lg opacity-80 mb-10 max-w-lg mx-auto">
               Rejoignez des centaines d&apos;entrepreneurs qui ont déjà trouvé
-              leur partenaire sur MojiraX
+              leur partenaire sur MoJiraX
             </p>
             <Link
               href="/login"
