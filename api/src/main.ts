@@ -6,7 +6,7 @@ import { AppModule } from './app.module';
 import { RedisIoAdapter } from './messaging/redis-io.adapter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
   // WebSocket: Redis-backed Socket.io adapter
