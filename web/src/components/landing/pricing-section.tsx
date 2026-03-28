@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, Loader2 } from 'lucide-react';
 import { Reveal } from './reveal';
+import { useAuth } from '@/context/auth-context';
+import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
 interface PricingPlan {
   id: string;
@@ -14,6 +17,7 @@ interface PricingPlan {
   features: string[];
   isPopular: boolean;
   ctaLabel: string;
+  planKey: string | null;
 }
 
 interface Props {
@@ -50,6 +54,20 @@ function Skeleton() {
 }
 
 export function PricingSection({ plans, loading }: Props) {
+  const { dbUser } = useAuth();
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+
+  const handleSubscribe = async (planId: string) => {
+    try {
+      setLoadingPlanId(planId);
+      const { data } = await AXIOS_INSTANCE.post('/payment/checkout', { planId });
+      window.location.href = data.url;
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erreur lors de la création du paiement');
+      setLoadingPlanId(null);
+    }
+  };
+
   const gridCols =
     plans.length <= 2
       ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto'
@@ -120,16 +138,52 @@ export function PricingSection({ plans, loading }: Props) {
                       </div>
                     ))}
                   </div>
-                  <Link
-                    href="/login"
-                    className={`w-full h-11 rounded-lg font-semibold flex items-center justify-center transition-all duration-200 text-sm ${
-                      plan.isPopular
-                        ? 'bg-kezak-primary text-white hover:bg-kezak-dark shadow-lg shadow-kezak-primary/20'
-                        : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
-                    }`}
-                  >
-                    {plan.ctaLabel}
-                  </Link>
+                  {plan.planKey === 'FREE' ? (
+                    <Link
+                      href="/register"
+                      className={`w-full h-11 rounded-lg font-semibold flex items-center justify-center transition-all duration-200 text-sm ${
+                        plan.isPopular
+                          ? 'bg-kezak-primary text-white hover:bg-kezak-dark shadow-lg shadow-kezak-primary/20'
+                          : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
+                      }`}
+                    >
+                      {plan.ctaLabel}
+                    </Link>
+                  ) : dbUser && dbUser.plan === plan.planKey ? (
+                    <button
+                      disabled
+                      className="w-full h-11 rounded-lg font-semibold flex items-center justify-center text-sm bg-gray-100 text-gray-400 cursor-not-allowed"
+                    >
+                      Plan actuel
+                    </button>
+                  ) : dbUser ? (
+                    <button
+                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={loadingPlanId === plan.id}
+                      className={`w-full h-11 rounded-lg font-semibold flex items-center justify-center transition-all duration-200 text-sm ${
+                        plan.isPopular
+                          ? 'bg-kezak-primary text-white hover:bg-kezak-dark shadow-lg shadow-kezak-primary/20'
+                          : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
+                      } disabled:opacity-60 disabled:cursor-not-allowed`}
+                    >
+                      {loadingPlanId === plan.id ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        plan.ctaLabel
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      className={`w-full h-11 rounded-lg font-semibold flex items-center justify-center transition-all duration-200 text-sm ${
+                        plan.isPopular
+                          ? 'bg-kezak-primary text-white hover:bg-kezak-dark shadow-lg shadow-kezak-primary/20'
+                          : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
+                      }`}
+                    >
+                      {plan.ctaLabel}
+                    </Link>
+                  )}
                 </div>
               </Reveal>
             ))}
