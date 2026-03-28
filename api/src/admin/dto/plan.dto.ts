@@ -9,9 +9,11 @@ import {
   MaxLength,
   ArrayMaxSize,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
+import { UserPlan } from '@prisma/client';
 
 export class CreatePlanDto {
   @IsString()
@@ -58,6 +60,15 @@ export class CreatePlanDto {
   @Min(0)
   @IsOptional()
   order?: number = 0;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  stripePriceId?: string;
+
+  @IsEnum(UserPlan)
+  @IsOptional()
+  planKey?: UserPlan;
 }
 
 export class UpdatePlanDto extends PartialType(CreatePlanDto) {}

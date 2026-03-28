@@ -23,6 +23,7 @@ export class LandingService {
         isPopular: true,
         order: true,
         ctaLabel: true,
+        planKey: true,
       },
     });
     return plans.map((p) => ({ ...p, price: Number(p.price) }));

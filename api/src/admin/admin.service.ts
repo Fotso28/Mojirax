@@ -1111,6 +1111,8 @@ export class AdminService {
         isActive: dto.isActive ?? true,
         ctaLabel: dto.ctaLabel ?? 'Commencer',
         order: dto.order ?? 0,
+        stripePriceId: dto.stripePriceId || null,
+        planKey: dto.planKey || null,
       },
     });
 
@@ -1151,6 +1153,8 @@ export class AdminService {
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
         ...(dto.ctaLabel !== undefined && { ctaLabel: dto.ctaLabel }),
         ...(dto.order !== undefined && { order: dto.order }),
+        ...(dto.stripePriceId !== undefined && { stripePriceId: dto.stripePriceId }),
+        ...(dto.planKey !== undefined && { planKey: dto.planKey }),
       },
     });
 
