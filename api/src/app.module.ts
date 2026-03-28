@@ -27,6 +27,7 @@ import { FiltersModule } from './filters/filters.module';
 import { RedisModule } from './redis/redis.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { LandingModule } from './landing/landing.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { LandingModule } from './landing/landing.module';
     DocumentsModule,
     MatchingModule,
     UnlockModule,
+    PaymentModule,
     ModerationModule,
     AdminModule,
     AdsModule,
