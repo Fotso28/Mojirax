@@ -28,6 +28,13 @@ enum AccountStatus {
   BANNED
 }
 
+enum UserPlan {
+  FREE
+  PLUS
+  PRO
+  ELITE
+}
+
 model User {
   id String @id @default(cuid())
 
@@ -45,6 +52,11 @@ model User {
   image String? // Avatar URL (R2)
   role   UserRole      @default(USER)
   status AccountStatus @default(ACTIVE)
+
+  plan                 UserPlan  @default(FREE)
+  stripeCustomerId     String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  planExpiresAt        DateTime? @map("plan_expires_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -442,7 +454,7 @@ model Transaction {
   status   TransactionStatus @default(PENDING)
 
   // External Reference
-  provider   String  @default("LYGOS")
+  provider   String  @default("STRIPE")
   externalId String? @unique @map("external_id") // Lygos Transaction ID
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -927,6 +939,8 @@ model PricingPlan {
   isActive    Boolean  @default(true) @map("is_active")
   order       Int      @default(0)
   ctaLabel    String   @default("Commencer") @map("cta_label")
+  stripePriceId String?   @unique @map("stripe_price_id")
+  planKey       UserPlan? @map("plan_key")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
