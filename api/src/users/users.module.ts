@@ -5,10 +5,9 @@ import { CandidateModerationService } from './candidate-moderation.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UploadModule } from '../upload/upload.module';
 import { MatchingModule } from '../matching/matching.module';
-import { UnlockModule } from '../unlock/unlock.module';
 
 @Module({
-    imports: [PrismaModule, UploadModule, MatchingModule, UnlockModule],
+    imports: [PrismaModule, UploadModule, MatchingModule],
     controllers: [UsersController],
     providers: [UsersService, CandidateModerationService],
     exports: [UsersService, CandidateModerationService],

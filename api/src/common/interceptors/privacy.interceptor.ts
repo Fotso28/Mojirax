@@ -7,20 +7,25 @@ import {
 } from '@nestjs/common';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { UnlockService } from '../../unlock/unlock.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UserPlan } from '@prisma/client';
 
 // Champs sensibles à masquer par type d'objet
 const USER_SENSITIVE_FIELDS = ['email', 'phone'];
 const FOUNDER_PROFILE_SENSITIVE_FIELDS = ['linkedinUrl', 'websiteUrl'];
 const CANDIDATE_SENSITIVE_FIELDS = ['linkedinUrl', 'resumeUrl', 'githubUrl', 'portfolioUrl'];
 
+interface PlanInfo {
+    id: string;
+    plan: UserPlan;
+    planExpiresAt: Date | null;
+}
+
 @Injectable()
 export class PrivacyInterceptor implements NestInterceptor {
     private readonly logger = new Logger(PrivacyInterceptor.name);
 
     constructor(
-        private readonly unlockService: UnlockService,
         private readonly prisma: PrismaService,
     ) {}
 
@@ -38,21 +43,28 @@ export class PrivacyInterceptor implements NestInterceptor {
     }
 
     private async applyPrivacy(data: any, firebaseUid: string | null): Promise<any> {
-        let currentUserId: string | null = null;
+        let currentUser: PlanInfo | null = null;
         if (firebaseUid) {
             const user = await this.prisma.user.findUnique({
                 where: { firebaseUid },
-                select: { id: true },
+                select: { id: true, plan: true, planExpiresAt: true },
             });
-            currentUserId = user?.id || null;
+            currentUser = user || null;
         }
 
-        return this.processResponse(data, currentUserId);
+        return this.processResponse(data, currentUser);
     }
 
-    private async processResponse(data: any, currentUserId: string | null): Promise<any> {
+    private hasPaidAccess(user: { plan: UserPlan; planExpiresAt: Date | null } | null): boolean {
+        if (!user) return false;
+        if (user.plan === UserPlan.FREE) return false;
+        if (user.planExpiresAt && user.planExpiresAt < new Date()) return false;
+        return true;
+    }
+
+    private processResponse(data: any, currentUser: PlanInfo | null): any {
         if (Array.isArray(data)) {
-            return Promise.all(data.map((item) => this.processResponse(item, currentUserId)));
+            return data.map((item) => this.processResponse(item, currentUser));
         }
 
         if (!data || typeof data !== 'object') return data;
@@ -62,25 +74,22 @@ export class PrivacyInterceptor implements NestInterceptor {
 
         // Cas 1: Réponse projet avec founder (GET /projects/:idOrSlug)
         if (result.founder && typeof result.founder === 'object') {
-            result.founder = await this.processFounder(result.founder, result.id, currentUserId);
+            result.founder = this.processFounder(result.founder, currentUser);
         }
 
         // Cas 2: Réponse candidat avec user (matching, applications)
         if (result.candidate && typeof result.candidate === 'object') {
-            result.candidate = await this.processCandidate(result.candidate, currentUserId);
+            result.candidate = this.processCandidate(result.candidate, currentUser);
         }
 
         // Cas 3: Objet user direct avec candidateProfile (GET /users/:id/public)
         if (result.candidateProfile && typeof result.candidateProfile === 'object' && result.id) {
-            const isOwner = currentUserId === result.id;
-            const candidateProfileId = result.candidateProfile.id;
+            const isOwner = currentUser?.id === result.id;
 
             if (!isOwner) {
-                const unlocked = currentUserId
-                    ? await this.unlockService.hasUnlock(currentUserId, candidateProfileId || result.id)
-                    : false;
+                const hasAccess = this.hasPaidAccess(currentUser);
 
-                if (!unlocked) {
+                if (!hasAccess) {
                     result.email = null;
                     result.phone = null;
                     result.candidateProfile = this.stripCandidateFields(result.candidateProfile);
@@ -95,14 +104,12 @@ export class PrivacyInterceptor implements NestInterceptor {
 
         // Cas 4: Objet user direct avec founderProfile (GET /users/:id/public pour fondateur)
         if (result.founderProfile && typeof result.founderProfile === 'object' && result.id && !result.founder) {
-            const isOwner = currentUserId === result.id;
+            const isOwner = currentUser?.id === result.id;
 
             if (!isOwner) {
-                const unlocked = currentUserId
-                    ? await this.unlockService.hasUnlock(currentUserId, result.id)
-                    : false;
+                const hasAccess = this.hasPaidAccess(currentUser);
 
-                if (!unlocked) {
+                if (!hasAccess) {
                     result.email = null;
                     result.phone = null;
                     result.founderProfile = this.stripFounderProfileFields(result.founderProfile);
@@ -118,28 +125,21 @@ export class PrivacyInterceptor implements NestInterceptor {
         return result;
     }
 
-    private async processFounder(
+    private processFounder(
         founder: any,
-        projectId: string | null,
-        currentUserId: string | null,
-    ): Promise<any> {
+        currentUser: PlanInfo | null,
+    ): any {
         const founderCopy = { ...founder };
-        const isOwner = currentUserId === founderCopy.id;
+        const isOwner = currentUser?.id === founderCopy.id;
 
         if (isOwner) {
             founderCopy._isLocked = false;
             return founderCopy;
         }
 
-        // Vérifier l'unlock sur le projet OU le fondateur
-        const unlocked = currentUserId
-            ? (
-                (projectId ? await this.unlockService.hasUnlock(currentUserId, projectId) : false) ||
-                (founderCopy.id ? await this.unlockService.hasUnlock(currentUserId, founderCopy.id) : false)
-            )
-            : false;
+        const hasAccess = this.hasPaidAccess(currentUser);
 
-        if (!unlocked) {
+        if (!hasAccess) {
             // Masquer les champs sensibles du User
             for (const field of USER_SENSITIVE_FIELDS) {
                 if (field in founderCopy) {
@@ -158,24 +158,22 @@ export class PrivacyInterceptor implements NestInterceptor {
         return founderCopy;
     }
 
-    private async processCandidate(
+    private processCandidate(
         candidate: any,
-        currentUserId: string | null,
-    ): Promise<any> {
+        currentUser: PlanInfo | null,
+    ): any {
         const candidateCopy = { ...candidate };
         const candidateUserId = candidateCopy.userId || candidateCopy.user?.id;
-        const isOwner = currentUserId === candidateUserId;
+        const isOwner = currentUser?.id === candidateUserId;
 
         if (isOwner) {
             candidateCopy._isLocked = false;
             return candidateCopy;
         }
 
-        const unlocked = currentUserId
-            ? await this.unlockService.hasUnlock(currentUserId, candidateCopy.id || candidateUserId)
-            : false;
+        const hasAccess = this.hasPaidAccess(currentUser);
 
-        if (!unlocked) {
+        if (!hasAccess) {
             // Masquer les champs du CandidateProfile
             for (const field of CANDIDATE_SENSITIVE_FIELDS) {
                 if (field in candidateCopy) {
