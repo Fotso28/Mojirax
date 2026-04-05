@@ -49,3 +49,9 @@ apps/web/openapi.json
 # MinIO
 minio.exe
 minio-data/
+
+# Uploads (runtime data)
+api/uploads/
+
+# Session artifacts
+.superpowers/
