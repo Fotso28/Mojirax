@@ -234,6 +234,7 @@ export class PaymentService {
         stripeCustomerId: session.customer as string,
         stripeSubscriptionId: subscriptionId,
         planExpiresAt: periodEnd,
+        planStartedAt: new Date(),
       },
     });
 
@@ -246,6 +247,7 @@ export class PaymentService {
         status: 'PAID',
         provider: 'STRIPE',
         externalId: session.id,
+        type: 'SUBSCRIPTION',
       },
     });
 
@@ -282,6 +284,7 @@ export class PaymentService {
         status: 'PAID',
         provider: 'STRIPE',
         externalId: invoice.id,
+        type: 'SUBSCRIPTION',
       },
     });
 
@@ -307,6 +310,7 @@ export class PaymentService {
         status: 'FAILED',
         provider: 'STRIPE',
         externalId: invoice.id,
+        type: 'SUBSCRIPTION',
       },
     });
 
