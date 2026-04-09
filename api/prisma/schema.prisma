@@ -57,6 +57,8 @@ model User {
   stripeCustomerId     String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   planExpiresAt        DateTime? @map("plan_expires_at")
+  planStartedAt        DateTime? @map("plan_started_at")
+  isInvisible          Boolean   @default(false) @map("is_invisible")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -92,6 +94,13 @@ model User {
   candidateConversations Conversation[]    @relation("CandidateConversations")
   sentMessages           Message[]         @relation("SentMessages")
   messageReactions       MessageReaction[] @relation("MessageReactions")
+
+  // Profile Views
+  profileViewsSent     ProfileView[] @relation("ProfileViewer")
+  profileViewsReceived ProfileView[] @relation("ProfileViewed")
+
+  // Boosts
+  boosts Boost[]
 
   // Preferences
   preferredLang String @default("fr") @map("preferred_lang")
@@ -321,6 +330,7 @@ model Project {
   applications     Application[]
   matchScores      MatchScore[]
   userInteractions UserProjectInteraction[]
+  boosts           Boost[]
 
   @@index([status])
   @@index([sector])
@@ -435,7 +445,7 @@ model AdminLog {
 }
 
 // --------------------------------------
-// 5. Monetization (Lygos Pay)
+// 5. Monetization (Stripe)
 // --------------------------------------
 
 enum TransactionStatus {
@@ -445,17 +455,23 @@ enum TransactionStatus {
   REFUNDED
 }
 
+enum TransactionType {
+  SUBSCRIPTION
+  UNLOCK
+}
+
 model Transaction {
   id     String @id @default(cuid())
   userId String @map("user_id")
 
   amount   Decimal           @db.Decimal(10, 2)
-  currency String            @default("XAF")
+  currency String            @default("EUR")
   status   TransactionStatus @default(PENDING)
+  type     TransactionType   @default(SUBSCRIPTION)
 
   // External Reference
   provider   String  @default("STRIPE")
-  externalId String? @unique @map("external_id") // Lygos Transaction ID
+  externalId String? @unique @map("external_id") // External Transaction ID
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -893,7 +909,7 @@ model Message {
   conversationId  String            @map("conversation_id")
   conversation    Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderId        String            @map("sender_id")
-  sender          User              @relation("SentMessages", fields: [senderId], references: [id])
+  sender          User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   clientMessageId String?           @unique @map("client_message_id")
   content         String?
   fileUrl         String?           @map("file_url")
@@ -915,7 +931,7 @@ model MessageReaction {
   messageId String   @map("message_id")
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   userId    String   @map("user_id")
-  user      User     @relation("MessageReactions", fields: [userId], references: [id])
+  user      User     @relation("MessageReactions", fields: [userId], references: [id], onDelete: Cascade)
   emoji     String   @db.VarChar(32)
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -975,4 +991,36 @@ model Testimonial {
 
   @@index([isActive, order])
   @@map("testimonials")
+}
+
+// 10. Profile Views (who viewed my profile)
+model ProfileView {
+  id        String   @id @default(cuid())
+  viewerId  String   @map("viewer_id")
+  viewedId  String   @map("viewed_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  viewer User @relation("ProfileViewer", fields: [viewerId], references: [id], onDelete: Cascade)
+  viewed User @relation("ProfileViewed", fields: [viewedId], references: [id], onDelete: Cascade)
+
+  @@index([viewedId, createdAt])
+  @@index([viewerId, createdAt])
+  @@unique([viewerId, viewedId])
+  @@map("profile_views")
+}
+
+// 11. Boosts (visibility boost for projects)
+model Boost {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  projectId String   @map("project_id")
+  startedAt DateTime @default(now()) @map("started_at")
+  expiresAt DateTime @map("expires_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([projectId, expiresAt])
+  @@map("boosts")
 }
