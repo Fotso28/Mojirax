@@ -138,6 +138,71 @@ export class PaymentService {
   }
 
   /**
+   * Get full billing info: plan details + subscription transaction history.
+   */
+  async getBilling(firebaseUid: string, page = 1, limit = 20) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
+    const user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+      select: {
+        id: true,
+        plan: true,
+        planStartedAt: true,
+        planExpiresAt: true,
+      },
+    });
+
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+    const isActive =
+      user.plan !== UserPlan.FREE &&
+      (!user.planExpiresAt || user.planExpiresAt > new Date());
+
+    const userId = user.id;
+
+    const [transactions, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where: { userId, type: 'SUBSCRIPTION' },
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.transaction.count({
+        where: { userId, type: 'SUBSCRIPTION' },
+      }),
+    ]);
+
+    return {
+      plan: user.plan,
+      planStartedAt: user.planStartedAt?.toISOString() ?? null,
+      planExpiresAt: user.planExpiresAt?.toISOString() ?? null,
+      isActive,
+      transactions: transactions.map((t) => ({
+        id: t.id,
+        amount: Number(t.amount),
+        currency: t.currency,
+        status: t.status,
+        createdAt: t.createdAt.toISOString(),
+      })),
+      pagination: {
+        page,
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take),
+      },
+    };
+  }
+
+  /**
    * Handle incoming Stripe webhook events.
    */
   async handleWebhook(rawBody: Buffer, signature: string): Promise<void> {

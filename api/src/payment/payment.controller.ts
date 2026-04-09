@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Query,
   Body,
   Headers,
   Req,
@@ -60,5 +61,22 @@ export class PaymentController {
   @ApiResponse({ status: 200, description: '{ plan, planExpiresAt, isActive }' })
   async getStatus(@Request() req) {
     return this.paymentService.getStatus(req.user.uid);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(FirebaseAuthGuard)
+  @Get('billing')
+  @ApiOperation({ summary: "Détails complets de l'abonnement + historique paiements" })
+  @ApiResponse({ status: 200, description: 'Billing info with transaction history' })
+  async getBilling(
+    @Request() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.paymentService.getBilling(
+      req.user.uid,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 }
