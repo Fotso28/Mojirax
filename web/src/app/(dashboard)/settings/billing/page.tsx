@@ -15,6 +15,8 @@ import {
     AlertCircle,
     ChevronLeft,
     ChevronRight,
+    CircleCheck,
+    Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,6 +40,19 @@ interface BillingData {
         total: number;
         totalPages: number;
     };
+}
+
+interface PricingPlan {
+    id: string;
+    name: string;
+    price: number;
+    period: string;
+    currency: string;
+    description: string | null;
+    features: string[];
+    isPopular: boolean;
+    ctaLabel: string;
+    planKey: string | null;
 }
 
 const STATUS_CONFIG = {
@@ -67,6 +82,28 @@ export default function BillingPage() {
     const [billing, setBilling] = useState<BillingData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const [plans, setPlans] = useState<PricingPlan[]>([]);
+    const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+
+    const fetchPlans = async () => {
+        try {
+            const { data } = await AXIOS_INSTANCE.get('/landing/plans');
+            setPlans(data);
+        } catch {
+            // Plans fetch failed
+        }
+    };
+
+    const handleSubscribe = async (planId: string) => {
+        try {
+            setLoadingPlanId(planId);
+            const { data } = await AXIOS_INSTANCE.post('/payment/checkout', { planId });
+            window.location.href = data.url;
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Erreur lors de la création du paiement');
+            setLoadingPlanId(null);
+        }
+    };
 
     const fetchBilling = async (p: number) => {
         try {
@@ -84,6 +121,7 @@ export default function BillingPage() {
         if (!isAuthLoading) {
             if (firebaseUser) {
                 fetchBilling(1);
+                fetchPlans();
             } else {
                 setIsLoading(false);
             }
@@ -145,12 +183,12 @@ export default function BillingPage() {
                             <p className="text-sm text-gray-500">Vous utilisez actuellement le plan gratuit</p>
                         </div>
                     </div>
-                    <Link
-                        href="/#pricing"
+                    <button
+                        onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
                         className="inline-flex items-center justify-center w-full h-[52px] bg-kezak-primary text-white font-semibold rounded-xl hover:bg-kezak-dark transition-colors"
                     >
                         Découvrir nos offres
-                    </Link>
+                    </button>
                 </div>
             ) : (
                 /* Paid plan card */
@@ -197,13 +235,96 @@ export default function BillingPage() {
                     )}
 
                     {isExpired && (
-                        <Link
-                            href="/#pricing"
+                        <button
+                            onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
                             className="mt-4 inline-flex items-center justify-center w-full h-[52px] bg-kezak-primary text-white font-semibold rounded-xl hover:bg-kezak-dark transition-colors"
                         >
                             Renouveler
-                        </Link>
+                        </button>
                     )}
+                </div>
+            )}
+
+            {/* Plans Section */}
+            {plans.length > 0 && (
+                <div id="plans-section" className="mb-6">
+                    <h2 className="font-bold text-gray-900 mb-4">
+                        {isFree || isExpired ? 'Choisissez votre plan' : 'Changer de plan'}
+                    </h2>
+                    <div className={`grid gap-4 ${
+                        plans.length <= 2
+                            ? 'grid-cols-1 md:grid-cols-2'
+                            : plans.length === 3
+                                ? 'grid-cols-1 md:grid-cols-3'
+                                : 'grid-cols-1 md:grid-cols-2'
+                    }`}>
+                        {plans.map((plan) => {
+                            const isCurrentPlan = billing && billing.plan === plan.planKey;
+                            return (
+                                <div
+                                    key={plan.id}
+                                    className={`p-5 rounded-2xl flex flex-col ${
+                                        plan.isPopular
+                                            ? 'border-2 border-kezak-primary shadow-md bg-white relative'
+                                            : 'bg-gray-50 border border-gray-100'
+                                    }`}
+                                >
+                                    {plan.isPopular && (
+                                        <span className="absolute top-4 right-4 bg-kezak-primary text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wide">
+                                            Populaire
+                                        </span>
+                                    )}
+                                    <h3 className="text-base font-bold mb-1">{plan.name}</h3>
+                                    <div className="mb-1">
+                                        <span className="text-2xl font-black text-gray-900">
+                                            {plan.price === 0 ? '0' : plan.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                                        </span>
+                                        <span className="text-sm text-gray-400 ml-1">€</span>
+                                        {plan.price > 0 && (
+                                            <span className="text-xs text-gray-400">/{plan.period}</span>
+                                        )}
+                                    </div>
+                                    {plan.description && (
+                                        <p className="text-xs text-gray-500 mb-3">{plan.description}</p>
+                                    )}
+                                    <div className="space-y-2 mb-4 flex-grow">
+                                        {plan.features.map((feature) => (
+                                            <div key={feature} className="flex items-start gap-2 text-gray-600">
+                                                <CircleCheck className="w-3.5 h-3.5 text-kezak-primary flex-shrink-0 mt-0.5" />
+                                                <span className="text-xs leading-snug">{feature}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {isCurrentPlan ? (
+                                        <button
+                                            disabled
+                                            className="w-full h-10 rounded-lg font-semibold text-sm bg-gray-100 text-gray-400 cursor-not-allowed"
+                                        >
+                                            Plan actuel
+                                        </button>
+                                    ) : plan.planKey === 'FREE' ? (
+                                        <div />
+                                    ) : (
+                                        <button
+                                            onClick={() => handleSubscribe(plan.id)}
+                                            disabled={loadingPlanId === plan.id}
+                                            className={`w-full h-10 rounded-lg font-semibold flex items-center justify-center text-sm transition-all ${
+                                                plan.isPopular
+                                                    ? 'bg-kezak-primary text-white hover:bg-kezak-dark shadow-lg shadow-kezak-primary/20'
+                                                    : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
+                                            } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                        >
+                                            {loadingPlanId === plan.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                plan.ctaLabel
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
