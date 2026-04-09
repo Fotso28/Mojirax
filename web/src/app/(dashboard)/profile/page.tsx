@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { HideRightSidebar } from '@/context/sidebar-context';
 import { Eye, Send, Star } from 'lucide-react';
+import { SubscriptionSummary } from '@/components/profile/subscription-summary';
 
 export default function ProfilePage() {
     const { user: firebaseUser, loading: isAuthLoading, refreshDbUser } = useAuth();
@@ -122,6 +123,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-6">
+                    <SubscriptionSummary />
                     {isCandidate && cp ? (
                         <>
                             {/* Status du profil */}
