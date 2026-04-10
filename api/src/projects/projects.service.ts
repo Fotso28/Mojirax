@@ -147,6 +147,7 @@ export class ProjectsService {
                         lastName: true,
                         name: true,
                         image: true,
+                        plan: true,
                     }
                 },
                 _count: {
@@ -571,6 +572,7 @@ export class ProjectsService {
                         email: true,
                         phone: true,
                         image: true,
+                        plan: true,
                         founderProfile: true,
                         createdAt: true,
                     }
@@ -602,6 +604,7 @@ export class ProjectsService {
                         lastName: true,
                         name: true,
                         image: true,
+                        plan: true,
                     }
                 },
             },

@@ -177,7 +177,7 @@ export function ConditionsView({ project }: { project: any }) {
 function formatBudget(budget: any): string {
     if (!budget) return '—';
     const fmt = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
-    const currency = budget.currency || 'XAF';
+    const currency = budget.currency || 'EUR';
     if (budget.min && budget.max) return `${fmt(budget.min)} - ${fmt(budget.max)} ${currency}`;
     if (budget.min) return `À partir de ${fmt(budget.min)} ${currency}`;
     if (budget.max) return `Jusqu'à ${fmt(budget.max)} ${currency}`;

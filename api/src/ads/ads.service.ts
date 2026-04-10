@@ -8,6 +8,7 @@ import {
 interface VisitorProfile {
   userId: string | null;
   role: string | null;
+  plan: string | null;
   sectors: string[];
   city: string | null;
   stage: string | null;
@@ -531,7 +532,7 @@ export class AdsService {
    */
   async buildVisitorProfile(firebaseUid: string | null): Promise<VisitorProfile> {
     if (!firebaseUid) {
-      return { userId: null, role: null, sectors: [], city: null, stage: null, skills: [] };
+      return { userId: null, role: null, plan: null, sectors: [], city: null, stage: null, skills: [] };
     }
 
     const user = await this.prisma.user.findUnique({
@@ -539,6 +540,7 @@ export class AdsService {
       select: {
         id: true,
         role: true,
+        plan: true,
         candidateProfile: {
           select: {
             skills: true,
@@ -560,7 +562,7 @@ export class AdsService {
     });
 
     if (!user) {
-      return { userId: null, role: null, sectors: [], city: null, stage: null, skills: [] };
+      return { userId: null, role: null, plan: null, sectors: [], city: null, stage: null, skills: [] };
     }
 
     // Agréger les données du profil
@@ -587,6 +589,7 @@ export class AdsService {
     return {
       userId: user.id,
       role: user.role,
+      plan: user.plan,
       sectors: [...sectors],
       city,
       stage,

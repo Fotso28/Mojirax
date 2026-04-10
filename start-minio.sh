@@ -6,4 +6,4 @@
 export MINIO_ROOT_USER=minioadmin
 export MINIO_ROOT_PASSWORD=minioadmin
 
-./minio.exe server ./minio-data --console-address ":9001"
+C:/minio/minio.exe server C:/minio-data --console-address ":9001"

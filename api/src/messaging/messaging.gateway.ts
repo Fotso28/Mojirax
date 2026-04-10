@@ -20,7 +20,8 @@ import { WsRateLimiter } from './ws-rate-limiter';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.constants';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, UserPlan } from '@prisma/client';
+import { getPlanLimits } from '../common/config/plan-limits.config';
 import {
   WsSendMessageDto,
   WsConversationIdDto,
@@ -134,7 +135,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Check if user is banned
       const userRecord = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { status: true },
+        select: { status: true, plan: true, isInvisible: true },
       });
       if (userRecord?.status === 'BANNED') {
         this.logger.warn(`Banned user tried to connect: userId=${userId}`);
@@ -144,7 +145,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       }
 
       // Store user data on socket
-      client.data.user = { uid, userId };
+      client.data.user = { uid, userId, plan: userRecord?.plan || 'FREE', isInvisible: userRecord?.isInvisible || false };
 
       // Join user's conversation rooms (parallel)
       const conversationIds = await this.messagingService.getUserConversationIds(userId);
@@ -156,12 +157,14 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Increment presence counter
       await this.presenceIncr(userId);
 
-      // Broadcast online status to all conversations
-      for (const convId of conversationIds) {
-        client.to(`conversation:${convId}`).emit('presence:update', {
-          userId,
-          status: 'online',
-        });
+      // Broadcast online status to all conversations (skip if invisible)
+      if (!client.data.user.isInvisible) {
+        for (const convId of conversationIds) {
+          client.to(`conversation:${convId}`).emit('presence:update', {
+            userId,
+            status: 'online',
+          });
+        }
       }
 
       // Start re-auth timer (refresh token every 50 min)
@@ -211,7 +214,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Decrement presence — only broadcast offline if counter reached 0
       const wentOffline = await this.presenceDecr(userId);
 
-      if (wentOffline) {
+      if (wentOffline && !client.data?.user?.isInvisible) {
         // Use cached conversationIds to avoid extra DB query
         const conversationIds =
           client.data.conversationIds ||
@@ -270,6 +273,19 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       const allowed = await this.rateLimiter.check(userId, 'message:send');
       if (!allowed) {
         return { status: 'error', error: 'Trop de messages, réessayez dans un instant' };
+      }
+
+      // Daily message quota check
+      const plan = client.data.user.plan || 'FREE';
+      const { messagesPerDay } = getPlanLimits(plan as UserPlan);
+      if (messagesPerDay !== Infinity) {
+        const today = new Date().toISOString().slice(0, 10);
+        const dailyKey = `msg_daily:${userId}:${today}`;
+        const count = await this.redis.incr(dailyKey);
+        if (count === 1) await this.redis.expire(dailyKey, 86400);
+        if (count > messagesPerDay) {
+          return { status: 'error', error: `Limite de ${messagesPerDay} messages/jour atteinte. Passez au plan supérieur.` };
+        }
       }
 
       // Validate content byte length (M02 — prevent multi-byte char DoS)

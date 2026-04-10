@@ -31,7 +31,7 @@
 - `admin_logs` - Admin actions
 
 **Payments (3):**
-- `transactions` - Lygos Pay (XAF)
+- `transactions` - Stripe (EUR)
 - `payment_audit_logs` - Webhook audit
 - `unlocks` - Privacy wall unlocks
 

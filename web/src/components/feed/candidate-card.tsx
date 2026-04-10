@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { MapPin, Briefcase, Code, Star } from 'lucide-react';
+import { PlanBadge } from '@/components/ui';
 
 interface CandidateProfile {
     id: string;
@@ -15,6 +16,7 @@ interface CandidateProfile {
         lastName: string | null;
         name: string | null;
         image: string | null;
+        plan?: string;
     };
 }
 
@@ -48,9 +50,12 @@ export function CandidateCard({ candidate }: { candidate: CandidateProfile }) {
                 <div className="flex-1">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="font-bold text-gray-900 group-hover:text-kezak-primary transition-colors">
-                                {displayName}
-                            </h3>
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="font-bold text-gray-900 group-hover:text-kezak-primary transition-colors">
+                                    {displayName}
+                                </h3>
+                                <PlanBadge plan={user.plan} />
+                            </div>
                             <p className="text-kezak-primary font-medium text-sm">{candidate.title}</p>
                         </div>
                         <button

@@ -3,6 +3,19 @@
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
 
+const COLLAB_OPTIONS = [
+    { value: 'EQUITY', label: 'Parts (Associé)' },
+    { value: 'PAID', label: 'Mission rémunérée' },
+    { value: 'HYBRID', label: 'Mixte' },
+    { value: 'DISCUSS', label: 'À discuter' },
+];
+
+const LOCATION_OPTIONS = [
+    { value: 'REMOTE', label: 'Remote (Télétravail)' },
+    { value: 'HYBRID', label: 'Hybride' },
+    { value: 'ONSITE', label: 'Présentiel' },
+];
+
 export function CandidateConditionsStep() {
     const { data, updateData, nextStep } = useOnboarding();
 
@@ -18,17 +31,18 @@ export function CandidateConditionsStep() {
                     <label className="block text-sm font-medium text-gray-700">
                         Type de collaboration recherchée
                     </label>
-                    <div className="flex gap-4 flex-wrap">
-                        {['EQUITY', 'PAID', 'HYBRID', 'DISCUSS'].map((type) => (
+                    <div className="flex gap-3 flex-wrap">
+                        {COLLAB_OPTIONS.map((opt) => (
                             <button
-                                key={type}
-                                onClick={() => updateData('collab_pref', type)}
-                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.collab_pref === type
+                                key={opt.value}
+                                type="button"
+                                onClick={() => updateData('collab_pref', opt.value)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.collab_pref === opt.value
                                         ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
                                         : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                                     }`}
                             >
-                                {type === 'EQUITY' ? 'Parts (Associé)' : type === 'PAID' ? 'Mission rémunérée' : type === 'HYBRID' ? 'Mixte' : 'À discuter'}
+                                {opt.label}
                             </button>
                         ))}
                     </div>
@@ -38,16 +52,21 @@ export function CandidateConditionsStep() {
                     <label className="block text-sm font-medium text-gray-700">
                         Où voulez-vous travailler ?
                     </label>
-                    <select
-                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
-                        value={data.location_pref || ''}
-                        onChange={(e) => updateData('location_pref', e.target.value)}
-                    >
-                        <option value="">Sélectionner...</option>
-                        <option value="REMOTE">Remote (Télétravail)</option>
-                        <option value="HYBRID">Hybride</option>
-                        <option value="ONSITE">Présentiel</option>
-                    </select>
+                    <div className="flex gap-3 flex-wrap">
+                        {LOCATION_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => updateData('location_pref', opt.value)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.location_pref === opt.value
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                                    }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
         </WizardStep>

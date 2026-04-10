@@ -16,6 +16,7 @@ import { COUNTRIES } from '@/lib/constants/countries';
 
 import { useToast } from '@/context/toast-context';
 import { cn } from '@/lib/utils';
+import { PlanBadge } from '@/components/ui';
 
 // ─── Labels ───────────────────────────────────────────
 const STAGE_LABELS: Record<string, string> = {
@@ -152,6 +153,7 @@ export default function FounderPublicProfilePage() {
                             <div className="flex items-center gap-2 flex-wrap">
                                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{displayName}</h1>
                                 <CheckCircle2 className="w-6 h-6 text-blue-500 fill-blue-50 shrink-0" />
+                                <PlanBadge plan={user.plan} />
                             </div>
                             {profile.title && (
                                 <p className="text-base text-gray-600 mt-1 leading-snug">{profile.title}</p>

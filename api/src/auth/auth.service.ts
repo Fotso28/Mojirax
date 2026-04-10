@@ -58,6 +58,7 @@ export class AuthService {
                 lastName: name ? name.split(' ').slice(1).join(' ') : undefined,
                 image: picture,
                 role: 'USER',
+                planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             },
         });
 

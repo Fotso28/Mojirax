@@ -131,7 +131,7 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
     // ─── Vision
     const [vision, setVision] = useState(cp.vision || '');
     const [hasCofounded, setHasCofounded] = useState(cp.hasCofounded || '');
-    const [projectPref, setProjectPref] = useState(cp.desiredSectors?.[0] || '');
+    const [projectPref, setProjectPref] = useState<string[]>(cp.desiredSectors || []);
 
     // ─── Disponibilité
     const [availability, setAvailability] = useState(cp.availability || '');
@@ -294,14 +294,35 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Type de projet recherché</label>
-                        <select value={projectPref} onChange={e => setProjectPref(e.target.value)} className={selectClass}>
-                            <option value="">Sélectionner...</option>
-                            <option value="TECH">Tech pure (SaaS, Mobile)</option>
-                            <option value="HYBRID">Hybride (Tech + Retail/Ops)</option>
-                            <option value="IMPACT">Impact Social</option>
-                            <option value="ANY">Peu importe tant que c'est ambitieux</option>
-                        </select>
+                        <label className="text-sm font-medium text-gray-700">
+                            Type de projet recherché
+                            <span className="text-gray-400 font-normal ml-1">(plusieurs choix possibles)</span>
+                        </label>
+                        <div className="flex gap-3 flex-wrap">
+                            {[
+                                { value: 'TECH', label: 'Tech pure (SaaS, Mobile)' },
+                                { value: 'HYBRID', label: 'Hybride (Tech + Retail/Ops)' },
+                                { value: 'IMPACT', label: 'Impact Social' },
+                                { value: 'ANY', label: 'Peu importe' },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => {
+                                        setProjectPref(prev => {
+                                            const idx = prev.indexOf(opt.value);
+                                            return idx >= 0 ? prev.filter(v => v !== opt.value) : [...prev, opt.value];
+                                        });
+                                    }}
+                                    className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${projectPref.includes(opt.value)
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </SectionCard>

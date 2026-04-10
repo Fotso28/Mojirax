@@ -68,6 +68,7 @@ export class UsersService {
                 phone: true,
                 image: true,
                 role: true,
+                plan: true,
                 founderProfile: true,
                 candidateProfile: {
                     select: {
@@ -124,6 +125,14 @@ export class UsersService {
         }
 
         return user;
+    }
+
+    async toggleInvisible(firebaseUid: string, invisible: boolean) {
+        return this.prisma.user.update({
+            where: { firebaseUid },
+            data: { isInvisible: invisible },
+            select: { isInvisible: true },
+        });
     }
 
     async updateProfile(firebaseUid: string, dto: UpdateUserProfileDto) {
@@ -232,7 +241,7 @@ export class UsersService {
                 portfolioUrl: dto.portfolioUrl || null,
                 yearsOfExperience: dto.yearsExp ? (yearsMap[dto.yearsExp] ?? 0) : null,
                 remoteOnly: dto.locationPref === 'REMOTE',
-                desiredSectors: dto.projectPref ? [dto.projectPref] : [],
+                desiredSectors: dto.projectPref?.length ? dto.projectPref : [],
                 availability: dto.availability || null,
                 shortPitch: dto.shortPitch || null,
                 longPitch: dto.longPitch || null,
@@ -306,7 +315,7 @@ export class UsersService {
             updateData.remoteOnly = dto.locationPref === 'REMOTE';
             updateData.locationPref = dto.locationPref || null;
         }
-        if (dto.projectPref !== undefined) updateData.desiredSectors = dto.projectPref ? [dto.projectPref] : [];
+        if (dto.projectPref !== undefined) updateData.desiredSectors = dto.projectPref?.length ? dto.projectPref : [];
         if (dto.availability !== undefined) updateData.availability = dto.availability || null;
         // Wizard-sourced fields
         if (dto.shortPitch !== undefined) updateData.shortPitch = dto.shortPitch || null;

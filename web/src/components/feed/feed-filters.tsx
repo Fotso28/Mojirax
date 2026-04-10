@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Filter, X, ChevronDown, MapPin, Briefcase, Code } from 'lucide-react';
+import { Filter, X, ChevronDown, MapPin, Briefcase, Code, Lock } from 'lucide-react';
 import { SECTORS } from '@/lib/constants/sectors';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useAuth } from '@/context/auth-context';
+import Link from 'next/link';
 
 interface FeedFiltersProps {
     onFilterChange: (filters: { city?: string; sector?: string; skills?: string[] }) => void;
@@ -16,18 +18,21 @@ interface PopularSkill {
 }
 
 export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
+    const { dbUser } = useAuth();
+    const isFree = !dbUser?.plan || dbUser.plan === 'FREE';
     const [isOpen, setIsOpen] = useState(false);
     const [city, setCity] = useState('');
     const [sector, setSector] = useState('');
     const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
     const [popularSkills, setPopularSkills] = useState<PopularSkill[]>([]);
 
-    // Charger les skills populaires depuis l'API
+    // Charger les skills populaires depuis l'API (seulement pour les utilisateurs payants)
     useEffect(() => {
+        if (isFree) return;
         AXIOS_INSTANCE.get('/filters/popular-skills')
             .then(({ data }) => setPopularSkills(data))
             .catch(() => {});
-    }, []);
+    }, [isFree]);
 
     const handleApply = () => {
         onFilterChange({
@@ -115,27 +120,39 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                                 </select>
                             </div>
 
-                            {/* Skills */}
+                            {/* Skills — réservé aux abonnés Plus+ */}
                             <div>
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block flex items-center gap-2">
                                     <Code size={14} /> Skills recherchés
                                 </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {popularSkills.length > 0 ? popularSkills.map(skill => (
-                                        <button
-                                            key={skill.value}
-                                            onClick={() => toggleSkill(skill.value)}
-                                            className={`px-3 py-1 rounded-full text-xs transition-all ${selectedSkills.includes(skill.value)
-                                                    ? 'bg-kezak-primary text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
-                                        >
-                                            {skill.label}
-                                        </button>
-                                    )) : (
-                                        <span className="text-xs text-gray-400">Chargement...</span>
-                                    )}
-                                </div>
+                                {isFree ? (
+                                    <Link
+                                        href="/#pricing"
+                                        className="flex items-center gap-2 p-3 bg-kezak-light/60 border border-kezak-primary/20 rounded-xl text-sm text-kezak-dark hover:bg-kezak-light transition-colors"
+                                    >
+                                        <Lock size={16} className="text-kezak-primary shrink-0" />
+                                        <span>
+                                            <span className="font-semibold">Passez au Plus</span> pour les filtres avancés
+                                        </span>
+                                    </Link>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                        {popularSkills.length > 0 ? popularSkills.map(skill => (
+                                            <button
+                                                key={skill.value}
+                                                onClick={() => toggleSkill(skill.value)}
+                                                className={`px-3 py-1 rounded-full text-xs transition-all ${selectedSkills.includes(skill.value)
+                                                        ? 'bg-kezak-primary text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                {skill.label}
+                                            </button>
+                                        )) : (
+                                            <span className="text-xs text-gray-400">Chargement...</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { InteractionsService } from '../interactions/interactions.service';
+import { BoostService } from '../boost/boost.service';
 
 // Mots français courants à ignorer dans la recherche
 const STOP_WORDS = new Set([
@@ -71,6 +73,8 @@ export class SearchService {
     constructor(
         private prisma: PrismaService,
         private aiService: AiService,
+        private interactionsService: InteractionsService,
+        private readonly boostService: BoostService,
     ) { }
 
     // =============================================
@@ -142,6 +146,77 @@ export class SearchService {
                 ],
             },
         }).catch(e => this.logger.warn(`Failed to log search: ${e.message}`));
+
+        // Activity-based re-ranking: boost results matching user engagement signals
+        if (userId) {
+            try {
+                const signals = await this.interactionsService.getUserSignals(userId);
+                for (const result of mergedProjects) {
+                    const sectorBonus = (signals.sectorEngagement[result.sector] || 0) * 0.01;
+                    const stageBonus = (signals.stageEngagement[result.stage] || 0) * 0.01;
+                    result.similarity = Math.min(1, (result.similarity || 0) + Math.min(0.1, sectorBonus + stageBonus));
+                }
+                mergedProjects.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+            } catch (e) {
+                // Silently fail — personalization is non-critical
+            }
+        }
+
+        // Apply boost bonus to search results
+        try {
+            const boostedIds = await this.boostService.getActiveBoostProjectIds();
+            const boostedSet = new Set(boostedIds);
+
+            for (const result of mergedProjects) {
+                // Boosted projects get +0.15 to their similarity score
+                if (boostedSet.has(result.id)) {
+                    result.similarity = Math.min(1, (result.similarity || 0) + 0.15);
+                }
+            }
+
+            // Re-sort after boost adjustments
+            mergedProjects.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+        } catch (e) {
+            // Boost ranking is non-critical
+        }
+
+        // ELITE plan priority: boost projects owned by ELITE users in search results
+        try {
+            const projectIds = mergedProjects.map((p: any) => p.id);
+            const peopleIds = mergedPeople.map((p: any) => p.id);
+
+            if (projectIds.length > 0) {
+                const eliteProjects = await this.prisma.project.findMany({
+                    where: { id: { in: projectIds }, founder: { plan: 'ELITE' } },
+                    select: { id: true },
+                });
+                const eliteProjectSet = new Set(eliteProjects.map(p => p.id));
+                for (const result of mergedProjects) {
+                    if (eliteProjectSet.has(result.id)) {
+                        result.similarity = Math.min(1, (result.similarity || 0) + 0.10);
+                    }
+                }
+            }
+
+            if (peopleIds.length > 0) {
+                const eliteCandidates = await this.prisma.candidateProfile.findMany({
+                    where: { id: { in: peopleIds }, user: { plan: 'ELITE' } },
+                    select: { id: true },
+                });
+                const elitePeopleSet = new Set(eliteCandidates.map(c => c.id));
+                for (const result of mergedPeople) {
+                    if (elitePeopleSet.has(result.id)) {
+                        result.similarity = Math.min(1, (result.similarity || 0) + 0.10);
+                    }
+                }
+            }
+
+            // Final re-sort after ELITE priority adjustments
+            mergedProjects.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+            mergedPeople.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+        } catch (e) {
+            // ELITE priority is non-critical
+        }
 
         return { projects: mergedProjects, people: mergedPeople, skills };
     }
@@ -365,6 +440,43 @@ export class SearchService {
                 ],
             }
         }).catch(e => this.logger.warn(`Failed to log search: ${e.message}`));
+
+        // ELITE plan priority: boost projects & candidates owned by ELITE users
+        try {
+            const projectIds = projects.map((p: any) => p.id);
+            const candidateIds = candidates.map((c: any) => c.id);
+
+            if (projectIds.length > 0) {
+                const eliteProjects = await this.prisma.project.findMany({
+                    where: { id: { in: projectIds }, founder: { plan: 'ELITE' } },
+                    select: { id: true },
+                });
+                const eliteSet = new Set(eliteProjects.map(p => p.id));
+                for (const p of projects) {
+                    if (eliteSet.has(p.id)) {
+                        p.similarity = Math.min(1, (p.similarity || 0) + 0.10);
+                    }
+                }
+            }
+
+            if (candidateIds.length > 0) {
+                const eliteCandidates = await this.prisma.candidateProfile.findMany({
+                    where: { id: { in: candidateIds }, user: { plan: 'ELITE' } },
+                    select: { id: true },
+                });
+                const eliteSet = new Set(eliteCandidates.map(c => c.id));
+                for (const c of candidates) {
+                    if (eliteSet.has(c.id)) {
+                        c.similarity = Math.min(1, (c.similarity || 0) + 0.10);
+                    }
+                }
+            }
+
+            projects.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+            candidates.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+        } catch (e) {
+            // ELITE priority is non-critical
+        }
 
         return { projects, candidates };
     }

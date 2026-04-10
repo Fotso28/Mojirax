@@ -3,6 +3,19 @@
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
 
+const TIME_OPTIONS = [
+    { value: '2-5H', label: '2-5h (Soirs & WE)' },
+    { value: '5-10H', label: '5-10h' },
+    { value: '10-20H', label: '10-20h (Mi-temps)' },
+    { value: 'FULLTIME', label: 'Temps plein' },
+];
+
+const COMMITMENT_OPTIONS = [
+    { value: 'SIDE', label: 'Side Project' },
+    { value: 'SERIOUS', label: 'Sérieux (Obj. Full-time)' },
+    { value: 'FULLTIME', label: 'Full-time immédiat' },
+];
+
 export function CandidateAvailabilityStep() {
     const { data, updateData, nextStep } = useOnboarding();
 
@@ -18,33 +31,42 @@ export function CandidateAvailabilityStep() {
                     <label className="block text-sm font-medium text-gray-700">
                         Temps disponible (Hebdo)
                     </label>
-                    <select
-                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
-                        value={data.time_availability || ''}
-                        onChange={(e) => updateData('time_availability', e.target.value)}
-                    >
-                        <option value="">Sélectionner...</option>
-                        <option value="2-5H">2-5h (Soirs & WE)</option>
-                        <option value="5-10H">5-10h</option>
-                        <option value="10-20H">10-20h (Mi-temps)</option>
-                        <option value="FULLTIME">Temps plein</option>
-                    </select>
+                    <div className="flex gap-3 flex-wrap">
+                        {TIME_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => updateData('time_availability', opt.value)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.time_availability === opt.value
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                                    }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
                         Type d'engagement visé
                     </label>
-                    <select
-                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
-                        value={data.commitment_type || ''}
-                        onChange={(e) => updateData('commitment_type', e.target.value)}
-                    >
-                        <option value="">Sélectionner...</option>
-                        <option value="SIDE">Side Project</option>
-                        <option value="SERIOUS">Sérieux (Obj. Full-time)</option>
-                        <option value="FULLTIME">Full-time immédiat</option>
-                    </select>
+                    <div className="flex gap-3 flex-wrap">
+                        {COMMITMENT_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => updateData('commitment_type', opt.value)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.commitment_type === opt.value
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                                    }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
         </WizardStep>

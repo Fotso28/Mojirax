@@ -18,7 +18,7 @@
 - **Cache/Queue** : Redis
 - **Storage** : MinIO (S3-compatible, hébergé VPS local)
 - **Auth** : Firebase Auth (Email, Google, LinkedIn)
-- **Paiement** : Lygos Pay
+- **Paiement** : Stripe
 - **AI** : Modération profils, suggestions matching
 - **Infrastructure** : VPS Cameroun + Docker
 
@@ -37,7 +37,7 @@ mojirax/
 2. **Privacy Wall** : Core feature — masquage données sensibles pour utilisateurs gratuits
 3. **Modération IA** : Statuts profils (PENDING_AI → PUBLISHED/REJECTED)
 4. **Feed & Matching** : Découverte avec algo matching personnalisé
-5. **Paiement** : Modèle Pay-to-Contact avec Lygos Pay
+5. **Paiement** : Modèle Pay-to-Contact avec Stripe
 6. **Admin Dashboard** : KPIs, gestion modération, transactions
 
 ### Configuration Développement (Hybride)
@@ -172,7 +172,7 @@ const founders = await this.prisma.user.findMany();
 ```typescript
 // CORRECT
 constructor(private config: ConfigService) {
-  this.apiKey = this.config.getOrThrow<string>('LYGOS_API_KEY');
+  this.apiKey = this.config.getOrThrow<string>('STRIPE_SECRET_KEY');
 }
 
 // INTERDIT
@@ -331,7 +331,7 @@ const { userId } = req.body;
 - Types autorisés : `image/jpeg`, `image/png`, `image/webp`, `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
 
 ### Webhooks
-- Tout webhook entrant (Lygos Pay, etc.) DOIT vérifier la signature.
+- Tout webhook entrant (Stripe, etc.) DOIT vérifier la signature.
 - Ne jamais traiter un webhook sans validation de son authenticité.
 
 ### Migrations Prisma
@@ -453,7 +453,7 @@ async handleConnection(client: Socket) {
 ### Workflow Déblocage Contact (Pay-to-Contact)
 1. Utilisateur gratuit voit profil bloqué → "Information Masquée"
 2. Clic "Débloquer Contact"
-3. Redirection Lygos Pay
+3. Redirection Stripe Checkout
 4. Paiement confirmé → Webhook backend
 5. `update user set is_premium = true`
 6. Page success → Détails maintenant visibles
@@ -500,12 +500,6 @@ docker compose logs -f api   # Logs API en temps réel
 docker compose logs -f db    # Logs PostgreSQL
 docker ps                    # Vérifier containers actifs
 
-# Lygos & Webhooks
-curl http://localhost:3001/api/payment/webhook \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"event":"payment.completed","reference":"xxx"}' # Test webhook Lygos
-
 # Audit
 npm audit                     # Vérifier vulnérabilités
 npm audit fix                 # Corriger auto si possible
@@ -528,11 +522,11 @@ npm audit fix                 # Corriger auto si possible
 ## 🌍 NOTES CONTEXTE CAMEROUN
 
 MojiraX est un projet spécifique au Cameroun. Points clés:
-- **Devises** : FCFA (CFA) — toujours afficher montants en FCFA
+- **Devises** : EUR — toujours afficher montants en EUR
 - **Langues** : Support Français + Anglais
 - **Connectivité** : Considérer réseau mobile 3G/4G (optimiser images, lazy-load)
 - **UX Mobile-first** : ~80% trafic via mobile
-- **Paiement local** : Lygos Pay intégré (pas Stripe, pas PayPal)
+- **Paiement** : Stripe intégré
 ---
 
 ## ✅ CHECKLIST AVANT CHAQUE PULL REQUEST

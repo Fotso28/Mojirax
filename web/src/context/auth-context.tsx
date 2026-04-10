@@ -141,8 +141,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(true);
         try {
             await signInWithPopup(auth, googleProvider);
-        } catch (error) {
+        } catch (error: any) {
             setLoading(false);
+            // Silently ignore popup closed by user — not an error
+            if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+                return;
+            }
             throw error;
         }
     };

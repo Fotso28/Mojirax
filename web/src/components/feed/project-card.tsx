@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MoreHorizontal, MapPin, Briefcase, Calendar, Eye, Bookmark, BookmarkCheck, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, PlanBadge } from '@/components/ui';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
 import { getSectorLabel } from '@/lib/constants/sectors';
@@ -30,6 +30,7 @@ interface ProjectCardProps {
             lastName?: string;
             name?: string;
             image?: string;
+            plan?: string;
         };
     };
     position?: number;
@@ -158,7 +159,10 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                         )}
                     </div>
                     <div>
-                        <h3 className="font-bold text-gray-900 leading-tight group-hover/founder:text-kezak-primary transition-colors">{founderName}</h3>
+                        <div className="flex items-center gap-1.5">
+                            <h3 className="font-bold text-gray-900 leading-tight group-hover/founder:text-kezak-primary transition-colors">{founderName}</h3>
+                            <PlanBadge plan={project.founder.plan} />
+                        </div>
                         <p className="text-xs text-gray-500">Fondateur</p>
                     </div>
                 </Link>

@@ -73,9 +73,12 @@ export class MessagingController {
     const allowedMimes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
     ];
     if (!allowedMimes.includes(file.mimetype)) {
-      throw new BadRequestException('Type de fichier non autorisé (PDF ou DOCX uniquement)');
+      throw new BadRequestException('Type de fichier non autorisé (PDF, DOCX, JPEG, PNG ou WebP)');
     }
     if (file.size > 5_242_880) {
       throw new BadRequestException('Fichier trop volumineux (5 MB max)');

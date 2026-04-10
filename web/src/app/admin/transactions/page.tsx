@@ -25,8 +25,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUSES = ['', 'PAID', 'PENDING', 'FAILED', 'REFUNDED'];
 
-function formatXAF(value: string | number) {
-  return new Intl.NumberFormat('fr-FR').format(Number(value)) + ' XAF';
+function formatEUR(value: string | number) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value));
 }
 
 export default function AdminTransactionsPage() {
@@ -131,7 +131,7 @@ export default function AdminTransactionsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 font-semibold text-gray-900">{formatXAF(tx.amount)}</td>
+                    <td className="px-5 py-4 font-semibold text-gray-900">{formatEUR(tx.amount)}</td>
                     <td className="px-5 py-4">
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[tx.status] || STATUS_COLORS.PENDING}`}>
                         {tx.status}

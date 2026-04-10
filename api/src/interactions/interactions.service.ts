@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
+import { UserPlan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInteractionDto } from './dto/create-interaction.dto';
+import { PLAN_LIMITS } from '../common/config/plan-limits.config';
 
 @Injectable()
 export class InteractionsService {
+    private readonly logger = new Logger(InteractionsService.name);
+
     constructor(private prisma: PrismaService) { }
 
     async create(firebaseUid: string, dto: CreateInteractionDto) {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
-            select: { id: true }
+            select: { id: true, plan: true }
         });
 
         if (!user) return null;
@@ -26,6 +30,15 @@ export class InteractionsService {
         });
 
         if (!project) return null;
+
+        if (dto.action === 'SAVE' && user.plan === UserPlan.FREE) {
+            const savedIds = await this.getSavedProjectIds(firebaseUid);
+            if (savedIds.length >= PLAN_LIMITS.FREE.savesMax) {
+                throw new ForbiddenException(
+                    `Limite de ${PLAN_LIMITS.FREE.savesMax} favoris atteinte. Passez au plan supérieur pour des favoris illimités.`,
+                );
+            }
+        }
 
         return this.prisma.userProjectInteraction.create({
             data: {
@@ -69,6 +82,40 @@ export class InteractionsService {
     }
 
     /**
+     * Undo the last SKIP interaction within the last 5 minutes (PLUS+ only).
+     */
+    async undoLastSkip(firebaseUid: string): Promise<{ projectId: string } | null> {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { id: true },
+        });
+        if (!user) return null;
+
+        // Find the most recent SKIP within the last 5 minutes
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const lastSkip = await this.prisma.userProjectInteraction.findFirst({
+            where: {
+                userId: user.id,
+                action: 'SKIP',
+                createdAt: { gte: fiveMinAgo },
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, projectId: true },
+        });
+
+        if (!lastSkip) return null;
+
+        // Delete the SKIP interaction
+        await this.prisma.userProjectInteraction.delete({
+            where: { id: lastSkip.id },
+        });
+
+        this.logger.log('Undo last skip', { userId: user.id, projectId: lastSkip.projectId });
+
+        return { projectId: lastSkip.projectId };
+    }
+
+    /**
      * Get user's interaction summary for scoring.
      * Returns aggregated signals per project for a given user.
      */
@@ -109,6 +156,8 @@ export class InteractionsService {
             APPLY: 8,
             UNLOCK: 10,
             UNSAVE: -2,
+            LIKE: 7,
+            UNLIKE: -3,
         };
 
         for (const i of interactions) {
@@ -154,5 +203,40 @@ export class InteractionsService {
             viewedProjectIds,
             savedProjectIds,
         };
+    }
+
+    /**
+     * Get users who liked a given project, paginated.
+     */
+    async getLikers(projectId: string, take = 20, skip = 0) {
+        const likers = await this.prisma.userProjectInteraction.findMany({
+            where: { projectId, action: 'LIKE' },
+            orderBy: { createdAt: 'desc' },
+            take: Math.min(take, 100),
+            skip,
+            select: {
+                createdAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        image: true,
+                        role: true,
+                        plan: true,
+                    },
+                },
+            },
+        });
+        return likers;
+    }
+
+    /**
+     * Count total likes on a project.
+     */
+    async getLikersCount(projectId: string): Promise<number> {
+        return this.prisma.userProjectInteraction.count({
+            where: { projectId, action: 'LIKE' },
+        });
     }
 }

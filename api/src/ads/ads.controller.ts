@@ -45,7 +45,6 @@ export class AdsController {
   @Post('event')
   async trackEvent(@Request() req, @Body() dto: TrackAdEventDto) {
     const userId = req.user?.uid || null;
-    // Résoudre l'ID interne si connecté
     let internalUserId: string | null = null;
     if (userId) {
       const visitor = await this.adsService.buildVisitorProfile(userId);

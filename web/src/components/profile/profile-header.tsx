@@ -2,6 +2,7 @@
 
 import { CheckCircle2 } from 'lucide-react';
 import { ImageUploader } from '@/components/ui/image-uploader';
+import { PlanBadge } from '@/components/ui/plan-badge';
 import { useToast } from '@/context/toast-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 
@@ -13,6 +14,7 @@ export interface ProfileHeaderProps {
         image?: string;
         email?: string;
         isVerified?: boolean;
+        plan?: string;
     };
     onAvatarUploaded?: (data: any) => void;
 }
@@ -67,6 +69,7 @@ export function ProfileHeader({ user, onAvatarUploaded }: ProfileHeaderProps) {
                         {user.isVerified && (
                             <CheckCircle2 className="w-6 h-6 text-blue-500 fill-blue-50" />
                         )}
+                        <PlanBadge plan={user.plan} />
                     </div>
 
                     <div className="flex items-center justify-center sm:justify-start gap-3">

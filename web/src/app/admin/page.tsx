@@ -23,7 +23,7 @@ interface Kpis {
   projects: { total: number; published: number; draft: number; pendingAi: number; analyzingDoc: number; rejected: number; archivedByAdmin: number };
   applications: { total: number; pending: number; accepted: number; rejected: number; ignored: number };
   revenue: {
-    totalXAF: number; thisMonthXAF: number;
+    totalEUR: number; thisMonthEUR: number;
     transactions: { total: number; paid: number; pending: number; failed: number; refunded: number };
     unlockCount: number;
   };
@@ -59,8 +59,8 @@ const NOTIFICATION_TYPES = [
 
 // ─── Shared Components ─────────────────────────────────
 
-function formatXAF(value: number) {
-  return new Intl.NumberFormat('fr-FR').format(value) + ' XAF';
+function formatEUR(value: number) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
 interface StatCardProps {
@@ -317,8 +317,8 @@ function RevenueTab({ kpis }: { kpis: Kpis }) {
       <div>
         <SectionTitle>Revenus</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <StatCard label="Revenus total" value={formatXAF(kpis.revenue.totalXAF)} icon={Banknote} color="text-emerald-600" bg="bg-emerald-50" />
-          <StatCard label="Ce mois" value={formatXAF(kpis.revenue.thisMonthXAF)} icon={Banknote} color="text-green-600" bg="bg-green-50" />
+          <StatCard label="Revenus total" value={formatEUR(kpis.revenue.totalEUR)} icon={Banknote} color="text-emerald-600" bg="bg-emerald-50" />
+          <StatCard label="Ce mois" value={formatEUR(kpis.revenue.thisMonthEUR)} icon={Banknote} color="text-green-600" bg="bg-green-50" />
           <StatCard label="Unlocks" value={kpis.revenue.unlockCount} icon={Unlock} color="text-purple-600" bg="bg-purple-50" />
         </div>
       </div>

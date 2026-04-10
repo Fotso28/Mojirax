@@ -3,10 +3,24 @@
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
 
+const ROLES = [
+    { value: 'TECH', label: 'CTO / Tech' },
+    { value: 'PRODUCT', label: 'CPO / Product' },
+    { value: 'MARKETING', label: 'CMO / Marketing' },
+    { value: 'OPS', label: 'COO / Operations' },
+    { value: 'FINANCE', label: 'CFO / Finance' },
+];
+
+const EXPERIENCE_LEVELS = [
+    { value: '0-2', label: '0-2 ans (Junior)' },
+    { value: '3-5', label: '3-5 ans (Confirmé)' },
+    { value: '6-10', label: '6-10 ans (Senior)' },
+    { value: '10+', label: '10+ ans (Expert)' },
+];
+
 export function CandidateExpertiseStep() {
     const { data, updateData, nextStep } = useOnboarding();
 
-    // Validation
     const isValid = data.title && data.years_exp && data.main_competence;
 
     return (
@@ -28,35 +42,41 @@ export function CandidateExpertiseStep() {
                     />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Rôle Principal</label>
-                        <select
-                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
-                            value={data.role_type || ''}
-                            onChange={(e) => updateData('role_type', e.target.value)}
-                        >
-                            <option value="">Sélectionner...</option>
-                            <option value="TECH">CTO / Tech</option>
-                            <option value="PRODUCT">CPO / Product</option>
-                            <option value="MARKETING">CMO / Marketing</option>
-                            <option value="OPS">COO / Operations</option>
-                            <option value="FINANCE">CFO / Finance</option>
-                        </select>
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">Rôle Principal</label>
+                    <div className="flex gap-3 flex-wrap">
+                        {ROLES.map((role) => (
+                            <button
+                                key={role.value}
+                                type="button"
+                                onClick={() => updateData('role_type', role.value)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.role_type === role.value
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                                    }`}
+                            >
+                                {role.label}
+                            </button>
+                        ))}
                     </div>
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Expérience</label>
-                        <select
-                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
-                            value={data.years_exp || ''}
-                            onChange={(e) => updateData('years_exp', e.target.value)}
-                        >
-                            <option value="">Sélectionner...</option>
-                            <option value="0-2">0-2 ans (Junior)</option>
-                            <option value="3-5">3-5 ans (Confirmé)</option>
-                            <option value="6-10">6-10 ans (Senior)</option>
-                            <option value="10+">10+ ans (Expert)</option>
-                        </select>
+                </div>
+
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">Expérience</label>
+                    <div className="flex gap-3 flex-wrap">
+                        {EXPERIENCE_LEVELS.map((exp) => (
+                            <button
+                                key={exp.value}
+                                type="button"
+                                onClick={() => updateData('years_exp', exp.value)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl border text-sm font-medium transition-all ${data.years_exp === exp.value
+                                        ? 'border-kezak-primary bg-kezak-primary/10 text-kezak-primary'
+                                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                                    }`}
+                            >
+                                {exp.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 

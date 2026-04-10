@@ -4,8 +4,11 @@ import {
     BadRequestException, Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserPlan } from '@prisma/client';
 import { UsersService } from './users.service';
+import { StatsService } from './stats.service';
 import { CandidateModerationService } from './candidate-moderation.service';
+import { ProfileViewsService } from './profile-views.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 import { SaveOnboardingStateDto } from './dto/save-onboarding-state.dto';
@@ -13,6 +16,10 @@ import { SaveProjectDraftDto } from './dto/save-project-draft.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
 import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
+import { PlanGuard } from '../payment/guards/plan.guard';
+import { RequiresPlan } from '../payment/decorators/requires-plan.decorator';
+import { getAvailableFlags } from '../common/config/feature-flags';
+import { PrismaService } from '../prisma/prisma.service';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 
@@ -23,7 +30,10 @@ export class UsersController {
 
     constructor(
         private readonly usersService: UsersService,
+        private readonly statsService: StatsService,
         private readonly candidateModerationService: CandidateModerationService,
+        private readonly profileViewsService: ProfileViewsService,
+        private readonly prisma: PrismaService,
     ) { }
 
     // ─── Protected ─────────────────────────────────────
@@ -139,6 +149,79 @@ export class UsersController {
         return profile;
     }
 
+    // ─── Invisible Mode (ELITE) ──────────────────────────────
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.ELITE)
+    @Patch('invisible')
+    @ApiOperation({ summary: 'Toggle invisible/stealth mode (ELITE only)' })
+    @ApiResponse({ status: 200, description: 'Invisible mode toggled.' })
+    @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
+    async toggleInvisible(@Request() req, @Body() body: { invisible: boolean }) {
+        const user = await this.usersService.toggleInvisible(req.user.uid, body.invisible);
+        return { isInvisible: user.isInvisible };
+    }
+
+    // ─── Profile Views ─────────────────────────────────────
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.PLUS)
+    @Get('profile-views')
+    @ApiOperation({ summary: 'Get profile viewers (PLUS+ only)' })
+    @ApiResponse({ status: 200, description: 'Profile viewers returned.' })
+    @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
+    async getProfileViewers(@Request() req) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid: req.user.uid },
+            select: { id: true, plan: true },
+        });
+        return this.profileViewsService.getViewers(user!.id, user!.plan);
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard)
+    @Get('profile-views/count')
+    @ApiOperation({ summary: 'Get profile view count (last 30 days)' })
+    @ApiResponse({ status: 200, description: 'View count returned.' })
+    async getProfileViewCount(@Request() req) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid: req.user.uid },
+            select: { id: true },
+        });
+        const count = await this.profileViewsService.getViewCount(user!.id);
+        return { count };
+    }
+
+    // ─── Profile Stats (PRO+) ─────────────────────────────
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.PRO)
+    @Get('stats')
+    @ApiOperation({ summary: 'Get profile stats per project (PRO+ only)' })
+    @ApiResponse({ status: 200, description: 'Profile stats returned.' })
+    @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
+    async getStats(@Request() req) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid: req.user.uid },
+            select: { id: true },
+        });
+        return this.statsService.getProfileStats(user!.id);
+    }
+
+    // ─── Feature Flags ─────────────────────────────────────
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard)
+    @Get('features')
+    @ApiOperation({ summary: 'Get available feature flags for current user plan' })
+    @ApiResponse({ status: 200, description: 'Feature flags returned.' })
+    async getFeatures(@Request() req) {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid: req.user.uid },
+            select: { plan: true },
+        });
+        return { features: getAvailableFlags(user!.plan) };
+    }
+
     // ─── Public / Semi-public ────────────────────────────
     // IMPORTANT: Les routes statiques doivent être AVANT :id/public
     // pour éviter les conflits de matching NestJS.
@@ -183,6 +266,20 @@ export class UsersController {
     @ApiResponse({ status: 200, description: 'Public profile returned.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
     async getPublicProfile(@Request() req, @Param('id') id: string) {
-        return this.usersService.findPublicProfile(id);
+        const profile = await this.usersService.findPublicProfile(id);
+
+        // Fire-and-forget: track the profile view if the viewer is authenticated
+        if (req.user?.uid) {
+            this.prisma.user
+                .findUnique({ where: { firebaseUid: req.user.uid }, select: { id: true } })
+                .then((currentUser) => {
+                    if (currentUser) {
+                        this.profileViewsService.trackView(currentUser.id, id).catch(() => {});
+                    }
+                })
+                .catch(() => {});
+        }
+
+        return profile;
     }
 }

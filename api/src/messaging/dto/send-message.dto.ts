@@ -24,6 +24,12 @@ export class SendMessageDto {
   fileSize?: number;
 
   @IsOptional()
-  @IsIn(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+  @IsIn([
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ])
   fileMimeType?: string;
 }

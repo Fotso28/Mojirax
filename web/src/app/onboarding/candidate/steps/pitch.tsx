@@ -25,7 +25,7 @@ export function CandidatePitchStep() {
                 locationPref: formData.location_pref,
                 availability: formData.time_availability,
                 collabPref: formData.collab_pref,
-                projectPref: formData.project_pref,
+                projectPref: formData.project_pref || [],
                 roleType: formData.role_type,
                 commitmentType: formData.commitment_type,
                 achievements: formData.achievements,

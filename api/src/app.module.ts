@@ -28,6 +28,7 @@ import { RedisModule } from './redis/redis.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { LandingModule } from './landing/landing.module';
 import { PaymentModule } from './payment/payment.module';
+import { BoostModule } from './boost/boost.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { PaymentModule } from './payment/payment.module';
     FiltersModule,
     MessagingModule,
     LandingModule,
+    BoostModule,
   ],
   controllers: [AppController],
   providers: [

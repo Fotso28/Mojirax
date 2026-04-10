@@ -11,19 +11,19 @@ export function NativeAd() {
             </div>
 
             <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-                    LP
+                <div className="w-14 h-14 rounded-xl bg-kezak-primary flex items-center justify-center text-white font-bold shrink-0">
+                    MX
                 </div>
                 <div>
-                    <h3 className="font-bold text-gray-900">Lygos Pay</h3>
+                    <h3 className="font-bold text-gray-900">MojiraX Premium</h3>
                     <p className="text-sm text-gray-600 mt-1 mb-3">
-                        Intégrez le paiement mobile dans votre startup en 5 minutes. API simple, sécurisée, et 100% Cameroun.
+                        Accédez aux contacts complets des co-founders et boostez vos chances de collaboration.
                     </p>
                     <a
-                        href="#"
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                        href="/pricing"
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-kezak-primary hover:text-kezak-dark"
                     >
-                        Essayer gratuitement <ExternalLink className="w-3 h-3" />
+                        Découvrir les plans <ExternalLink className="w-3 h-3" />
                     </a>
                 </div>
             </div>

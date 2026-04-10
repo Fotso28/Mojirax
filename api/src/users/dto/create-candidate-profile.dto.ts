@@ -89,10 +89,11 @@ export class CreateCandidateProfileDto {
     @IsString()
     collabPref?: string;
 
-    @ApiPropertyOptional({ example: 'TECH' })
+    @ApiPropertyOptional({ example: ['TECH', 'IMPACT'], type: [String] })
     @IsOptional()
-    @IsString()
-    projectPref?: string;
+    @IsArray()
+    @IsString({ each: true })
+    projectPref?: string[];
 
     @ApiPropertyOptional({ example: 'TECH' })
     @IsOptional()

@@ -189,8 +189,8 @@ export class AdminService {
         ignored: ignoredApplications,
       },
       revenue: {
-        totalXAF: Number(paidSum._sum.amount ?? 0),
-        thisMonthXAF: Number(thisMonthSum._sum.amount ?? 0),
+        totalEUR: Number(paidSum._sum.amount ?? 0),
+        thisMonthEUR: Number(thisMonthSum._sum.amount ?? 0),
         transactions: {
           total: totalTransactions,
           paid: paidCount,

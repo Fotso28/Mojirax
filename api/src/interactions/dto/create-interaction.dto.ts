@@ -6,7 +6,7 @@ export class CreateInteractionDto {
     @IsString()
     projectId: string;
 
-    @ApiProperty({ description: 'Action: VIEW, CLICK, SAVE, UNSAVE, SKIP, SHARE' })
+    @ApiProperty({ description: 'Action: VIEW, CLICK, SAVE, UNSAVE, SKIP, SHARE, LIKE, UNLIKE' })
     @IsString()
     action: string;
 
