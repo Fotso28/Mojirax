@@ -18,9 +18,7 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  FOUNDER
-  CANDIDATE
-  USER // Default before selection
+  USER
 }
 
 enum AccountStatus {
@@ -50,6 +48,23 @@ model User {
 
   // Profile
   image String? // Avatar URL (R2)
+
+  // Professional Profile (promoted from founderProfile JSON)
+  title             String?
+  bio               String?   @db.Text
+  country           String?
+  city              String?
+  linkedinUrl       String?   @map("linkedin_url")
+  websiteUrl        String?   @map("website_url")
+  githubUrl         String?   @map("github_url")
+  portfolioUrl      String?   @map("portfolio_url")
+  skills            String[]  @default([])
+  languages         String[]  @default([])
+  certifications    String[]  @default([])
+  yearsOfExperience Int?      @map("years_of_experience")
+  experience        Json?     @db.JsonB
+  education         Json?     @db.JsonB
+
   role   UserRole      @default(USER)
   status AccountStatus @default(ACTIVE)
 
@@ -62,9 +77,6 @@ model User {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Founder Profile (JSON: { title, bio, skills[], experience[], education[], linkedinUrl, city, languages[] })
-  founderProfile Json? @map("founder_profile") @db.JsonB
 
   // Onboarding Draft State
   onboardingState Json? @map("onboarding_state") // Stores { step: 2, data: {...} }
@@ -164,26 +176,8 @@ model CandidateProfile {
   id     String @id @default(cuid())
   userId String @unique @map("user_id")
 
-  // Core Data
-  title       String // e.g., "Senior React Developer"
-  bio         String  @db.Text
-  location    String?
-  linkedinUrl String? @map("linkedin_url")
+  // Core Data (title, bio, skills, etc. now live on User)
   resumeUrl   String? @map("resume_url") // R2 Link
-
-  // Skills & Tags
-  skills String[]
-
-  // Computed/Synced Data (LinkedIn Import)
-  experience Json? @db.JsonB // Flexible structure for job history
-  education  Json? @db.JsonB
-
-  // Additional Profile Details
-  yearsOfExperience Int?     @map("years_of_experience")
-  languages         String[] @default([]) // ["French", "English"]
-  certifications    String[] @default([]) // ["AWS Certified"]
-  portfolioUrl      String?  @map("portfolio_url")
-  githubUrl         String?  @map("github_url")
 
   // Wizard-sourced fields (stored separately for round-trip editing)
   shortPitch     String? @map("short_pitch") @db.Text
@@ -232,9 +226,7 @@ model CandidateProfile {
   matchScores    MatchScore[]
 
   @@index([status])
-  @@index([skills])
   @@index([desiredSectors])
-  @@index([location])
   @@map("candidate_profiles")
 }
 
