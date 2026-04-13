@@ -50,8 +50,8 @@ export class ModerationActionDto {
 }
 
 export class ChangeRoleDto {
-  @IsEnum(['ADMIN', 'FOUNDER', 'CANDIDATE', 'USER'])
-  role: 'ADMIN' | 'FOUNDER' | 'CANDIDATE' | 'USER';
+  @IsEnum(['ADMIN', 'USER'])
+  role: 'ADMIN' | 'USER';
 }
 
 export class ListTransactionsDto extends PaginationDto {

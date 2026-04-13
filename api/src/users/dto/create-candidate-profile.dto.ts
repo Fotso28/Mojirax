@@ -1,117 +1,65 @@
-import { IsString, IsOptional, IsArray, IsUrl } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsArray, MaxLength, ArrayMaxSize, IsIn, IsUrl } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCandidateProfileDto {
-    @ApiProperty({ example: 'Senior React Developer' })
-    @IsString()
-    title: string;
-
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ description: 'Short pitch (280 chars)' })
     @IsOptional()
     @IsString()
-    bio?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
+    @MaxLength(280, { message: 'Le pitch court ne doit pas dépasser 280 caractères' })
     shortPitch?: string;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ description: 'Long pitch / motivation' })
     @IsOptional()
     @IsString()
+    @MaxLength(2000, { message: 'Le message libre ne doit pas dépasser 2000 caractères' })
     longPitch?: string;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ description: 'Vision at 3-5 years' })
     @IsOptional()
     @IsString()
-    mainCompetence?: string;
-
-    @ApiPropertyOptional({ example: ['React', 'Node.js'], type: [String] })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    skills?: string[];
-
-    @ApiPropertyOptional({ example: ['Français', 'Anglais'], type: [String] })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    languages?: string[];
-
-    @ApiPropertyOptional({ example: ['AWS Certified', 'PMP'], type: [String] })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    certifications?: string[];
-
-    @ApiPropertyOptional({ example: 'Douala, Cameroun' })
-    @IsOptional()
-    @IsString()
-    location?: string;
-
-    @ApiPropertyOptional({ example: 'https://linkedin.com/in/...' })
-    @IsOptional()
-    @IsString()
-    linkedinUrl?: string;
-
-    @ApiPropertyOptional({ example: 'https://github.com/...' })
-    @IsOptional()
-    @IsString()
-    githubUrl?: string;
-
-    @ApiPropertyOptional({ example: 'https://portfolio.com' })
-    @IsOptional()
-    @IsString()
-    portfolioUrl?: string;
-
-    @ApiPropertyOptional({ example: '6-10' })
-    @IsOptional()
-    @IsString()
-    yearsExp?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
+    @MaxLength(500, { message: 'La vision ne doit pas dépasser 500 caractères' })
     vision?: string;
-
-    @ApiPropertyOptional({ example: 'REMOTE' })
-    @IsOptional()
-    @IsString()
-    locationPref?: string;
-
-    @ApiPropertyOptional({ example: 'FULLTIME' })
-    @IsOptional()
-    @IsString()
-    availability?: string;
-
-    @ApiPropertyOptional({ example: 'EQUITY' })
-    @IsOptional()
-    @IsString()
-    collabPref?: string;
-
-    @ApiPropertyOptional({ example: ['TECH', 'IMPACT'], type: [String] })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    projectPref?: string[];
 
     @ApiPropertyOptional({ example: 'TECH' })
     @IsOptional()
-    @IsString()
+    @IsIn(['TECH', 'PRODUCT', 'MARKETING', 'OPS', 'FINANCE'], { message: 'Type de rôle invalide' })
     roleType?: string;
 
     @ApiPropertyOptional({ example: 'SERIOUS' })
     @IsOptional()
-    @IsString()
+    @IsIn(['SIDE', 'SERIOUS', 'FULLTIME'], { message: "Type d'engagement invalide" })
     commitmentType?: string;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ example: 'EQUITY' })
     @IsOptional()
-    @IsString()
-    achievements?: string;
+    @IsIn(['EQUITY', 'PAID', 'HYBRID', 'DISCUSS'], { message: 'Préférence de collaboration invalide' })
+    collabPref?: string;
+
+    @ApiPropertyOptional({ example: 'REMOTE' })
+    @IsOptional()
+    @IsIn(['REMOTE', 'HYBRID', 'ONSITE'], { message: 'Préférence de lieu invalide' })
+    locationPref?: string;
 
     @ApiPropertyOptional({ example: 'YES' })
     @IsOptional()
-    @IsString()
+    @IsIn(['YES', 'NO'], { message: 'Valeur invalide pour hasCofounded' })
     hasCofounded?: string;
+
+    @ApiPropertyOptional({ example: 'FULLTIME' })
+    @IsOptional()
+    @IsIn(['2-5H', '5-10H', '10-20H', 'FULLTIME'], { message: 'Disponibilité invalide' })
+    availability?: string;
+
+    @ApiPropertyOptional({ example: ['TECH', 'IMPACT'], type: [String] })
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(10, { message: 'Maximum 10 secteurs' })
+    @IsIn(['TECH', 'HYBRID', 'IMPACT', 'ANY'], { each: true, message: 'Type de projet invalide' })
+    projectPref?: string[];
+
+    @ApiPropertyOptional({ description: 'Resume URL' })
+    @IsOptional()
+    @IsUrl({}, { message: 'URL CV invalide' })
+    @MaxLength(500)
+    resumeUrl?: string;
 }
