@@ -89,8 +89,8 @@ export class AdminService {
       // Users
       this.prisma.user.count(),
       this.prisma.user.count({ where: { role: 'ADMIN' } }),
-      this.prisma.user.count({ where: { role: 'FOUNDER' } }),
-      this.prisma.user.count({ where: { role: 'CANDIDATE' } }),
+      this.prisma.user.count({ where: { projects: { some: {} } } }),
+      this.prisma.user.count({ where: { candidateProfile: { isNot: null } } }),
       this.prisma.user.count({ where: { role: 'USER' } }),
       this.prisma.user.count({ where: { createdAt: { gte: oneWeekAgo } } }),
       // Projects

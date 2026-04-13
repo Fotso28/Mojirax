@@ -32,7 +32,9 @@ export class ApplicationsService {
                 firstName: true,
                 lastName: true,
                 name: true,
-                founderProfile: true,
+                title: true,
+                bio: true,
+                skills: true,
                 candidateProfile: { select: { id: true } },
             },
         });
@@ -42,13 +44,12 @@ export class ApplicationsService {
         }
 
         // Validate profile completeness before applying
-        const fp = (user.founderProfile ?? {}) as Record<string, any>;
         const missingFields: string[] = [];
         if (!user.firstName) missingFields.push('Prénom');
         if (!user.lastName) missingFields.push('Nom');
-        if (!fp?.title) missingFields.push('Titre professionnel');
-        if (!fp?.bio) missingFields.push('Bio');
-        if (!fp?.skills || fp.skills.length === 0) missingFields.push('Compétences');
+        if (!user.title) missingFields.push('Titre professionnel');
+        if (!user.bio) missingFields.push('Bio');
+        if (!user.skills || user.skills.length === 0) missingFields.push('Compétences');
 
         if (missingFields.length > 0) {
             throw new BadRequestException({
@@ -58,20 +59,17 @@ export class ApplicationsService {
             });
         }
 
-        // Auto-create candidateProfile from founderProfile data if needed
+        // Auto-create candidateProfile if needed
         if (!user.candidateProfile) {
             const profile = await this.prisma.candidateProfile.create({
                 data: {
                     userId: user.id,
-                    title: fp.title,
-                    bio: fp.bio,
-                    skills: fp.skills || [],
                     status: 'ANALYZING',
                 },
                 select: { id: true },
             });
             user.candidateProfile = profile;
-            this.logger.log(`Auto-created candidate profile from founder profile for user ${user.id}`);
+            this.logger.log(`Auto-created candidate profile for user ${user.id}`);
 
             // Lancer la modération IA en fire-and-forget
             this.candidateModerationService.moderateProfile(profile.id).catch(() => {});

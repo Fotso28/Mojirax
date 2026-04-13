@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
@@ -24,12 +24,6 @@ export class UsersService {
                 candidateProfile: {
                     select: {
                         id: true,
-                        title: true,
-                        bio: true,
-                        skills: true,
-                        location: true,
-                        yearsOfExperience: true,
-                        availability: true,
                         shortPitch: true,
                         longPitch: true,
                         vision: true,
@@ -39,13 +33,9 @@ export class UsersService {
                         locationPref: true,
                         desiredSectors: true,
                         remoteOnly: true,
-                        linkedinUrl: true,
                         resumeUrl: true,
-                        githubUrl: true,
-                        portfolioUrl: true,
-                        languages: true,
-                        certifications: true,
                         hasCofounded: true,
+                        availability: true,
                         qualityScore: true,
                         profileCompleteness: true,
                         status: true,
@@ -69,16 +59,23 @@ export class UsersService {
                 image: true,
                 role: true,
                 plan: true,
-                founderProfile: true,
+                title: true,
+                bio: true,
+                country: true,
+                city: true,
+                linkedinUrl: true,
+                websiteUrl: true,
+                githubUrl: true,
+                portfolioUrl: true,
+                skills: true,
+                languages: true,
+                certifications: true,
+                yearsOfExperience: true,
+                experience: true,
+                education: true,
                 candidateProfile: {
                     select: {
                         id: true,
-                        title: true,
-                        bio: true,
-                        skills: true,
-                        location: true,
-                        yearsOfExperience: true,
-                        availability: true,
                         shortPitch: true,
                         longPitch: true,
                         vision: true,
@@ -88,10 +85,9 @@ export class UsersService {
                         locationPref: true,
                         desiredSectors: true,
                         remoteOnly: true,
-                        linkedinUrl: true,
                         resumeUrl: true,
-                        githubUrl: true,
-                        portfolioUrl: true,
+                        hasCofounded: true,
+                        availability: true,
                         qualityScore: true,
                         profileCompleteness: true,
                         status: true,
@@ -138,13 +134,17 @@ export class UsersService {
     async updateProfile(firebaseUid: string, dto: UpdateUserProfileDto) {
         return this.prisma.user.update({
             where: { firebaseUid },
-            data: {
-                ...dto,
-            },
+            data: { ...dto },
         });
     }
 
     async saveOnboardingState(firebaseUid: string, state: any) {
+        // Protection JSON bomb (max 100KB)
+        const jsonSize = JSON.stringify(state).length;
+        if (jsonSize > 100_000) {
+            throw new BadRequestException('Données d\'onboarding trop volumineuses (max 100KB)');
+        }
+
         return this.prisma.user.update({
             where: { firebaseUid },
             data: {
@@ -162,6 +162,12 @@ export class UsersService {
     }
 
     async saveProjectDraft(firebaseUid: string, draft: any) {
+        // Protection JSON bomb (max 100KB)
+        const jsonSize = JSON.stringify(draft).length;
+        if (jsonSize > 100_000) {
+            throw new BadRequestException('Brouillon de projet trop volumineux (max 100KB)');
+        }
+
         return this.prisma.user.update({
             where: { firebaseUid },
             data: {
@@ -220,29 +226,9 @@ export class UsersService {
             throw new ConflictException('Vous avez déjà un profil candidat');
         }
 
-        // Mapper les champs du DTO vers CandidateProfile
-        const yearsMap: Record<string, number> = { '0-2': 1, '3-5': 4, '6-10': 8, '10+': 12 };
-
-        const bio = [dto.shortPitch, dto.longPitch, dto.vision, dto.achievements]
-            .filter(Boolean)
-            .join('\n\n');
-
         const profile = await this.prisma.candidateProfile.create({
             data: {
                 userId: user.id,
-                title: dto.title,
-                bio: bio || '',
-                skills: dto.skills && dto.skills.length > 0 ? dto.skills : (dto.mainCompetence ? [dto.mainCompetence] : []),
-                languages: dto.languages || [],
-                certifications: dto.certifications || [],
-                location: dto.location || null,
-                linkedinUrl: dto.linkedinUrl || null,
-                githubUrl: dto.githubUrl || null,
-                portfolioUrl: dto.portfolioUrl || null,
-                yearsOfExperience: dto.yearsExp ? (yearsMap[dto.yearsExp] ?? 0) : null,
-                remoteOnly: dto.locationPref === 'REMOTE',
-                desiredSectors: dto.projectPref?.length ? dto.projectPref : [],
-                availability: dto.availability || null,
                 shortPitch: dto.shortPitch || null,
                 longPitch: dto.longPitch || null,
                 vision: dto.vision || null,
@@ -251,6 +237,10 @@ export class UsersService {
                 collabPref: dto.collabPref || null,
                 locationPref: dto.locationPref || null,
                 hasCofounded: dto.hasCofounded || null,
+                availability: dto.availability || null,
+                desiredSectors: dto.projectPref?.length ? dto.projectPref : [],
+                remoteOnly: dto.locationPref === 'REMOTE',
+                resumeUrl: dto.resumeUrl || null,
                 status: 'ANALYZING',
             },
             select: { id: true, status: true },
@@ -284,47 +274,22 @@ export class UsersService {
             throw new NotFoundException('Profil candidat introuvable');
         }
 
-        const yearsMap: Record<string, number> = { '0-2': 1, '3-5': 4, '6-10': 8, '10+': 12 };
-
         const updateData: Record<string, any> = { status: 'ANALYZING' };
 
-        if (dto.title !== undefined) updateData.title = dto.title || '';
-        if (dto.bio !== undefined) updateData.bio = dto.bio || '';
-        if (dto.shortPitch || dto.longPitch || dto.vision || dto.achievements) {
-            // Recalculate bio from pitch fields only if no explicit bio provided
-            if (dto.bio === undefined) {
-                updateData.bio = [dto.shortPitch, dto.longPitch, dto.vision, dto.achievements]
-                    .filter(Boolean)
-                    .join('\n\n');
-            }
-        }
-        // Full skills array takes priority over legacy mainCompetence
-        if (dto.skills !== undefined) {
-            updateData.skills = dto.skills.length > 0 ? dto.skills : [];
-        } else if (dto.mainCompetence) {
-            updateData.skills = [dto.mainCompetence];
-        }
-        if (dto.languages !== undefined) updateData.languages = dto.languages;
-        if (dto.certifications !== undefined) updateData.certifications = dto.certifications;
-        if (dto.location !== undefined) updateData.location = dto.location || null;
-        if (dto.linkedinUrl !== undefined) updateData.linkedinUrl = dto.linkedinUrl || null;
-        if (dto.githubUrl !== undefined) updateData.githubUrl = dto.githubUrl || null;
-        if (dto.portfolioUrl !== undefined) updateData.portfolioUrl = dto.portfolioUrl || null;
-        if (dto.yearsExp !== undefined) updateData.yearsOfExperience = dto.yearsExp ? (yearsMap[dto.yearsExp] ?? 0) : null;
-        if (dto.locationPref !== undefined) {
-            updateData.remoteOnly = dto.locationPref === 'REMOTE';
-            updateData.locationPref = dto.locationPref || null;
-        }
-        if (dto.projectPref !== undefined) updateData.desiredSectors = dto.projectPref?.length ? dto.projectPref : [];
-        if (dto.availability !== undefined) updateData.availability = dto.availability || null;
-        // Wizard-sourced fields
         if (dto.shortPitch !== undefined) updateData.shortPitch = dto.shortPitch || null;
         if (dto.longPitch !== undefined) updateData.longPitch = dto.longPitch || null;
         if (dto.vision !== undefined) updateData.vision = dto.vision || null;
         if (dto.roleType !== undefined) updateData.roleType = dto.roleType || null;
         if (dto.commitmentType !== undefined) updateData.commitmentType = dto.commitmentType || null;
         if (dto.collabPref !== undefined) updateData.collabPref = dto.collabPref || null;
+        if (dto.locationPref !== undefined) {
+            updateData.remoteOnly = dto.locationPref === 'REMOTE';
+            updateData.locationPref = dto.locationPref || null;
+        }
         if (dto.hasCofounded !== undefined) updateData.hasCofounded = dto.hasCofounded || null;
+        if (dto.availability !== undefined) updateData.availability = dto.availability || null;
+        if (dto.projectPref !== undefined) updateData.desiredSectors = dto.projectPref?.length ? dto.projectPref : [];
+        if (dto.resumeUrl !== undefined) updateData.resumeUrl = dto.resumeUrl || null;
 
         const profile = await this.prisma.candidateProfile.update({
             where: { id: user.candidateProfile.id },
@@ -348,10 +313,10 @@ export class UsersService {
         const where: Prisma.CandidateProfileWhereInput = {
             status: 'PUBLISHED',
             ...(filters?.city ? {
-                location: { contains: filters.city, mode: 'insensitive' as Prisma.QueryMode }
+                user: { city: { contains: filters.city, mode: 'insensitive' as Prisma.QueryMode } }
             } : {}),
             ...(filters?.skills && filters.skills.length > 0 ? {
-                skills: { hasSome: filters.skills }
+                user: { skills: { hasSome: filters.skills } }
             } : {}),
             ...(filters?.sector ? {
                 desiredSectors: { has: filters.sector }
@@ -365,11 +330,6 @@ export class UsersService {
             skip: cursor ? 1 : 0,
             select: {
                 id: true,
-                title: true,
-                bio: true,
-                skills: true,
-                location: true,
-                yearsOfExperience: true,
                 availability: true,
                 shortPitch: true,
                 roleType: true,
@@ -388,6 +348,11 @@ export class UsersService {
                         lastName: true,
                         name: true,
                         image: true,
+                        title: true,
+                        bio: true,
+                        skills: true,
+                        city: true,
+                        yearsOfExperience: true,
                     }
                 }
             },
@@ -409,12 +374,14 @@ export class UsersService {
     async generateCandidateEmbeddings(candidateProfileId: string) {
         const profile = await this.prisma.candidateProfile.findUnique({
             where: { id: candidateProfileId },
-            select: { bio: true, skills: true, title: true },
+            select: {
+                user: { select: { title: true, bio: true, skills: true } },
+            },
         });
         if (!profile) return;
 
         // Bio embedding
-        const bioText = [profile.title, profile.bio].filter(Boolean).join(' ');
+        const bioText = [profile.user.title, profile.user.bio].filter(Boolean).join(' ');
         if (bioText.length >= 10) {
             const bioEmbedding = await this.aiService.getEmbedding(bioText);
             const bioVector = `[${bioEmbedding.join(',')}]`;
@@ -429,8 +396,8 @@ export class UsersService {
         }
 
         // Skills embedding
-        if (profile.skills.length > 0) {
-            const skillsText = profile.skills.join(', ');
+        if (profile.user.skills.length > 0) {
+            const skillsText = profile.user.skills.join(', ');
             const skillsEmbedding = await this.aiService.getEmbedding(skillsText);
             const skillsVector = `[${skillsEmbedding.join(',')}]`;
             await this.prisma.$executeRaw`
@@ -456,12 +423,10 @@ export class UsersService {
             where: { status: 'PUBLISHED' },
             select: {
                 id: true,
-                title: true,
-                skills: true,
                 qualityScore: true,
                 createdAt: true,
                 user: {
-                    select: { id: true, name: true, image: true },
+                    select: { id: true, name: true, image: true, title: true, skills: true },
                 },
             },
             orderBy: { createdAt: 'desc' },
@@ -497,8 +462,8 @@ export class UsersService {
                 userId: c.user.id,
                 name: c.user.name,
                 image: c.user.image,
-                title: c.title,
-                skills: c.skills?.slice(0, 3) || [],
+                title: c.user.title,
+                skills: c.user.skills?.slice(0, 3) || [],
                 qualityScore: c.qualityScore,
                 score,
             };

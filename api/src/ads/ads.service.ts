@@ -541,10 +541,10 @@ export class AdsService {
         id: true,
         role: true,
         plan: true,
+        skills: true,
+        city: true,
         candidateProfile: {
           select: {
-            skills: true,
-            location: true,
             desiredSectors: true,
           },
         },
@@ -571,11 +571,16 @@ export class AdsService {
     let city: string | null = null;
     let stage: string | null = null;
 
+    // Depuis les colonnes User
+    if (user.skills) {
+      user.skills.forEach((s: string) => skills.add(s));
+    }
+    if (user.city) {
+      city = user.city;
+    }
     // Depuis le profil candidat
     if (user.candidateProfile) {
-      user.candidateProfile.skills.forEach((s) => skills.add(s));
-      user.candidateProfile.desiredSectors.forEach((s) => sectors.add(s));
-      city = user.candidateProfile.location;
+      user.candidateProfile.desiredSectors.forEach((s: string) => sectors.add(s));
     }
 
     // Depuis les projets
