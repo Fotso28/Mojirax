@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CandidateCard } from './candidate-card';
 import { FeedFilters } from './feed-filters';
+import { TopActiveCandidates } from './top-active-candidates';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { Loader2 } from 'lucide-react';
 
@@ -96,6 +97,7 @@ export function CandidateStream() {
         return (
             <div className="space-y-6 max-w-2xl mx-auto">
                 <FeedFilters onFilterChange={handleFilterChange} />
+                <TopActiveCandidates />
                 {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm animate-pulse h-48" />
                 ))}
@@ -107,6 +109,7 @@ export function CandidateStream() {
         return (
             <div className="max-w-2xl mx-auto">
                 <FeedFilters onFilterChange={handleFilterChange} />
+                <TopActiveCandidates />
                 <div className="text-center py-20">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-2xl">👩‍💻</span>
@@ -125,6 +128,7 @@ export function CandidateStream() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <FeedFilters onFilterChange={handleFilterChange} />
+            <TopActiveCandidates />
             {candidates.map((candidate) => (
                 <CandidateCard key={candidate.id} candidate={candidate} />
             ))}
