@@ -13,6 +13,7 @@ import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 import { SaveOnboardingStateDto } from './dto/save-onboarding-state.dto';
 import { SaveProjectDraftDto } from './dto/save-project-draft.dto';
+import { ToggleInvisibleDto } from './dto/toggle-invisible.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
 import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
@@ -157,8 +158,8 @@ export class UsersController {
     @ApiOperation({ summary: 'Toggle invisible/stealth mode (ELITE only)' })
     @ApiResponse({ status: 200, description: 'Invisible mode toggled.' })
     @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
-    async toggleInvisible(@Request() req, @Body() body: { invisible: boolean }) {
-        const user = await this.usersService.toggleInvisible(req.user.uid, body.invisible);
+    async toggleInvisible(@Request() req, @Body() dto: ToggleInvisibleDto) {
+        const user = await this.usersService.toggleInvisible(req.user.uid, dto.invisible);
         return { isInvisible: user.isInvisible };
     }
 
@@ -171,11 +172,8 @@ export class UsersController {
     @ApiResponse({ status: 200, description: 'Profile viewers returned.' })
     @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
     async getProfileViewers(@Request() req) {
-        const user = await this.prisma.user.findUnique({
-            where: { firebaseUid: req.user.uid },
-            select: { id: true, plan: true },
-        });
-        return this.profileViewsService.getViewers(user!.id, user!.plan);
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+        return this.profileViewsService.getViewers(user.id, user.plan);
     }
 
     @ApiBearerAuth()
@@ -184,11 +182,8 @@ export class UsersController {
     @ApiOperation({ summary: 'Get profile view count (last 30 days)' })
     @ApiResponse({ status: 200, description: 'View count returned.' })
     async getProfileViewCount(@Request() req) {
-        const user = await this.prisma.user.findUnique({
-            where: { firebaseUid: req.user.uid },
-            select: { id: true },
-        });
-        const count = await this.profileViewsService.getViewCount(user!.id);
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+        const count = await this.profileViewsService.getViewCount(user.id);
         return { count };
     }
 
@@ -201,11 +196,20 @@ export class UsersController {
     @ApiResponse({ status: 200, description: 'Profile stats returned.' })
     @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
     async getStats(@Request() req) {
-        const user = await this.prisma.user.findUnique({
-            where: { firebaseUid: req.user.uid },
-            select: { id: true },
-        });
-        return this.statsService.getProfileStats(user!.id);
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+        return this.statsService.getProfileStats(user.id);
+    }
+
+    // ─── Top Active Candidates (PRO+) ────────────────────
+    @ApiBearerAuth()
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.PRO)
+    @Get('top-active')
+    @ApiOperation({ summary: 'Get top 10 most active candidates this week (PRO+ only)' })
+    @ApiResponse({ status: 200, description: 'Top active candidates returned.' })
+    @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
+    async getTopActiveCandidates() {
+        return this.usersService.getTopActiveCandidates();
     }
 
     // ─── Feature Flags ─────────────────────────────────────
@@ -215,17 +219,16 @@ export class UsersController {
     @ApiOperation({ summary: 'Get available feature flags for current user plan' })
     @ApiResponse({ status: 200, description: 'Feature flags returned.' })
     async getFeatures(@Request() req) {
-        const user = await this.prisma.user.findUnique({
-            where: { firebaseUid: req.user.uid },
-            select: { plan: true },
-        });
-        return { features: getAvailableFlags(user!.plan) };
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+        return { features: getAvailableFlags(user.plan) };
     }
 
     // ─── Public / Semi-public ────────────────────────────
     // IMPORTANT: Les routes statiques doivent être AVANT :id/public
     // pour éviter les conflits de matching NestJS.
 
+    @UseGuards(FirebaseAuthOptionalGuard)
+    @Throttle({ default: { ttl: 60000, limit: 30 } })
     @Get('candidates/feed')
     @ApiOperation({ summary: 'Get candidate feed for founders' })
     @ApiQuery({ name: 'cursor', required: false })
