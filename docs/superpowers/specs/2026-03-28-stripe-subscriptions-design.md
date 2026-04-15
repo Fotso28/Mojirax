@@ -38,7 +38,6 @@ Remplacer Lygos Pay par **Stripe** avec un modèle d'**abonnement mensuel**. L'u
 | Voir qui a consulté ton profil | - | x | x | x |
 | Filtres avancés | - | x | x | x |
 | Retour arrière dernier swipe | - | x | x | x |
-| Sans contenu sponsorisé | - | x | x | x |
 | Plus de visibilité résultats | - | x | x | x |
 | Voir qui t'a aimé | - | - | x | x |
 | Messages illimités | - | - | x | x |

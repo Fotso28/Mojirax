@@ -41,7 +41,6 @@ MojiraX a besoin de 4 plans tarifaires (Gratuit, Plus, Pro, Elite) affichés sur
 - Filtres avancés pour trouver des profils plus pertinents
 - Retour arrière sur le dernier swipe
 - Plus de visibilité dans les résultats
-- Expérience sans contenu sponsorisé
 
 **Pro :**
 - Tout le plan Plus
