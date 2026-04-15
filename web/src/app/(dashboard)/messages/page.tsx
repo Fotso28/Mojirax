@@ -23,7 +23,7 @@ interface Conversation {
 export default function MessagesPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center h-[calc(100vh-5rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)]">
         <div className="h-8 w-8 rounded-full border-2 border-kezak-primary border-t-transparent animate-spin" />
       </div>
     }>
@@ -134,7 +134,7 @@ function MessagesPageContent() {
 
   if (!dbUser) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-5rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)]">
         <div className="h-8 w-8 rounded-full border-2 border-kezak-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -146,7 +146,7 @@ function MessagesPageContent() {
       <HideRightSidebar />
 
       {/* Container pleine hauteur, prend tout l'espace disponible */}
-      <div className="relative h-[calc(100vh-6rem)] flex bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="relative h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] flex bg-white md:rounded-2xl md:border md:border-gray-100 md:shadow-sm overflow-hidden">
 
         {/* ===== Liste conversations ===== */}
         {/* Desktop/Tablet: colonne fixe 30%. Mobile: plein écran statique. */}
