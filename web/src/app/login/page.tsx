@@ -107,7 +107,13 @@ export default function LoginPage() {
         justSignedUp.current = false;
         try {
             await signInWithEmail(trimmedEmail, password);
-            router.push('/');
+            // Existing user with plan intent → go straight to checkout
+            if (planIntent) {
+                const ok = await triggerCheckoutByPlanKey(planIntent);
+                if (!ok) router.push('/');
+            } else {
+                router.push('/');
+            }
         } catch (err: any) {
             console.error("Login error:", err);
             setError(getFirebaseErrorMessage(err));
