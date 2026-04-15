@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { InteractionsService } from '../interactions/interactions.service';
 import { BoostService } from '../boost/boost.service';
+import { PLAN_SEARCH_BOOST } from '../common/config/plan-limits.config';
 
 // Mots français courants à ignorer dans la recherche
 const STOP_WORDS = new Set([
@@ -180,42 +181,44 @@ export class SearchService {
             // Boost ranking is non-critical
         }
 
-        // ELITE plan priority: boost projects owned by ELITE users in search results
+        // Plan-based priority: boost results owned by paid users (progressive by tier)
         try {
             const projectIds = mergedProjects.map((p: any) => p.id);
             const peopleIds = mergedPeople.map((p: any) => p.id);
 
             if (projectIds.length > 0) {
-                const eliteProjects = await this.prisma.project.findMany({
-                    where: { id: { in: projectIds }, founder: { plan: 'ELITE' } },
-                    select: { id: true },
+                const projectPlans = await this.prisma.project.findMany({
+                    where: { id: { in: projectIds } },
+                    select: { id: true, founder: { select: { plan: true } } },
                 });
-                const eliteProjectSet = new Set(eliteProjects.map(p => p.id));
+                const planMap = new Map(projectPlans.map(p => [p.id, p.founder.plan]));
                 for (const result of mergedProjects) {
-                    if (eliteProjectSet.has(result.id)) {
-                        result.similarity = Math.min(1, (result.similarity || 0) + 0.10);
+                    const boost = PLAN_SEARCH_BOOST[planMap.get(result.id) ?? 'FREE'] ?? 0;
+                    if (boost > 0) {
+                        result.similarity = Math.min(1, (result.similarity || 0) + boost);
                     }
                 }
             }
 
             if (peopleIds.length > 0) {
-                const eliteCandidates = await this.prisma.candidateProfile.findMany({
-                    where: { id: { in: peopleIds }, user: { plan: 'ELITE' } },
-                    select: { id: true },
+                const candidatePlans = await this.prisma.candidateProfile.findMany({
+                    where: { id: { in: peopleIds } },
+                    select: { id: true, user: { select: { plan: true } } },
                 });
-                const elitePeopleSet = new Set(eliteCandidates.map(c => c.id));
+                const planMap = new Map(candidatePlans.map(c => [c.id, c.user.plan]));
                 for (const result of mergedPeople) {
-                    if (elitePeopleSet.has(result.id)) {
-                        result.similarity = Math.min(1, (result.similarity || 0) + 0.10);
+                    const boost = PLAN_SEARCH_BOOST[planMap.get(result.id) ?? 'FREE'] ?? 0;
+                    if (boost > 0) {
+                        result.similarity = Math.min(1, (result.similarity || 0) + boost);
                     }
                 }
             }
 
-            // Final re-sort after ELITE priority adjustments
+            // Final re-sort after plan priority adjustments
             mergedProjects.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
             mergedPeople.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
         } catch (e) {
-            // ELITE priority is non-critical
+            // Plan priority is non-critical
         }
 
         return { projects: mergedProjects, people: mergedPeople, skills };
@@ -252,7 +255,7 @@ export class SearchService {
             `,
             this.prisma.$queryRaw`
                 SELECT u.id, u.first_name AS "firstName", u.last_name AS "lastName",
-                       u.name, u.image, cp.title, 0.5 AS similarity
+                       u.name, u.image, u.title, 0.5 AS similarity
                 FROM users u
                 LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
                 WHERE (
@@ -260,18 +263,19 @@ export class SearchService {
                         COALESCE(u.first_name, '') || ' ' ||
                         COALESCE(u.last_name, '') || ' ' ||
                         COALESCE(u.name, '') || ' ' ||
-                        COALESCE(cp.title, '') || ' ' ||
-                        COALESCE(cp.bio, '') || ' ' ||
-                        COALESCE(cp.location, '')
+                        COALESCE(u.title, '') || ' ' ||
+                        COALESCE(u.bio, '') || ' ' ||
+                        COALESCE(u.city, '') || ' ' ||
+                        COALESCE(u.country, '')
                     )) LIKE ALL(SELECT unaccent(LOWER(unnest(${wordPatterns}::text[]))))
                     OR EXISTS (
-                        SELECT 1 FROM unnest(COALESCE(cp.skills, ARRAY[]::text[])) AS skill
+                        SELECT 1 FROM unnest(COALESCE(u.skills, ARRAY[]::text[])) AS skill
                         WHERE unaccent(LOWER(skill)) LIKE ANY(
                             SELECT unaccent(LOWER(unnest(${wordPatterns}::text[])))
                         )
                     )
                 )
-                AND (u.role = 'FOUNDER' OR cp.status = 'PUBLISHED')
+                AND (cp.status = 'PUBLISHED' OR EXISTS (SELECT 1 FROM projects p WHERE p.founder_id = u.id))
                 LIMIT 5;
             `,
         ]);
@@ -298,7 +302,7 @@ export class SearchService {
             `,
             this.prisma.$queryRaw`
                 SELECT u.id, u.first_name AS "firstName", u.last_name AS "lastName",
-                       u.name, u.image, cp.title,
+                       u.name, u.image, u.title,
                        1 - (cp.bio_embedding <=> ${vectorString}::vector) AS similarity
                 FROM candidate_profiles cp
                 JOIN users u ON u.id = cp.user_id
@@ -406,7 +410,7 @@ export class SearchService {
                     `,
                     this.prisma.$queryRaw`
                         SELECT
-                            cp.id, cp.title, cp.bio, cp.location, cp.skills,
+                            cp.id, u.title, u.bio, u.city, u.country, u.skills,
                             u.first_name as "firstName", u.last_name as "lastName", u.name, u.image,
                             1 - (cp.bio_embedding <=> ${vectorString}::vector) as similarity
                         FROM candidate_profiles cp
@@ -441,33 +445,35 @@ export class SearchService {
             }
         }).catch(e => this.logger.warn(`Failed to log search: ${e.message}`));
 
-        // ELITE plan priority: boost projects & candidates owned by ELITE users
+        // Plan-based priority: boost results owned by paid users (progressive by tier)
         try {
             const projectIds = projects.map((p: any) => p.id);
             const candidateIds = candidates.map((c: any) => c.id);
 
             if (projectIds.length > 0) {
-                const eliteProjects = await this.prisma.project.findMany({
-                    where: { id: { in: projectIds }, founder: { plan: 'ELITE' } },
-                    select: { id: true },
+                const projectPlans = await this.prisma.project.findMany({
+                    where: { id: { in: projectIds } },
+                    select: { id: true, founder: { select: { plan: true } } },
                 });
-                const eliteSet = new Set(eliteProjects.map(p => p.id));
+                const planMap = new Map(projectPlans.map(p => [p.id, p.founder.plan]));
                 for (const p of projects) {
-                    if (eliteSet.has(p.id)) {
-                        p.similarity = Math.min(1, (p.similarity || 0) + 0.10);
+                    const boost = PLAN_SEARCH_BOOST[planMap.get(p.id) ?? 'FREE'] ?? 0;
+                    if (boost > 0) {
+                        p.similarity = Math.min(1, (p.similarity || 0) + boost);
                     }
                 }
             }
 
             if (candidateIds.length > 0) {
-                const eliteCandidates = await this.prisma.candidateProfile.findMany({
-                    where: { id: { in: candidateIds }, user: { plan: 'ELITE' } },
-                    select: { id: true },
+                const candidatePlans = await this.prisma.candidateProfile.findMany({
+                    where: { id: { in: candidateIds } },
+                    select: { id: true, user: { select: { plan: true } } },
                 });
-                const eliteSet = new Set(eliteCandidates.map(c => c.id));
+                const planMap = new Map(candidatePlans.map(c => [c.id, c.user.plan]));
                 for (const c of candidates) {
-                    if (eliteSet.has(c.id)) {
-                        c.similarity = Math.min(1, (c.similarity || 0) + 0.10);
+                    const boost = PLAN_SEARCH_BOOST[planMap.get(c.id) ?? 'FREE'] ?? 0;
+                    if (boost > 0) {
+                        c.similarity = Math.min(1, (c.similarity || 0) + boost);
                     }
                 }
             }
@@ -475,7 +481,7 @@ export class SearchService {
             projects.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
             candidates.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
         } catch (e) {
-            // ELITE priority is non-critical
+            // Plan priority is non-critical
         }
 
         return { projects, candidates };
