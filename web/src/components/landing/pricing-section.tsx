@@ -174,7 +174,7 @@ export function PricingSection({ plans, loading }: Props) {
                     </button>
                   ) : (
                     <Link
-                      href="/login"
+                      href={`/login?plan=${plan.planKey}`}
                       className={`w-full h-11 rounded-lg font-semibold flex items-center justify-center transition-all duration-200 text-sm ${
                         plan.isPopular
                           ? 'bg-kezak-primary text-white hover:bg-kezak-dark shadow-lg shadow-kezak-primary/20'
