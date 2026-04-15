@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Header } from './header';
 import { SidebarLeft } from './sidebar-left';
 import { SidebarRight } from './sidebar-right';
@@ -18,6 +19,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
     const [isMobileWidgetsOpen, setIsMobileWidgetsOpen] = useState(false);
     const { hidden: isSidebarHidden } = useSidebar();
+    const pathname = usePathname();
+    const isMessagesPage = pathname === '/messages';
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -31,7 +34,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
             />
 
             {/* Main Grid Layout */}
-            <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-8">
+            <div className={cn(
+                "flex-1 max-w-[1600px] w-full mx-auto",
+                isMessagesPage
+                    ? "px-0 md:px-4 md:sm:px-6 lg:px-8 pt-16 md:pt-24 pb-0 md:pb-8"
+                    : "px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-8"
+            )}>
                 <div className={cn(
                     "grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start",
                     isSidebarHidden ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[280px_1fr_300px]"
