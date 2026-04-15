@@ -455,30 +455,21 @@ export class UsersService {
         }
 
         // Smart ranking: qualityScore * 0.6 + activityScore * 0.4
+        // activityScore = candidatures envoyées (30j) normalisées sur 0-100
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         const candidateIds = candidates.map(c => c.id);
-        const candidateUserIds = candidates.map(c => c.user.id);
 
-        const [applicationCounts, viewCounts] = await Promise.all([
-            this.prisma.application.groupBy({
-                by: ['candidateId'],
-                where: { candidateId: { in: candidateIds }, createdAt: { gte: thirtyDaysAgo } },
-                _count: true,
-            }),
-            this.prisma.userProjectInteraction.groupBy({
-                by: ['userId'],
-                where: { userId: { in: candidateUserIds }, action: 'VIEW', createdAt: { gte: thirtyDaysAgo } },
-                _count: true,
-            }),
-        ]);
+        const applicationCounts = await this.prisma.application.groupBy({
+            by: ['candidateId'],
+            where: { candidateId: { in: candidateIds }, createdAt: { gte: thirtyDaysAgo } },
+            _count: true,
+        });
 
         const appMap = new Map(applicationCounts.map(a => [a.candidateId, a._count]));
-        const viewMap = new Map(viewCounts.map(v => [v.userId, v._count]));
 
         const scored = candidates.map(c => {
             const apps = appMap.get(c.id) ?? 0;
-            const views = viewMap.get(c.user.id) ?? 0;
-            const activityScore = Math.min(apps / 5, 1) * 60 + Math.min(views / 20, 1) * 40;
+            const activityScore = Math.min(apps / 5, 1) * 100;
             const feedScore = (c.qualityScore ?? 50) * 0.6 + activityScore * 0.4;
             return { ...c, _feedScore: feedScore };
         });
@@ -664,8 +655,12 @@ export class UsersService {
 
         const result = scored.slice(0, take);
 
-        await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
-        this.logger.log(`Top active candidates cached (${result.length} results)`);
+        try {
+            await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+            this.logger.log(`Top active candidates cached (${result.length} results)`);
+        } catch (e) {
+            this.logger.warn(`Failed to cache top active candidates: ${(e as Error).message}`);
+        }
 
         return result;
     }
