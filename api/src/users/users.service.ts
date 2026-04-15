@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserPlan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { AiService } from '../ai/ai.service';
@@ -16,11 +16,59 @@ export class UsersService {
         private aiService: AiService,
     ) { }
 
+    async getUserIdAndPlan(firebaseUid: string): Promise<{ id: string; plan: UserPlan }> {
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { id: true, plan: true },
+        });
+        if (!user) throw new NotFoundException('Utilisateur introuvable');
+        return user;
+    }
+
     async findOne(firebaseUid: string) {
         return this.prisma.user.findUnique({
             where: { firebaseUid },
-            include: {
-                projects: true,
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                name: true,
+                phone: true,
+                address: true,
+                image: true,
+                role: true,
+                plan: true,
+                title: true,
+                bio: true,
+                country: true,
+                city: true,
+                linkedinUrl: true,
+                websiteUrl: true,
+                githubUrl: true,
+                portfolioUrl: true,
+                skills: true,
+                languages: true,
+                certifications: true,
+                yearsOfExperience: true,
+                experience: true,
+                education: true,
+                isInvisible: true,
+                createdAt: true,
+                projects: {
+                    select: {
+                        id: true,
+                        slug: true,
+                        name: true,
+                        pitch: true,
+                        logoUrl: true,
+                        sector: true,
+                        stage: true,
+                        status: true,
+                        location: true,
+                        createdAt: true,
+                    },
+                },
                 candidateProfile: {
                     select: {
                         id: true,
@@ -42,10 +90,15 @@ export class UsersService {
                         createdAt: true,
                     },
                 },
-            }
+            },
         });
     }
 
+    /**
+     * Retourne le profil public d'un utilisateur.
+     * IMPORTANT: Cette méthode retourne email/phone pour le masquage par PrivacyInterceptor.
+     * Ne JAMAIS appeler depuis un endpoint sans @UseInterceptors(PrivacyInterceptor).
+     */
     async findPublicProfile(userId: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -132,9 +185,34 @@ export class UsersService {
     }
 
     async updateProfile(firebaseUid: string, dto: UpdateUserProfileDto) {
+        const urlFields = ['linkedinUrl', 'websiteUrl', 'githubUrl', 'portfolioUrl'] as const;
+        const data: Record<string, any> = { ...dto };
+        for (const field of urlFields) {
+            if (data[field] === '') data[field] = null;
+        }
+        if (data.phone === '') data.phone = null;
+
         return this.prisma.user.update({
             where: { firebaseUid },
-            data: { ...dto },
+            data,
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                name: true,
+                image: true,
+                role: true,
+                plan: true,
+                title: true,
+                bio: true,
+                country: true,
+                city: true,
+                address: true,
+                skills: true,
+                languages: true,
+                yearsOfExperience: true,
+            },
         });
     }
 
@@ -149,7 +227,8 @@ export class UsersService {
             where: { firebaseUid },
             data: {
                 onboardingState: state
-            }
+            },
+            select: { id: true, email: true, firstName: true, lastName: true, name: true, image: true, role: true, plan: true },
         });
     }
 
@@ -172,7 +251,8 @@ export class UsersService {
             where: { firebaseUid },
             data: {
                 projectDraft: draft
-            }
+            },
+            select: { id: true, email: true, firstName: true, lastName: true, name: true, image: true, role: true, plan: true },
         });
     }
 
@@ -187,7 +267,8 @@ export class UsersService {
     async clearProjectDraft(firebaseUid: string) {
         return this.prisma.user.update({
             where: { firebaseUid },
-            data: { projectDraft: Prisma.JsonNull }
+            data: { projectDraft: Prisma.JsonNull },
+            select: { id: true, email: true, firstName: true, lastName: true, name: true, image: true, role: true, plan: true },
         });
     }
 
@@ -206,6 +287,7 @@ export class UsersService {
         return this.prisma.user.update({
             where: { firebaseUid },
             data: { image: imageUrl },
+            select: { id: true, email: true, firstName: true, lastName: true, name: true, image: true, role: true, plan: true },
         });
     }
 
@@ -236,7 +318,7 @@ export class UsersService {
                 commitmentType: dto.commitmentType || null,
                 collabPref: dto.collabPref || null,
                 locationPref: dto.locationPref || null,
-                hasCofounded: dto.hasCofounded || null,
+                hasCofounded: dto.hasCofounded ?? null,
                 availability: dto.availability || null,
                 desiredSectors: dto.projectPref?.length ? dto.projectPref : [],
                 remoteOnly: dto.locationPref === 'REMOTE',
@@ -286,7 +368,7 @@ export class UsersService {
             updateData.remoteOnly = dto.locationPref === 'REMOTE';
             updateData.locationPref = dto.locationPref || null;
         }
-        if (dto.hasCofounded !== undefined) updateData.hasCofounded = dto.hasCofounded || null;
+        if (dto.hasCofounded !== undefined) updateData.hasCofounded = dto.hasCofounded ?? null;
         if (dto.availability !== undefined) updateData.availability = dto.availability || null;
         if (dto.projectPref !== undefined) updateData.desiredSectors = dto.projectPref?.length ? dto.projectPref : [];
         if (dto.resumeUrl !== undefined) updateData.resumeUrl = dto.resumeUrl || null;
@@ -310,22 +392,28 @@ export class UsersService {
     ) {
         const take = Math.min(limit, 20);
 
+        // Build user filter as single object to avoid spread overwrite
+        const userFilter: Record<string, any> = {};
+        if (filters?.city) {
+            userFilter.city = { contains: filters.city, mode: 'insensitive' as Prisma.QueryMode };
+        }
+        if (filters?.skills && filters.skills.length > 0) {
+            userFilter.skills = { hasSome: filters.skills };
+        }
+
         const where: Prisma.CandidateProfileWhereInput = {
             status: 'PUBLISHED',
-            ...(filters?.city ? {
-                user: { city: { contains: filters.city, mode: 'insensitive' as Prisma.QueryMode } }
-            } : {}),
-            ...(filters?.skills && filters.skills.length > 0 ? {
-                user: { skills: { hasSome: filters.skills } }
-            } : {}),
+            ...(Object.keys(userFilter).length > 0 ? { user: userFilter } : {}),
             ...(filters?.sector ? {
                 desiredSectors: { has: filters.sector }
             } : {}),
         };
 
+        // Fetch a larger pool for smart ranking (3x requested to allow good sort)
+        const poolSize = Math.min(take * 3, 60);
         const candidates = await this.prisma.candidateProfile.findMany({
             where,
-            take: take + 1,
+            take: poolSize + 1,
             cursor: cursor ? { id: cursor } : undefined,
             skip: cursor ? 1 : 0,
             select: {
@@ -359,13 +447,49 @@ export class UsersService {
             orderBy: { createdAt: 'desc' },
         });
 
-        const nextCursor = candidates.length > take ? candidates[take].id : null;
-        const page = candidates.slice(0, take);
+        if (candidates.length === 0) {
+            return { candidates: [], nextCursor: null };
+        }
 
-        return {
-            candidates: page,
-            nextCursor,
-        };
+        // Smart ranking: qualityScore * 0.6 + activityScore * 0.4
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const candidateIds = candidates.map(c => c.id);
+        const candidateUserIds = candidates.map(c => c.user.id);
+
+        const [applicationCounts, viewCounts] = await Promise.all([
+            this.prisma.application.groupBy({
+                by: ['candidateId'],
+                where: { candidateId: { in: candidateIds }, createdAt: { gte: thirtyDaysAgo } },
+                _count: true,
+            }),
+            this.prisma.userProjectInteraction.groupBy({
+                by: ['userId'],
+                where: { userId: { in: candidateUserIds }, action: 'VIEW', createdAt: { gte: thirtyDaysAgo } },
+                _count: true,
+            }),
+        ]);
+
+        const appMap = new Map(applicationCounts.map(a => [a.candidateId, a._count]));
+        const viewMap = new Map(viewCounts.map(v => [v.userId, v._count]));
+
+        const scored = candidates.map(c => {
+            const apps = appMap.get(c.id) ?? 0;
+            const views = viewMap.get(c.user.id) ?? 0;
+            const activityScore = Math.min(apps / 5, 1) * 60 + Math.min(views / 20, 1) * 40;
+            const feedScore = (c.qualityScore ?? 50) * 0.6 + activityScore * 0.4;
+            return { ...c, _feedScore: feedScore };
+        });
+
+        scored.sort((a, b) => b._feedScore - a._feedScore);
+
+        // Paginate from sorted results
+        const page = scored.slice(0, take);
+        const nextCursor = scored.length > take ? scored[take].id : null;
+
+        // Strip internal _feedScore before returning
+        const result = page.map(({ _feedScore, ...rest }) => rest);
+
+        return { candidates: result, nextCursor };
     }
 
     /**
@@ -438,11 +562,11 @@ export class UsersService {
         // Compter les vues de profil (interactions VIEW sur les projets des candidats n'existe pas
         // mais on peut compter les applications reçues ou vues du profil via SearchLog clickedResultId)
         // Pour l'instant, on utilise le nombre d'applications reçues comme proxy de popularité
-        const userIds = candidates.map((c) => c.user.id);
+        const candidateProfileIds = candidates.map((c) => c.id);
 
         const applicationCounts = await this.prisma.application.groupBy({
             by: ['candidateId'],
-            where: { candidateId: { in: userIds } },
+            where: { candidateId: { in: candidateProfileIds } },
             _count: true,
         });
 
@@ -453,7 +577,7 @@ export class UsersService {
             const qualityNorm = (c.qualityScore || 0) / 100;
             const ageMs = now - new Date(c.createdAt).getTime();
             const freshnessNorm = Math.max(0, 1 - ageMs / thirtyDaysMs);
-            const popularityNorm = (appMap.get(c.user.id) || 0) / maxApps;
+            const popularityNorm = (appMap.get(c.id) || 0) / maxApps;
 
             const score = qualityNorm * 0.4 + freshnessNorm * 0.3 + popularityNorm * 0.3;
 
