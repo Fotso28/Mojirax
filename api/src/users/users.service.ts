@@ -1,10 +1,12 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Prisma, UserPlan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { AiService } from '../ai/ai.service';
 import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
+import Redis from 'ioredis';
+import { REDIS_CLIENT } from '../redis/redis.constants';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +16,7 @@ export class UsersService {
         private prisma: PrismaService,
         private uploadService: UploadService,
         private aiService: AiService,
+        @Inject(REDIS_CLIENT) private readonly redis: Redis,
     ) { }
 
     async getUserIdAndPlan(firebaseUid: string): Promise<{ id: string; plan: UserPlan }> {
@@ -596,5 +599,74 @@ export class UsersService {
         scored.sort((a, b) => b.score - a.score);
 
         return scored.slice(0, 5);
+    }
+
+    /**
+     * Top 10 candidats les plus actifs de la semaine.
+     * Cached Redis 1h. Gated PRO+ côté controller.
+     */
+    async getTopActiveCandidates(limit = 10) {
+        const take = Math.min(limit, 10);
+        const cacheKey = 'top_active_candidates';
+
+        const cached = await this.redis.get(cacheKey);
+        if (cached) {
+            this.logger.debug('Top active candidates served from cache');
+            return JSON.parse(cached);
+        }
+
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        // Candidats avec le plus de candidatures cette semaine
+        const applicationCounts = await this.prisma.application.groupBy({
+            by: ['candidateId'],
+            where: { createdAt: { gte: sevenDaysAgo } },
+            _count: true,
+            orderBy: { _count: { candidateId: 'desc' } },
+            take: 50,
+        });
+
+        if (applicationCounts.length === 0) return [];
+
+        const activeCandidateIds = applicationCounts.map(a => a.candidateId);
+
+        const candidates = await this.prisma.candidateProfile.findMany({
+            where: {
+                status: 'PUBLISHED',
+                id: { in: activeCandidateIds },
+            },
+            select: {
+                id: true,
+                shortPitch: true,
+                roleType: true,
+                qualityScore: true,
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        name: true,
+                        image: true,
+                        title: true,
+                        skills: true,
+                        city: true,
+                    },
+                },
+            },
+        });
+
+        const appMap = new Map(applicationCounts.map(a => [a.candidateId, a._count]));
+        const scored = candidates.map(c => ({
+            ...c,
+            weeklyActivity: (appMap.get(c.id) ?? 0) * 3,
+        }));
+        scored.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
+
+        const result = scored.slice(0, take);
+
+        await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+        this.logger.log(`Top active candidates cached (${result.length} results)`);
+
+        return result;
     }
 }
