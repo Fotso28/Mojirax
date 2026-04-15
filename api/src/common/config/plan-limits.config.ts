@@ -30,3 +30,14 @@ export function getPlanLimits(plan: UserPlan): PlanLimits {
 export function hasPaidPlan(plan: UserPlan): boolean {
   return plan !== UserPlan.FREE;
 }
+
+/**
+ * Boost de similarité dans les résultats de recherche par plan.
+ * Les profils/projets d'utilisateurs payants remontent plus haut.
+ */
+export const PLAN_SEARCH_BOOST: Record<UserPlan, number> = {
+  FREE: 0,
+  PLUS: 0.03,
+  PRO: 0.06,
+  ELITE: 0.10,
+};
