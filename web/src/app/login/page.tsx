@@ -2,24 +2,25 @@
 
 import { useAuth } from '@/context/auth-context';
 import { Button, Input } from '@/components/ui';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import { getPlanIntent, withPlanIntent, triggerCheckoutByPlanKey } from '@/lib/utils/plan-intent';
 import { getFirebaseErrorMessage } from '@/utils/firebase-errors';
 import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
 import { Rocket, Compass, CheckCircle, ArrowRight, Zap, ShieldCheck, Users } from 'lucide-react';
 import { CountrySelect } from '@/components/ui/country-select';
 import { COUNTRIES } from '@/lib/constants/countries';
 
-const roles = [
+const intentions = [
     {
-        id: 'FOUNDER',
-        label: 'Je suis un Fondateur',
+        id: 'PUBLISH',
+        label: 'Publier un projet',
         description: 'J\'ai une vision et je cherche des partenaires pour la concrétiser.',
         icon: Rocket,
     },
     {
-        id: 'CANDIDATE',
-        label: 'Je suis un Candidat',
+        id: 'SEARCH',
+        label: 'Chercher un projet',
         description: 'Je veux rejoindre un projet ambitieux en tant que co-fondateur technique ou business.',
         icon: Compass,
     }
@@ -54,8 +55,8 @@ export default function LoginPage() {
     const router = useRouter();
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
     const [step, setStep] = useState<'auth' | 'role'>('auth');
-    const [selectedRole, setSelectedRole] = useState<string | null>(null);
-    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+    const [selectedIntention, setSelectedIntention] = useState<string | null>(null);
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
     // Form State
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -70,13 +71,30 @@ export default function LoginPage() {
     const selectedCountry = COUNTRIES.find(c => c.label === country);
     const dialCode = selectedCountry?.dialCode || '';
 
+    const searchParams = useSearchParams();
+    const planIntent = getPlanIntent(searchParams);
+
     const justSignedUp = useRef(false);
 
     useEffect(() => {
         if (!loading && user && !justSignedUp.current) {
+            const isNewGoogleUser = sessionStorage.getItem('google_new_user');
+            if (isNewGoogleUser) {
+                sessionStorage.removeItem('google_new_user');
+                justSignedUp.current = true;
+                setStep('role');
+                return;
+            }
+            // Existing user with plan intent → go straight to checkout
+            if (planIntent) {
+                triggerCheckoutByPlanKey(planIntent).then((ok) => {
+                    if (!ok) router.push('/');
+                });
+                return;
+            }
             router.push('/');
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, planIntent]);
 
     const handleLogin = async () => {
         setError('');
@@ -119,25 +137,27 @@ export default function LoginPage() {
         }
     };
 
-    const handleContinueRole = async () => {
-        if (!selectedRole || !user) return;
-        setIsUpdatingRole(true);
+    const handleContinueIntention = async () => {
+        if (!selectedIntention || !user) return;
+        setIsUpdatingProfile(true);
         setError('');
         try {
             const fullAddress = [address, country].filter(Boolean).join(', ') || undefined;
             await axiosInstance.patch('/users/profile', {
-                role: selectedRole,
                 firstName: firstName || undefined,
                 lastName: lastName || undefined,
                 phone: phone || undefined,
                 address: fullAddress,
             });
-            router.push(selectedRole === 'FOUNDER' ? '/onboarding/founder' : '/onboarding/candidate');
+            // Store intention for post-onboarding redirect
+            localStorage.setItem('onboarding_intention', selectedIntention);
+            const onboardingPath = selectedIntention === 'PUBLISH' ? '/onboarding/founder' : '/onboarding/candidate';
+            router.push(withPlanIntent(onboardingPath, planIntent));
         } catch (error) {
-            console.error('Failed to update role:', error);
-            setError('Une erreur est survenue lors de la mise à jour du rôle.');
+            console.error('Failed to update profile:', error);
+            setError('Une erreur est survenue lors de la mise à jour du profil.');
         } finally {
-            setIsUpdatingRole(false);
+            setIsUpdatingProfile(false);
         }
     };
 
@@ -330,25 +350,25 @@ export default function LoginPage() {
                         ) : (
                             <div className="w-full transition-all duration-500 animate-in slide-in-from-right-8 fade-in">
                                 <div className="text-center mb-10">
-                                    <h2 className="text-[28px] font-bold tracking-tight text-slate-900 mb-2">Configurez votre profil</h2>
-                                    <p className="text-slate-500 font-medium text-[15px]">Sélectionnez votre rôle pour personnaliser l'expérience.</p>
+                                    <h2 className="text-[28px] font-bold tracking-tight text-slate-900 mb-2">Que souhaitez-vous faire ?</h2>
+                                    <p className="text-slate-500 font-medium text-[15px]">Vous pourrez toujours faire les deux par la suite.</p>
                                 </div>
                                 <div className="space-y-4 mb-8">
-                                    {roles.map((role) => (
+                                    {intentions.map((item) => (
                                         <div
-                                            key={role.id}
-                                            onClick={() => setSelectedRole(role.id)}
+                                            key={item.id}
+                                            onClick={() => setSelectedIntention(item.id)}
                                             className={`relative p-5 rounded-2xl border-[2px] cursor-pointer transition-all duration-200 group flex items-start gap-4 bg-white
-                                                ${selectedRole === role.id ? 'border-blue-600 shadow-md outline outline-4 outline-blue-50/50 scale-[1.01]' : 'border-slate-200 hover:border-blue-200 hover:bg-slate-50'}`}
+                                                ${selectedIntention === item.id ? 'border-blue-600 shadow-md outline outline-4 outline-blue-50/50 scale-[1.01]' : 'border-slate-200 hover:border-blue-200 hover:bg-slate-50'}`}
                                         >
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${selectedRole === role.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                                                <role.icon className="w-6 h-6" />
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${selectedIntention === item.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                                <item.icon className="w-6 h-6" />
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className={`font-bold mb-1 tracking-tight ${selectedRole === role.id ? 'text-slate-900' : 'text-slate-700'}`}>{role.label}</h3>
-                                                <p className="text-slate-500 text-[14px] font-medium leading-relaxed">{role.description}</p>
+                                                <h3 className={`font-bold mb-1 tracking-tight ${selectedIntention === item.id ? 'text-slate-900' : 'text-slate-700'}`}>{item.label}</h3>
+                                                <p className="text-slate-500 text-[14px] font-medium leading-relaxed">{item.description}</p>
                                             </div>
-                                            {selectedRole === role.id && (
+                                            {selectedIntention === item.id && (
                                                 <div className="absolute top-5 right-5 text-blue-600 animate-in zoom-in">
                                                     <CheckCircle className="w-5 h-5 bg-white rounded-full bg-blend-lighten" />
                                                 </div>
@@ -357,12 +377,12 @@ export default function LoginPage() {
                                     ))}
                                 </div>
                                 <button
-                                    onClick={handleContinueRole}
-                                    disabled={!selectedRole || isUpdatingRole}
+                                    onClick={handleContinueIntention}
+                                    disabled={!selectedIntention || isUpdatingProfile}
                                     className="w-full h-[48px] bg-slate-900 hover:bg-black text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:hover:bg-slate-900 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-px"
                                 >
-                                    {isUpdatingRole ? 'Configuration...' : 'Ouvrir mon tableau de bord'}
-                                    {!isUpdatingRole && <ArrowRight className="w-5 h-5 ml-1" />}
+                                    {isUpdatingProfile ? 'Configuration...' : 'Continuer'}
+                                    {!isUpdatingProfile && <ArrowRight className="w-5 h-5 ml-1" />}
                                 </button>
                                 <div className="mt-6 flex justify-center">
                                     <button
