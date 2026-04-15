@@ -728,7 +728,7 @@ INSERT INTO pricing_plans (id, name, price, period, currency, description, featu
 
 ('plan_plus', 'Plus', 4.99, 'mois', 'EUR',
  'Idéal pour améliorer votre visibilité et augmenter vos chances.',
- ARRAY['Tout le plan Gratuit', 'Voir qui a consulté votre profil', 'Filtres avancés pour trouver des profils plus pertinents', 'Retour arrière sur le dernier swipe', 'Plus de visibilité dans les résultats', 'Expérience sans contenu sponsorisé'],
+ ARRAY['Tout le plan Gratuit', 'Voir qui a consulté votre profil', 'Filtres avancés pour trouver des profils plus pertinents', 'Retour arrière sur le dernier swipe', 'Plus de visibilité dans les résultats'],
  false, true, 1, 'Passer au plan Plus', NOW(), NOW()),
 
 ('plan_pro', 'Pro', 9.99, 'mois', 'EUR',
