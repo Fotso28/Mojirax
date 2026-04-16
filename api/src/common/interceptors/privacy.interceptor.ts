@@ -4,15 +4,21 @@ import {
     ExecutionContext,
     CallHandler,
     Logger,
+    Inject,
 } from '@nestjs/common';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import Redis from 'ioredis';
 import { PrismaService } from '../../prisma/prisma.service';
+import { REDIS_CLIENT } from '../../redis/redis.constants';
 import { UserPlan } from '@prisma/client';
 
 // Champs sensibles à masquer par type d'objet
 const USER_SENSITIVE_FIELDS = ['email', 'phone', 'linkedinUrl', 'websiteUrl', 'githubUrl', 'portfolioUrl'];
 const CANDIDATE_SENSITIVE_FIELDS = ['resumeUrl'];
+
+const PLAN_CACHE_TTL_SECONDS = 60;
+const PLAN_CACHE_PREFIX = 'privacy:plan:';
 
 interface PlanInfo {
     id: string;
@@ -26,6 +32,7 @@ export class PrivacyInterceptor implements NestInterceptor {
 
     constructor(
         private readonly prisma: PrismaService,
+        @Inject(REDIS_CLIENT) private readonly redis: Redis,
     ) {}
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -42,16 +49,58 @@ export class PrivacyInterceptor implements NestInterceptor {
     }
 
     private async applyPrivacy(data: any, firebaseUid: string | null): Promise<any> {
-        let currentUser: PlanInfo | null = null;
-        if (firebaseUid) {
-            const user = await this.prisma.user.findUnique({
-                where: { firebaseUid },
-                select: { id: true, plan: true, planExpiresAt: true },
-            });
-            currentUser = user || null;
+        const currentUser = firebaseUid ? await this.resolvePlanInfo(firebaseUid) : null;
+        return this.processResponse(data, currentUser);
+    }
+
+    /**
+     * Resolve the caller's plan info with a 60s Redis cache to avoid
+     * hitting Postgres on every request.
+     * Cache miss: read DB and SETEX the result (null for unknown users
+     * is cached as the literal 'none' string to avoid thundering herd
+     * on invalid tokens).
+     */
+    private async resolvePlanInfo(firebaseUid: string): Promise<PlanInfo | null> {
+        const key = PLAN_CACHE_PREFIX + firebaseUid;
+        try {
+            const cached = await this.redis.get(key);
+            if (cached === 'none') return null;
+            if (cached) {
+                const parsed = JSON.parse(cached) as { id: string; plan: UserPlan; planExpiresAt: string | null };
+                return {
+                    id: parsed.id,
+                    plan: parsed.plan,
+                    planExpiresAt: parsed.planExpiresAt ? new Date(parsed.planExpiresAt) : null,
+                };
+            }
+        } catch (err: any) {
+            this.logger.warn(`Redis plan cache read failed: ${err.message}`);
         }
 
-        return this.processResponse(data, currentUser);
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { id: true, plan: true, planExpiresAt: true },
+        });
+
+        try {
+            if (user) {
+                await this.redis.setex(
+                    key,
+                    PLAN_CACHE_TTL_SECONDS,
+                    JSON.stringify({
+                        id: user.id,
+                        plan: user.plan,
+                        planExpiresAt: user.planExpiresAt?.toISOString() ?? null,
+                    }),
+                );
+            } else {
+                await this.redis.setex(key, PLAN_CACHE_TTL_SECONDS, 'none');
+            }
+        } catch (err: any) {
+            this.logger.warn(`Redis plan cache write failed: ${err.message}`);
+        }
+
+        return user ?? null;
     }
 
     private hasPaidAccess(user: { plan: UserPlan; planExpiresAt: Date | null } | null): boolean {
