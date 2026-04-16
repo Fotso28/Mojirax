@@ -11,9 +11,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UserPlan } from '@prisma/client';
 
 // Champs sensibles à masquer par type d'objet
-const USER_SENSITIVE_FIELDS = ['email', 'phone'];
-const FOUNDER_PROFILE_SENSITIVE_FIELDS = ['linkedinUrl', 'websiteUrl'];
-const CANDIDATE_SENSITIVE_FIELDS = ['linkedinUrl', 'resumeUrl', 'githubUrl', 'portfolioUrl'];
+const USER_SENSITIVE_FIELDS = ['email', 'phone', 'linkedinUrl', 'websiteUrl', 'githubUrl', 'portfolioUrl'];
+const CANDIDATE_SENSITIVE_FIELDS = ['resumeUrl'];
 
 interface PlanInfo {
     id: string;
@@ -90,8 +89,7 @@ export class PrivacyInterceptor implements NestInterceptor {
                 const hasAccess = this.hasPaidAccess(currentUser);
 
                 if (!hasAccess) {
-                    result.email = null;
-                    result.phone = null;
+                    this.stripUserSensitiveFields(result);
                     result.candidateProfile = this.stripCandidateFields(result.candidateProfile);
                     result._isLocked = true;
                 } else {
@@ -102,17 +100,18 @@ export class PrivacyInterceptor implements NestInterceptor {
             }
         }
 
-        // Cas 4: Objet user direct avec founderProfile (GET /users/:id/public pour fondateur)
-        if (result.founderProfile && typeof result.founderProfile === 'object' && result.id && !result.founder) {
+        // Cas 4: Objet user direct sans candidateProfile (GET /users/:id/public pour fondateur)
+        // On utilise `role` comme signature d'un User direct plutôt qu'`email`
+        // pour éviter un faux-négatif si la query Prisma omet l'email
+        // (le masquage doit toujours poser `_isLocked` pour que le frontend sache).
+        if (!result.candidateProfile && result.id && result.role && !result.founder && !result.candidate) {
             const isOwner = currentUser?.id === result.id;
 
             if (!isOwner) {
                 const hasAccess = this.hasPaidAccess(currentUser);
 
                 if (!hasAccess) {
-                    result.email = null;
-                    result.phone = null;
-                    result.founderProfile = this.stripFounderProfileFields(result.founderProfile);
+                    this.stripUserSensitiveFields(result);
                     result._isLocked = true;
                 } else {
                     result._isLocked = false;
@@ -140,16 +139,8 @@ export class PrivacyInterceptor implements NestInterceptor {
         const hasAccess = this.hasPaidAccess(currentUser);
 
         if (!hasAccess) {
-            // Masquer les champs sensibles du User
-            for (const field of USER_SENSITIVE_FIELDS) {
-                if (field in founderCopy) {
-                    founderCopy[field] = null;
-                }
-            }
-            // Masquer les champs du founderProfile
-            if (founderCopy.founderProfile && typeof founderCopy.founderProfile === 'object') {
-                founderCopy.founderProfile = this.stripFounderProfileFields(founderCopy.founderProfile);
-            }
+            // Masquer les champs sensibles du User (linkedinUrl, websiteUrl, etc. sont maintenant sur User)
+            this.stripUserSensitiveFields(founderCopy);
             founderCopy._isLocked = true;
         } else {
             founderCopy._isLocked = false;
@@ -183,11 +174,7 @@ export class PrivacyInterceptor implements NestInterceptor {
             // Masquer les champs du User nested
             if (candidateCopy.user && typeof candidateCopy.user === 'object') {
                 candidateCopy.user = { ...candidateCopy.user };
-                for (const field of USER_SENSITIVE_FIELDS) {
-                    if (field in candidateCopy.user) {
-                        candidateCopy.user[field] = null;
-                    }
-                }
+                this.stripUserSensitiveFields(candidateCopy.user);
             }
             candidateCopy._isLocked = true;
         } else {
@@ -197,15 +184,12 @@ export class PrivacyInterceptor implements NestInterceptor {
         return candidateCopy;
     }
 
-    private stripFounderProfileFields(profile: any): any {
-        if (!profile || typeof profile !== 'object') return profile;
-        const copy = { ...profile };
-        for (const field of FOUNDER_PROFILE_SENSITIVE_FIELDS) {
-            if (field in copy) {
-                copy[field] = null;
+    private stripUserSensitiveFields(obj: any): void {
+        for (const field of USER_SENSITIVE_FIELDS) {
+            if (field in obj) {
+                obj[field] = null;
             }
         }
-        return copy;
     }
 
     private stripCandidateFields(profile: any): any {
