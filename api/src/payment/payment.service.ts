@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserPlan } from '@prisma/client';
+import { Prisma, UserPlan } from '@prisma/client';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 import { I18nService, Locale } from '../i18n/i18n.service';
@@ -283,6 +283,29 @@ export class PaymentService {
 
   // --- Private webhook handlers ---
 
+  /**
+   * Record a webhook event into PaymentAuditLog for ex-post traceability.
+   * Never throws — audit failure must not break the webhook processing
+   * that just succeeded.
+   */
+  private async auditWebhook(
+    transactionId: string,
+    event: string,
+    payload: unknown,
+  ): Promise<void> {
+    try {
+      await this.prisma.paymentAuditLog.create({
+        data: {
+          transactionId,
+          event,
+          payload: payload as Prisma.InputJsonValue,
+        },
+      });
+    } catch (err: any) {
+      this.logger.error(`auditWebhook failed (event=${event}, tx=${transactionId}): ${err.message}`);
+    }
+  }
+
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const userId = session.metadata?.userId;
     const planKey = session.metadata?.planKey as UserPlan | undefined;
@@ -326,6 +349,7 @@ export class PaymentService {
       }),
     ]);
 
+    await this.auditWebhook(transaction.id, 'checkout.session.completed', session);
     this.logger.log(`User ${userId} activated plan ${planKey} (tx=${transaction.id})`);
   }
 
@@ -352,7 +376,7 @@ export class PaymentService {
     }
 
     // Atomic user.update + transaction.upsert — replay-safe.
-    await this.prisma.$transaction([
+    const [, transaction] = await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: user.id },
         data: { planExpiresAt: periodEnd },
@@ -372,6 +396,7 @@ export class PaymentService {
       }),
     ]);
 
+    await this.auditWebhook(transaction.id, 'invoice.paid', invoice);
     this.logger.log(`Invoice paid for user ${user.id}, subscription renewed`);
   }
 
@@ -392,7 +417,7 @@ export class PaymentService {
     }
 
     // Upsert is idempotent on replay.
-    await this.prisma.transaction.upsert({
+    const transaction = await this.prisma.transaction.upsert({
       where: { externalId: invoice.id },
       create: {
         userId: user.id,
@@ -406,6 +431,7 @@ export class PaymentService {
       update: {},
     });
 
+    await this.auditWebhook(transaction.id, 'invoice.payment_failed', invoice);
     this.logger.warn(`Payment failed for user ${user.id}, subscription ${subscriptionId}`);
   }
 
