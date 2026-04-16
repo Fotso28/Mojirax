@@ -12,6 +12,7 @@ import { CountrySelect } from '@/components/ui/country-select';
 import { COUNTRIES } from '@/lib/constants/countries';
 import { useTranslation } from '@/context/i18n-context';
 import { useToast } from '@/context/toast-context';
+import { logger } from '@/lib/logger';
 
 // Icons
 const GoogleIcon = () => (
@@ -114,7 +115,7 @@ function LoginPageContent() {
                 router.push('/');
             }
         } catch (err: any) {
-            console.error("Login error:", err);
+            logger.error("Login error:", err);
             setError(getFirebaseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
@@ -135,7 +136,7 @@ function LoginPageContent() {
             setStep('role');
         } catch (err: any) {
             justSignedUp.current = false;
-            console.error("Signup error:", err);
+            logger.error("Signup error:", err);
             setError(getFirebaseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
@@ -159,7 +160,7 @@ function LoginPageContent() {
             const onboardingPath = selectedIntention === 'PUBLISH' ? '/onboarding/founder' : '/onboarding/candidate';
             router.push(withPlanIntent(onboardingPath, planIntent));
         } catch (error) {
-            console.error('Failed to update profile:', error);
+            logger.error('Failed to update profile:', error);
             setError(t('auth.error_profile_update'));
         } finally {
             setIsUpdatingProfile(false);

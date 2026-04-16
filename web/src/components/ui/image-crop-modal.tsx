@@ -5,6 +5,7 @@ import Cropper, { Area } from 'react-easy-crop';
 import { AnimatePresence, motion } from 'framer-motion';
 import { processImage, type ProcessedImage, type ImageProcessingOptions } from '@/utils/image-processing';
 import { X, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export interface ImageCropModalProps {
     open: boolean;
@@ -66,7 +67,7 @@ export function ImageCropModal({
             const result = await processImage(imageSrc, options);
             onConfirm(result);
         } catch (err) {
-            console.error('Crop failed:', err);
+            logger.error('Crop failed:', err);
         } finally {
             setIsCropping(false);
         }

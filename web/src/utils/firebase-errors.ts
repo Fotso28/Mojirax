@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 export const getFirebaseErrorMessage = (error: any): string => {
     const code = error?.code || '';
 
@@ -26,7 +28,7 @@ export const getFirebaseErrorMessage = (error: any): string => {
             return "La connexion a été annulée.";
 
         default:
-            console.warn("Unhandled Firebase Error:", code);
+            logger.warn("Unhandled Firebase Error:", code);
             return "Une erreur est survenue lors de la connexion. Veuillez réessayer.";
     }
 };

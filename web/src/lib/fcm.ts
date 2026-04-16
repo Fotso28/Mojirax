@@ -1,13 +1,13 @@
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { getApps } from 'firebase/app';
+import { logger } from './logger';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? '';
 
 let messagingInstance: ReturnType<typeof getMessaging> | null = null;
 
 if (typeof window !== 'undefined' && !VAPID_KEY) {
-  // eslint-disable-next-line no-console
-  console.warn('[FCM] NEXT_PUBLIC_FIREBASE_VAPID_KEY is not set — push notifications will not work.');
+  logger.warn('[FCM] NEXT_PUBLIC_FIREBASE_VAPID_KEY is not set — push notifications will not work.');
 }
 
 /**
@@ -52,7 +52,7 @@ export async function requestPushPermission(): Promise<string | null> {
 
     return token || null;
   } catch (error) {
-    console.warn('FCM token request failed:', error);
+    logger.warn('FCM token request failed:', error);
     return null;
   }
 }
