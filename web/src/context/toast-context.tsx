@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, X } from 'lucide-react';
 
@@ -18,18 +18,23 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-let toastId = 0;
+const TOAST_DURATION_MS: Record<ToastType, number> = {
+    success: 3500,
+    warning: 5000,
+    error: 5000,
+};
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    const nextIdRef = useRef(0);
 
     const showToast = useCallback((message: string, type: ToastType = 'success') => {
-        const id = ++toastId;
+        const id = ++nextIdRef.current;
         setToasts(prev => [...prev, { id, message, type }]);
 
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
-        }, type === 'warning' ? 4000 : 2000);
+        }, TOAST_DURATION_MS[type]);
     }, []);
 
     // Bridge for non-React contexts (e.g. axios interceptor) to trigger toasts
