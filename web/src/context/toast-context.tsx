@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, X } from 'lucide-react';
 
@@ -31,6 +31,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, type === 'warning' ? 4000 : 2000);
     }, []);
+
+    // Bridge for non-React contexts (e.g. axios interceptor) to trigger toasts
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const detail = (e as CustomEvent<{ message: string; type?: ToastType }>).detail;
+            if (detail?.message) showToast(detail.message, detail.type ?? 'error');
+        };
+        window.addEventListener('app:toast', handler);
+        return () => window.removeEventListener('app:toast', handler);
+    }, [showToast]);
 
     const removeToast = useCallback((id: number) => {
         setToasts(prev => prev.filter(t => t.id !== id));

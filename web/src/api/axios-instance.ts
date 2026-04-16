@@ -5,7 +5,7 @@ export const AXIOS_INSTANCE = Axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 });
 
-// Request interceptor — fresh token on every request
+// Request interceptor — fresh token + Accept-Language on every request
 AXIOS_INSTANCE.interceptors.request.use(
     async (config) => {
         const currentUser = auth.currentUser;
@@ -13,6 +13,11 @@ AXIOS_INSTANCE.interceptors.request.use(
             // getIdToken() rafraîchit automatiquement si expiré
             const token = await currentUser.getIdToken();
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        // Envoyer la locale pour l'i18n backend
+        if (typeof window !== 'undefined') {
+            const lang = localStorage.getItem('mojirax-lang') || 'fr';
+            config.headers['Accept-Language'] = lang;
         }
         return config;
     },
@@ -25,6 +30,24 @@ AXIOS_INSTANCE.interceptors.request.use(
 AXIOS_INSTANCE.interceptors.response.use(
     (response) => response,
     async (error) => {
+        // Check for PLAN_REQUIRED (FREE user tries to use paid feature)
+        if (
+            error.response?.status === 403 &&
+            error.response?.data?.code === 'PLAN_REQUIRED'
+        ) {
+            if (typeof window !== 'undefined') {
+                const url: string = error.config?.url || '';
+                let feature: 'apply' | 'create_project' | 'send_message' | 'generic' = 'generic';
+                if (url.includes('/applications')) feature = 'apply';
+                else if (url.includes('/projects')) feature = 'create_project';
+                else if (url.includes('/messages/conversations')) feature = 'send_message';
+                window.dispatchEvent(
+                    new CustomEvent('upsell:required', { detail: { feature } }),
+                );
+            }
+            return Promise.reject(error);
+        }
+
         // Check for banned account
         if (
             error.response?.status === 403 &&
@@ -36,8 +59,15 @@ AXIOS_INSTANCE.interceptors.response.use(
                 const { auth } = await import('@/lib/firebase');
                 const { signOut } = await import('firebase/auth');
                 await signOut(auth).catch(() => {});
-                alert('Votre compte a été désactivé, contactez le support');
-                window.location.href = '/login';
+                window.dispatchEvent(
+                    new CustomEvent('app:toast', {
+                        detail: {
+                            message: 'Votre compte a été désactivé, contactez le support',
+                            type: 'error',
+                        },
+                    }),
+                );
+                setTimeout(() => { window.location.href = '/login'; }, 1500);
             }
             return Promise.reject(error);
         }
