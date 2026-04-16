@@ -5,33 +5,45 @@ import {
     ConflictException,
     ForbiddenException,
     NotFoundException,
+    Inject,
 } from '@nestjs/common';
+import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '@prisma/client';
+import { I18nService } from '../i18n/i18n.service';
+import { REDIS_CLIENT } from '../redis/redis.constants';
+
+const UNLOCK_CACHE_PREFIX = 'unlock:';
+const UNLOCK_CACHE_TTL_SECONDS = 5 * 60;
 
 @Injectable()
 export class UnlockService {
     private readonly logger = new Logger(UnlockService.name);
 
-    // In-memory cache: Map<"userId:targetId", { unlocked: boolean; expiresAt: number }>
-    private cache = new Map<string, { unlocked: boolean; expiresAt: number }>();
-    private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
     constructor(
         private readonly prisma: PrismaService,
         private readonly notifications: NotificationsService,
+        private readonly i18n: I18nService,
+        @Inject(REDIS_CLIENT) private readonly redis: Redis,
     ) {}
+
+    private cacheKey(userId: string, targetId: string): string {
+        return `${UNLOCK_CACHE_PREFIX}${userId}:${targetId}`;
+    }
 
     /**
      * Vérifie si un utilisateur a débloqué un profil/projet.
+     * Cache Redis 5 min — cohérent entre instances API multiples.
      */
     async hasUnlock(userId: string, targetId: string): Promise<boolean> {
-        const cacheKey = `${userId}:${targetId}`;
-        const cached = this.cache.get(cacheKey);
-
-        if (cached && cached.expiresAt > Date.now()) {
-            return cached.unlocked;
+        const key = this.cacheKey(userId, targetId);
+        try {
+            const cached = await this.redis.get(key);
+            if (cached === '1') return true;
+            if (cached === '0') return false;
+        } catch (err: any) {
+            this.logger.warn(`Unlock cache read failed: ${err.message}`);
         }
 
         const unlock = await this.prisma.unlock.findFirst({
@@ -47,10 +59,11 @@ export class UnlockService {
 
         const unlocked = !!unlock;
 
-        this.cache.set(cacheKey, {
-            unlocked,
-            expiresAt: Date.now() + this.CACHE_TTL_MS,
-        });
+        try {
+            await this.redis.setex(key, UNLOCK_CACHE_TTL_SECONDS, unlocked ? '1' : '0');
+        } catch (err: any) {
+            this.logger.warn(`Unlock cache write failed: ${err.message}`);
+        }
 
         return unlocked;
     }
@@ -107,16 +120,17 @@ export class UnlockService {
             throw e;
         }
 
-        // 7. Invalider le cache
-        this.cache.delete(`${userId}:${targetId}`);
+        // 7. Invalider le cache Redis
+        await this.invalidateCache(userId, targetId);
 
         // 8. Créer une notification
         const targetName = await this.resolveTargetName(targetId, type);
+        const userLocale = await this.notifications.getUserLocale(userId);
         await this.notifications.notify(
             userId,
             NotificationType.PROFILE_UNLOCKED,
-            'Profil débloqué',
-            `Vous avez débloqué le profil de ${targetName}`,
+            this.i18n.t('notification.unlock_title', userLocale),
+            this.i18n.t('notification.unlock_body', userLocale, { targetName }),
             { unlockId: unlock.id, targetId, targetName, unlockType: type },
         );
 
@@ -143,10 +157,10 @@ export class UnlockService {
             // Supprimer l'unlock
             await this.prisma.unlock.delete({ where: { id: unlock.id } });
 
-            // Invalider le cache
+            // Invalider le cache Redis
             const targetId = unlock.targetCandidateId || unlock.targetProjectId;
             if (targetId) {
-                this.cache.delete(`${unlock.userId}:${targetId}`);
+                await this.invalidateCache(unlock.userId, targetId);
             }
 
             this.logger.log(`Unlock revoked: id=${unlock.id} tx=${transactionId}`);
@@ -212,10 +226,14 @@ export class UnlockService {
     }
 
     /**
-     * Invalide le cache pour un utilisateur/cible.
+     * Invalide le cache Redis pour un utilisateur/cible.
      */
-    invalidateCache(userId: string, targetId: string): void {
-        this.cache.delete(`${userId}:${targetId}`);
+    async invalidateCache(userId: string, targetId: string): Promise<void> {
+        try {
+            await this.redis.del(this.cacheKey(userId, targetId));
+        } catch (err: any) {
+            this.logger.warn(`Unlock cache invalidation failed: ${err.message}`);
+        }
     }
 
     /**
