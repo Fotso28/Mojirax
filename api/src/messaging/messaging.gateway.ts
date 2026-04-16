@@ -35,10 +35,19 @@ const TYPING_TTL = 3; // 3 seconds
 const REAUTH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
 const MAX_CONTENT_BYTES = 20_000; // 20 KB max for message content
 
+function resolveWebSocketOrigin(): string {
+  const url = process.env.FRONTEND_URL;
+  if (url) return url;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FRONTEND_URL is required in production (WebSocket CORS)');
+  }
+  return 'http://localhost:5000';
+}
+
 @WebSocketGateway({
   namespace: '/messaging',
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+    origin: resolveWebSocketOrigin(),
     credentials: true,
   },
 })
