@@ -5,7 +5,7 @@ import { CandidateCard } from './candidate-card';
 import { FeedFilters } from './feed-filters';
 import { TopActiveCandidates } from './top-active-candidates';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users2 } from 'lucide-react';
 
 interface CandidateFeedResponse {
     candidates: any[];
@@ -111,8 +111,8 @@ export function CandidateStream() {
                 <FeedFilters onFilterChange={handleFilterChange} />
                 <TopActiveCandidates />
                 <div className="text-center py-20">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">👩‍💻</span>
+                    <div className="w-16 h-16 bg-kezak-light rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users2 className="w-7 h-7 text-kezak-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun candidat disponible</h3>
                     <p className="text-gray-500">

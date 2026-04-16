@@ -7,7 +7,7 @@ import { AdFeedCard } from '@/components/ads/ad-feed-card';
 import { FeedFilters } from './feed-filters';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Rocket } from 'lucide-react';
 
 interface FeedAd {
     id: string;
@@ -186,8 +186,8 @@ export function FeedStream() {
             <div className="max-w-2xl mx-auto">
                 <FeedFilters onFilterChange={handleFilterChange} />
                 <div className="text-center py-20">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">🚀</span>
+                    <div className="w-16 h-16 bg-kezak-light rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Rocket className="w-7 h-7 text-kezak-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun projet pour le moment</h3>
                     <p className="text-gray-500">

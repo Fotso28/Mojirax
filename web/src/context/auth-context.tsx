@@ -7,7 +7,8 @@ import {
     signInWithPopup,
     signOut,
     createUserWithEmailAndPassword,
-    signInWithEmailAndPassword
+    signInWithEmailAndPassword,
+    getAdditionalUserInfo
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
@@ -64,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 localStorage.setItem('auth_user', JSON.stringify(userCache));
                 setUser(currentUser);
 
-                // 🚀 PERFORMANCE: Unblock UI immediately after Firebase check
+                // PERFORMANCE: Unblock UI immediately after Firebase check
                 // Don't wait for backend sync to show the app shell
                 setLoading(false);
 
@@ -77,7 +78,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                     if (profileData) {
                         setDbUser(profileData);
-                        localStorage.setItem('db_user', JSON.stringify(profileData));
+                        // Cache only non-sensitive fields for instant load
+                        // (shared computers / cybercafés — sensitive data must not persist)
+                        const cachedProfile = {
+                            id: profileData.id,
+                            firstName: profileData.firstName,
+                            lastName: profileData.lastName,
+                            name: profileData.name,
+                            image: profileData.image,
+                            role: profileData.role,
+                            plan: profileData.plan,
+                            title: profileData.title,
+                            bio: profileData.bio,
+                            skills: profileData.skills,
+                            country: profileData.country,
+                            city: profileData.city,
+                            projects: profileData.projects,
+                            candidateProfile: profileData.candidateProfile
+                                ? { id: profileData.candidateProfile.id, status: profileData.candidateProfile.status }
+                                : null,
+                        };
+                        localStorage.setItem('db_user', JSON.stringify(cachedProfile));
                     }
 
                     // 3. Register FCM push token (fire & forget)
@@ -93,6 +114,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('auth_user');
                     localStorage.removeItem('db_user');
+                    // Nettoyer les brouillons d'onboarding pour éviter fuite de données
+                    // sur ordinateur partagé (cybercafé)
+                    localStorage.removeItem('onboarding_founder_draft');
+                    localStorage.removeItem('onboarding_candidate_draft');
+                    localStorage.removeItem('onboarding_project_draft');
+                    localStorage.removeItem('onboarding_intention');
                 }
                 setDbUser(null);
                 setUser(null);
@@ -140,7 +167,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signInWithGoogle = async () => {
         setLoading(true);
         try {
-            await signInWithPopup(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
+            const additionalInfo = getAdditionalUserInfo(result);
+            if (additionalInfo?.isNewUser) {
+                sessionStorage.setItem('google_new_user', 'true');
+            }
         } catch (error: any) {
             setLoading(false);
             // Silently ignore popup closed by user — not an error
@@ -178,7 +209,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const { data } = await axiosInstance.get('/users/profile');
             if (data) {
                 setDbUser(data);
-                localStorage.setItem('db_user', JSON.stringify(data));
+                // Cache only non-sensitive fields for instant load
+                const cachedProfile = {
+                    id: data.id,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    name: data.name,
+                    image: data.image,
+                    role: data.role,
+                    plan: data.plan,
+                    title: data.title,
+                    bio: data.bio,
+                    skills: data.skills,
+                    country: data.country,
+                    city: data.city,
+                    projects: data.projects,
+                    candidateProfile: data.candidateProfile
+                        ? { id: data.candidateProfile.id, status: data.candidateProfile.status }
+                        : null,
+                };
+                localStorage.setItem('db_user', JSON.stringify(cachedProfile));
             }
         } catch (error) {
             // Failed to refresh db user
@@ -186,6 +236,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const logout = async () => {
+        // Nettoyage défensif avant signOut (au cas où signOut échoue)
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('db_user');
+        localStorage.removeItem('onboarding_intention');
+        setDbUser(null);
+
         try {
             // Unregister FCM token before signing out
             const fcmToken = localStorage.getItem('fcm_token');
