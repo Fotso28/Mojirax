@@ -111,7 +111,7 @@ async function main() {
     console.log('  Admin créé avec succès !');
     console.log('═══════════════════════════════════════');
     console.log(`  Email    : ${ADMIN_EMAIL}`);
-    console.log(`  Password : ${ADMIN_PASSWORD}`);
+    console.log(`  Password : (voir variable ADMIN_PASSWORD dans votre .env)`);
     console.log(`  Nom      : ${ADMIN_NAME}`);
     console.log('═══════════════════════════════════════');
     console.log('\n→ Connectez-vous sur /login puis accédez à /admin\n');
