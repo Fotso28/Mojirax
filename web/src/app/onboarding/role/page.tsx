@@ -1,30 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { getPlanIntent, withPlanIntent } from '@/lib/utils/plan-intent';
 import { Rocket, Compass, CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui';
-
-const intentions = [
-    {
-        id: 'PUBLISH',
-        label: 'Publier un projet',
-        description: 'J\'ai une idée ou un projet en cours et je cherche des co-fondateurs.',
-        icon: Rocket,
-    },
-    {
-        id: 'SEARCH',
-        label: 'Chercher un projet',
-        description: 'Je veux rejoindre un projet ambitieux et apporter mes compétences.',
-        icon: Compass,
-    }
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export default function OnboardingStartPage() {
+    return (
+        <Suspense fallback={null}>
+            <OnboardingStartContent />
+        </Suspense>
+    );
+}
+
+function OnboardingStartContent() {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
     const searchParams = useSearchParams();
     const planIntent = getPlanIntent(searchParams);
@@ -44,7 +39,7 @@ export default function OnboardingStartPage() {
             const path = selected === 'PUBLISH' ? '/onboarding/founder' : '/onboarding/candidate';
             router.push(withPlanIntent(path, planIntent));
         } catch {
-            setError('Une erreur est survenue. Veuillez réessayer.');
+            setError(t('auth.error_generic'));
         } finally {
             setLoading(false);
         }
@@ -62,10 +57,10 @@ export default function OnboardingStartPage() {
                 <div className="text-center mb-16">
                     <img src="/logo/logo.svg" alt="MojiraX" className="mx-auto h-12 w-12 mb-8 opacity-80" />
                     <h1 className="text-4xl md:text-5xl font-bold text-kezak-dark mb-4 tracking-tight">
-                        Que souhaitez-vous faire ?
+                        {t('auth.what_do_you_want')}
                     </h1>
                     <p className="text-lg text-gray-500 max-w-xl mx-auto">
-                        Vous pourrez toujours faire les deux par la suite. Ce choix personnalise votre première expérience.
+                        {t('auth.can_do_both_later_long')}
                     </p>
                 </div>
 
@@ -76,7 +71,10 @@ export default function OnboardingStartPage() {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-12">
-                    {intentions.map((item) => (
+                    {[
+                        { id: 'PUBLISH', label: t('auth.intention_publish_label'), description: t('auth.intention_publish_desc_alt'), icon: Rocket },
+                        { id: 'SEARCH', label: t('auth.intention_search_label'), description: t('auth.intention_search_desc_alt'), icon: Compass },
+                    ].map((item) => (
                         <div
                             key={item.id}
                             onClick={() => { setSelected(item.id); setError(''); }}
@@ -118,9 +116,9 @@ export default function OnboardingStartPage() {
                         disabled={!selected || loading}
                         className="!h-14 !px-12 text-lg !rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                     >
-                        {loading ? 'Traitement...' : (
+                        {loading ? t('auth.submitting') : (
                             <>
-                                Continuer <ArrowRight className="ml-2 w-5 h-5" />
+                                {t('common.continue')} <ArrowRight className="ml-2 w-5 h-5" />
                             </>
                         )}
                     </Button>

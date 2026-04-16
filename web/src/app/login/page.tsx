@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/auth-context';
 import { Button, Input } from '@/components/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { getPlanIntent, withPlanIntent, triggerCheckoutByPlanKey } from '@/lib/utils/plan-intent';
 import { getFirebaseErrorMessage } from '@/utils/firebase-errors';
 import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
@@ -37,7 +37,17 @@ const CoFounderLogo = () => (
 );
 
 
+// Next 16.2+ requires components that call useSearchParams() to be wrapped
+// in a Suspense boundary to allow CSR bailout during SSG.
 export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginPageContent />
+        </Suspense>
+    );
+}
+
+function LoginPageContent() {
     const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
     const { t } = useTranslation();
     const { showToast } = useToast();
