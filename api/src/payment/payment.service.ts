@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserPlan } from '@prisma/client';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 const PLAN_HIERARCHY: Record<UserPlan, number> = {
   FREE: 0,
@@ -19,6 +20,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly i18n: I18nService,
   ) {
     this.stripe = new Stripe(this.config.getOrThrow<string>('STRIPE_SECRET_KEY'));
   }
@@ -26,34 +28,36 @@ export class PaymentService {
   /**
    * Create a Stripe Checkout Session for a subscription plan.
    */
-  async createCheckoutSession(firebaseUid: string, planId: string): Promise<{ url: string }> {
+  async createCheckoutSession(firebaseUid: string, planId: string, locale: Locale = 'fr'): Promise<{ url: string }> {
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
-      select: { id: true, email: true, plan: true, stripeCustomerId: true },
+      select: { id: true, email: true, plan: true, stripeCustomerId: true, preferredLang: true },
     });
 
-    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    if (!user) throw new NotFoundException(this.i18n.t('payment.user_not_found', locale));
+
+    const userLocale = (user.preferredLang === 'en' ? 'en' : 'fr') as Locale;
 
     const pricingPlan = await this.prisma.pricingPlan.findUnique({
       where: { id: planId },
     });
 
     if (!pricingPlan || !pricingPlan.isActive) {
-      throw new NotFoundException('Plan introuvable ou inactif');
+      throw new NotFoundException(this.i18n.t('payment.plan_inactive', userLocale));
     }
 
     if (!pricingPlan.stripePriceId) {
-      throw new BadRequestException('Ce plan n\'est pas encore configuré pour le paiement Stripe');
+      throw new BadRequestException(this.i18n.t('payment.plan_no_stripe', userLocale));
     }
 
     if (!pricingPlan.planKey) {
-      throw new BadRequestException('Ce plan n\'a pas de niveau associé');
+      throw new BadRequestException(this.i18n.t('payment.plan_no_key', userLocale));
     }
 
     // Prevent subscribing to same or lower plan
     if (PLAN_HIERARCHY[user.plan] >= PLAN_HIERARCHY[pricingPlan.planKey]) {
       throw new BadRequestException(
-        `Vous avez déjà le plan ${user.plan}. Choisissez un plan supérieur.`,
+        this.i18n.t('payment.already_same_plan', userLocale, { plan: user.plan }),
       );
     }
 
@@ -95,14 +99,16 @@ export class PaymentService {
   /**
    * Create a Stripe Customer Portal session for managing subscription.
    */
-  async createPortalSession(firebaseUid: string): Promise<{ url: string }> {
+  async createPortalSession(firebaseUid: string, locale: Locale = 'fr'): Promise<{ url: string }> {
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
-      select: { stripeCustomerId: true },
+      select: { stripeCustomerId: true, preferredLang: true },
     });
 
+    const userLocale = (user?.preferredLang === 'en' ? 'en' : 'fr') as Locale;
+
     if (!user?.stripeCustomerId) {
-      throw new BadRequestException('Aucun abonnement Stripe trouvé');
+      throw new BadRequestException(this.i18n.t('payment.no_subscription', userLocale));
     }
 
     const frontendUrl = this.config.getOrThrow<string>('FRONTEND_URL');
@@ -118,13 +124,13 @@ export class PaymentService {
   /**
    * Get payment/subscription status for the current user.
    */
-  async getStatus(firebaseUid: string) {
+  async getStatus(firebaseUid: string, locale: Locale = 'fr') {
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
       select: { plan: true, planExpiresAt: true, stripeSubscriptionId: true },
     });
 
-    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    if (!user) throw new NotFoundException(this.i18n.t('payment.user_not_found', locale));
 
     const isActive =
       user.plan !== UserPlan.FREE &&
@@ -140,7 +146,7 @@ export class PaymentService {
   /**
    * Get full billing info: plan details + subscription transaction history.
    */
-  async getBilling(firebaseUid: string, page = 1, limit = 20) {
+  async getBilling(firebaseUid: string, page = 1, limit = 20, locale: Locale = 'fr') {
     const take = Math.min(limit, 100);
     const skip = (page - 1) * take;
 
@@ -154,7 +160,7 @@ export class PaymentService {
       },
     });
 
-    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    if (!user) throw new NotFoundException(this.i18n.t('payment.user_not_found', locale));
 
     const isActive =
       user.plan !== UserPlan.FREE &&
@@ -292,31 +298,35 @@ export class PaymentService {
     const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
     const periodEnd = this.getSubscriptionPeriodEnd(subscription);
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        plan: planKey,
-        stripeCustomerId: session.customer as string,
-        stripeSubscriptionId: subscriptionId,
-        planExpiresAt: periodEnd,
-        planStartedAt: new Date(),
-      },
-    });
+    // Atomic : user.update + transaction.upsert. Upsert makes replay safe
+    // (Stripe retries any non-2xx webhook — see C-2 audit finding).
+    const [, transaction] = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          plan: planKey,
+          stripeCustomerId: session.customer as string,
+          stripeSubscriptionId: subscriptionId,
+          planExpiresAt: periodEnd,
+          planStartedAt: new Date(),
+        },
+      }),
+      this.prisma.transaction.upsert({
+        where: { externalId: session.id },
+        create: {
+          userId,
+          amount: (session.amount_total ?? 0) / 100,
+          currency: (session.currency ?? 'eur').toUpperCase(),
+          status: 'PAID',
+          provider: 'STRIPE',
+          externalId: session.id,
+          type: 'SUBSCRIPTION',
+        },
+        update: {}, // no-op: keep original values on replay
+      }),
+    ]);
 
-    // Create transaction record
-    await this.prisma.transaction.create({
-      data: {
-        userId,
-        amount: (session.amount_total ?? 0) / 100,
-        currency: (session.currency ?? 'eur').toUpperCase(),
-        status: 'PAID',
-        provider: 'STRIPE',
-        externalId: session.id,
-        type: 'SUBSCRIPTION',
-      },
-    });
-
-    this.logger.log(`User ${userId} activated plan ${planKey}`);
+    this.logger.log(`User ${userId} activated plan ${planKey} (tx=${transaction.id})`);
   }
 
   private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
@@ -336,22 +346,31 @@ export class PaymentService {
     const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
     const periodEnd = this.getSubscriptionPeriodEnd(subscription);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { planExpiresAt: periodEnd },
-    });
+    if (!invoice.id) {
+      this.logger.warn(`Invoice without id received for user ${user.id}`);
+      return;
+    }
 
-    await this.prisma.transaction.create({
-      data: {
-        userId: user.id,
-        amount: (invoice.amount_paid ?? 0) / 100,
-        currency: (invoice.currency ?? 'eur').toUpperCase(),
-        status: 'PAID',
-        provider: 'STRIPE',
-        externalId: invoice.id,
-        type: 'SUBSCRIPTION',
-      },
-    });
+    // Atomic user.update + transaction.upsert — replay-safe.
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { planExpiresAt: periodEnd },
+      }),
+      this.prisma.transaction.upsert({
+        where: { externalId: invoice.id },
+        create: {
+          userId: user.id,
+          amount: (invoice.amount_paid ?? 0) / 100,
+          currency: (invoice.currency ?? 'eur').toUpperCase(),
+          status: 'PAID',
+          provider: 'STRIPE',
+          externalId: invoice.id,
+          type: 'SUBSCRIPTION',
+        },
+        update: {},
+      }),
+    ]);
 
     this.logger.log(`Invoice paid for user ${user.id}, subscription renewed`);
   }
@@ -367,8 +386,15 @@ export class PaymentService {
 
     if (!user) return;
 
-    await this.prisma.transaction.create({
-      data: {
+    if (!invoice.id) {
+      this.logger.warn(`Failed invoice without id received for user ${user.id}`);
+      return;
+    }
+
+    // Upsert is idempotent on replay.
+    await this.prisma.transaction.upsert({
+      where: { externalId: invoice.id },
+      create: {
         userId: user.id,
         amount: (invoice.amount_due ?? 0) / 100,
         currency: (invoice.currency ?? 'eur').toUpperCase(),
@@ -377,6 +403,7 @@ export class PaymentService {
         externalId: invoice.id,
         type: 'SUBSCRIPTION',
       },
+      update: {},
     });
 
     this.logger.warn(`Payment failed for user ${user.id}, subscription ${subscriptionId}`);
