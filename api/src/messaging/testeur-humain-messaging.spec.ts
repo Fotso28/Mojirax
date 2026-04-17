@@ -163,8 +163,8 @@ describe('Testeur 2 — Fatou (rapide) : idempotence findOrCreate', () => {
         prisma.conversation.findUnique.mockResolvedValueOnce(existing);
         const second = await service.findOrCreateConversation(FATOU_ID, AMADOU_ID);
 
-        expect(first.id).toBe('conv-shared-001');
-        expect(second.id).toBe('conv-shared-001');
+        expect(first?.id).toBe('conv-shared-001');
+        expect(second?.id).toBe('conv-shared-001');
         expect(prisma.conversation.create).not.toHaveBeenCalled();
     });
 
