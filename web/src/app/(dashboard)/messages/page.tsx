@@ -9,6 +9,7 @@ import { HideRightSidebar } from '@/context/sidebar-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { ConversationList } from '@/components/messaging/conversation-list';
 import { ChatView } from '@/components/messaging/chat-view';
+import { useTranslation } from '@/context/i18n-context';
 
 interface Conversation {
   id: string;
@@ -36,6 +37,7 @@ function MessagesPageContent() {
   const { dbUser } = useAuth();
   const { socket, onReconnectRefetch } = useSocket();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const convParam = searchParams.get('conv');
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -149,7 +151,7 @@ function MessagesPageContent() {
       <div className="relative h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] flex bg-white md:rounded-2xl md:border md:border-gray-100 md:shadow-sm overflow-hidden">
 
         {/* ===== Liste conversations ===== */}
-        {/* Desktop/Tablet: colonne fixe 30%. Mobile: plein écran statique. */}
+        {/* Desktop/Tablet: colonne fixe 30%. Mobile: plein ecran statique. */}
         <div
           className={`
             flex-shrink-0 flex flex-col
@@ -164,9 +166,9 @@ function MessagesPageContent() {
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-full gap-2 p-4 text-center">
-              <p className="text-sm text-gray-500">Impossible de charger les conversations</p>
+              <p className="text-sm text-gray-500">{t('dashboard.messages_load_error')}</p>
               <button onClick={fetchConversations} className="text-sm text-kezak-primary hover:underline">
-                Réessayer
+                {t('common.retry')}
               </button>
             </div>
           ) : (
@@ -181,7 +183,7 @@ function MessagesPageContent() {
         </div>
 
         {/* ===== Zone chat ===== */}
-        {/* Desktop/Tablet: flex naturel à droite de la liste */}
+        {/* Desktop/Tablet: flex naturel a droite de la liste */}
         {/* Mobile: overlay absolu avec transition slide depuis la droite */}
         <div
           className={`
@@ -204,8 +206,8 @@ function MessagesPageContent() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
               <MessageSquare className="h-12 w-12 text-gray-200" />
-              <p className="text-sm font-medium">Sélectionnez une conversation</p>
-              <p className="text-xs">Vos échanges avec vos co-fondateurs apparaîtront ici</p>
+              <p className="text-sm font-medium">{t('dashboard.messages_select_conversation')}</p>
+              <p className="text-xs">{t('dashboard.messages_exchanges_here')}</p>
             </div>
           )}
         </div>

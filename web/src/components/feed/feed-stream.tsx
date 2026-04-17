@@ -7,7 +7,8 @@ import { AdFeedCard } from '@/components/ads/ad-feed-card';
 import { FeedFilters } from './feed-filters';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
-import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
+import { Loader2, Rocket, AlertCircle } from 'lucide-react';
 
 interface FeedAd {
     id: string;
@@ -32,11 +33,13 @@ interface Filters {
 
 export function FeedStream() {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [projects, setProjects] = useState<any[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [filters, setFilters] = useState<Filters>({});
     const [feedAds, setFeedAds] = useState<FeedAd[]>([]);
     const [insertEvery, setInsertEvery] = useState(8);
@@ -70,6 +73,7 @@ export function FeedStream() {
             setIsLoadingMore(true);
         } else {
             setIsLoading(true);
+            setLoadError(false);
         }
 
         try {
@@ -97,7 +101,8 @@ export function FeedStream() {
             setNextCursor(data.nextCursor);
             setHasMore(!!data.nextCursor);
         } catch {
-            // Feed load failed
+            // Initial load errored — surface in the UI (cursor pagination stays silent)
+            if (!cursor) setLoadError(true);
         } finally {
             setIsLoading(false);
             setIsLoadingMore(false);
@@ -114,10 +119,17 @@ export function FeedStream() {
         loadFeed(null, filters);
     }, [user, loadFeed, filters, pathname]);
 
-    // Refresh feed when window regains focus (e.g. after creating a project)
+    // Refresh feed when window regains focus (e.g. after creating a project).
+    // Debounced: a user alt-tabbing across tabs would otherwise re-fetch on
+    // every focus event, burning mobile data on 3G/4G. Skip if we refreshed
+    // in the last 30s.
+    const lastFocusRefreshRef = useRef(0);
     useEffect(() => {
         if (!user) return;
         const handleFocus = () => {
+            const now = Date.now();
+            if (now - lastFocusRefreshRef.current < 30_000) return;
+            lastFocusRefreshRef.current = now;
             setProjects([]);
             setNextCursor(null);
             setHasMore(true);
@@ -180,20 +192,42 @@ export function FeedStream() {
         );
     }
 
+    // Error state — network/server failed, offer retry
+    if (loadError && projects.length === 0) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <FeedFilters onFilterChange={handleFilterChange} />
+                <div className="text-center py-20">
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-7 h-7 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.load_error_title')}</h3>
+                    <p className="text-gray-500 mb-5">{t('dashboard.feed.load_error_description')}</p>
+                    <button
+                        onClick={() => loadFeed(null, filters)}
+                        className="inline-flex items-center justify-center h-[44px] px-6 rounded-xl bg-kezak-primary hover:bg-kezak-dark text-white font-semibold transition-colors"
+                    >
+                        {t('dashboard.feed.load_error_retry')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // Empty state
     if (projects.length === 0) {
         return (
             <div className="max-w-2xl mx-auto">
                 <FeedFilters onFilterChange={handleFilterChange} />
                 <div className="text-center py-20">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">🚀</span>
+                    <div className="w-16 h-16 bg-kezak-light rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Rocket className="w-7 h-7 text-kezak-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun projet pour le moment</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.projects_empty_title')}</h3>
                     <p className="text-gray-500">
                         {Object.values(filters).some(Boolean)
-                            ? 'Essayez de modifier vos filtres.'
-                            : 'Les projets apparaîtront ici dès qu\'ils seront publiés.'}
+                            ? t('dashboard.feed.projects_empty_filtered')
+                            : t('dashboard.feed.projects_empty_description')}
                     </p>
                 </div>
             </div>
@@ -233,7 +267,7 @@ export function FeedStream() {
 
             {!hasMore && projects.length > 0 && (
                 <div className="text-center py-8 text-gray-400 text-sm">
-                    Vous avez tout vu !
+                    {t('dashboard.feed.end_reached')}
                 </div>
             )}
         </div>

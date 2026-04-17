@@ -3,6 +3,7 @@
 import { useOnboarding } from '@/context/onboarding-context';
 import { ArrowLeft, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from '@/context/i18n-context';
 
 interface WizardLayoutProps {
     title: string;
@@ -27,9 +28,9 @@ export function WizardLayout({ title, children, onBack }: WizardLayoutProps) {
                     <ArrowLeft className="w-5 h-5" />
                 </button>
 
-                <div className="ml-4 font-semibold text-gray-700">{title}</div>
+                <div className="ms-4 font-semibold text-gray-700">{title}</div>
 
-                <div className="ml-auto text-sm text-gray-400 font-medium">
+                <div className="ms-auto text-sm text-gray-400 font-medium">
                     {currentStep + 1} / {totalSteps}
                 </div>
             </header>
@@ -66,8 +67,10 @@ export function WizardLayout({ title, children, onBack }: WizardLayoutProps) {
 }
 
 // Reusable Step Container
-export function WizardStep({ title, description, children, onNext, isValid = true, nextLabel = "Continuer" }: any) {
+export function WizardStep({ title, description, children, onNext, isValid = true, nextLabel }: any) {
     const { isSubmitting } = useOnboarding();
+    const { t } = useTranslation();
+    const resolvedLabel = nextLabel || t('common.continue');
 
     return (
         <div className="space-y-8">
@@ -90,7 +93,7 @@ export function WizardStep({ title, description, children, onNext, isValid = tru
                     disabled={!isValid || isSubmitting}
                     className="group flex items-center gap-2 bg-kezak-primary text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-kezak-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-kezak-primary/30"
                 >
-                    {isSubmitting ? 'Enregistrement...' : nextLabel}
+                    {isSubmitting ? t('auth.saving') : resolvedLabel}
                     {!isSubmitting && <Check className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 </button>
             </div>

@@ -9,6 +9,8 @@ import { CountrySelect } from '@/components/ui/country-select';
 import { COUNTRIES } from '@/lib/constants/countries';
 import { ExperienceList, ExperienceItem } from './experience-list';
 import { EducationList, EducationItem } from './education-list';
+import { useTranslation } from '@/context/i18n-context';
+import { logger } from '@/lib/logger';
 
 interface ProfileFormProps {
     user: any;
@@ -35,34 +37,33 @@ function SectionCard({ icon: Icon, title, children }: {
 }
 
 export function ProfileForm({ user, onSaved }: ProfileFormProps) {
+    const { t } = useTranslation();
     const { showToast } = useToast();
-    const fp = user.founderProfile || {};
-
     // Section 1: Infos personnelles
     const [firstName, setFirstName] = useState(user.firstName || '');
     const [lastName, setLastName] = useState(user.lastName || '');
-    const [email, setEmail] = useState(user.email || '');
+    const email = user.email || '';
     const [phone, setPhone] = useState(user.phone || '');
-    const [country, setCountry] = useState(fp.country || '');
-    const [city, setCity] = useState(fp.city || '');
+    const [country, setCountry] = useState(user.country || '');
+    const [city, setCity] = useState(user.city || '');
     const [address, setAddress] = useState(user.address || '');
 
     // Section 2: Profil pro
-    const [title, setTitle] = useState(fp.title || '');
-    const [bio, setBio] = useState(fp.bio || '');
-    const [yearsOfExperience, setYearsOfExperience] = useState<number | ''>(fp.yearsOfExperience ?? '');
+    const [title, setTitle] = useState(user.title || '');
+    const [bio, setBio] = useState(user.bio || '');
+    const [yearsOfExperience, setYearsOfExperience] = useState<number | ''>(user.yearsOfExperience ?? '');
 
     // Section 3: Liens
-    const [linkedinUrl, setLinkedinUrl] = useState(fp.linkedinUrl || '');
-    const [websiteUrl, setWebsiteUrl] = useState(fp.websiteUrl || '');
+    const [linkedinUrl, setLinkedinUrl] = useState(user.linkedinUrl || '');
+    const [websiteUrl, setWebsiteUrl] = useState(user.websiteUrl || '');
 
     // Section 4: Compétences & Langues
-    const [skills, setSkills] = useState<string[]>(fp.skills || []);
-    const [languages, setLanguages] = useState<string[]>(fp.languages || []);
+    const [skills, setSkills] = useState<string[]>(user.skills || []);
+    const [languages, setLanguages] = useState<string[]>(user.languages || []);
 
     // Section 5: Expériences
     const [experience, setExperience] = useState<ExperienceItem[]>(
-        fp.experience?.map((e: any) => ({
+        user.experience?.map((e: any) => ({
             role: e.role || '', company: e.company || '',
             startYear: e.startYear || '', endYear: e.endYear ?? '',
         })) || []
@@ -70,7 +71,7 @@ export function ProfileForm({ user, onSaved }: ProfileFormProps) {
 
     // Section 6: Formation
     const [education, setEducation] = useState<EducationItem[]>(
-        fp.education?.map((e: any) => ({
+        user.education?.map((e: any) => ({
             degree: e.degree || '', school: e.school || '', year: e.year || '',
         })) || []
     );
@@ -85,8 +86,10 @@ export function ProfileForm({ user, onSaved }: ProfileFormProps) {
     const saveAll = async () => {
         setIsSaving(true);
         try {
-            const founderProfile = {
-                title, bio, country, city, linkedinUrl, websiteUrl, skills, languages,
+            await AXIOS_INSTANCE.patch('/users/profile', {
+                firstName, lastName, phone, address,
+                title, bio, country, city, linkedinUrl, websiteUrl,
+                skills, languages,
                 yearsOfExperience: yearsOfExperience === '' ? null : yearsOfExperience,
                 experience: experience.filter(e => e.role && e.company).map(e => ({
                     role: e.role, company: e.company,
@@ -97,18 +100,14 @@ export function ProfileForm({ user, onSaved }: ProfileFormProps) {
                     degree: e.degree, school: e.school,
                     year: e.year || undefined,
                 })),
-            };
-            await AXIOS_INSTANCE.patch('/users/profile', {
-                firstName, lastName, email, phone, address,
-                founderProfile,
             });
 
-            // Refetch full profile (with relations) to update UI
             const { data: freshProfile } = await AXIOS_INSTANCE.get('/users/profile');
             onSaved?.(freshProfile);
-            showToast('Profil mis à jour avec succès', 'success');
-        } catch {
-            showToast('Erreur lors de la sauvegarde', 'error');
+            showToast(t('dashboard.profile_save_success'), 'success');
+        } catch (err: any) {
+            logger.error('[ProfileForm] Save failed:', err?.response?.status, err?.response?.data?.code || err?.message);
+            showToast(t('dashboard.profile_save_error'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -117,102 +116,106 @@ export function ProfileForm({ user, onSaved }: ProfileFormProps) {
     return (
         <div className="space-y-8">
             {/* Section 1: Infos personnelles */}
-            <SectionCard icon={User} title="Informations personnelles">
+            <SectionCard icon={User} title={t('dashboard.profile_personal_info')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Prénom</label>
-                        <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Votre prénom" className={inputClass} />
+                        <label htmlFor="profile-firstName" className="text-sm font-medium text-gray-700">{t('dashboard.profile_firstName')}</label>
+                        <input id="profile-firstName" type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t('dashboard.profile_firstName_placeholder')} maxLength={100} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Nom</label>
-                        <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Votre nom" className={inputClass} />
+                        <label htmlFor="profile-lastName" className="text-sm font-medium text-gray-700">{t('dashboard.profile_lastName')}</label>
+                        <input id="profile-lastName" type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t('dashboard.profile_lastName_placeholder')} maxLength={100} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" className={inputClass} />
+                        <label htmlFor="profile-email" className="text-sm font-medium text-gray-700">{t('dashboard.profile_email')}</label>
+                        <input id="profile-email" type="email" value={email} readOnly className={`${inputClass} bg-gray-50 text-gray-500 cursor-not-allowed`} />
+                        <p className="text-xs text-gray-400">{t('dashboard.profile_email_hint')}</p>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Téléphone</label>
+                        <label htmlFor="profile-phone" className="text-sm font-medium text-gray-700">{t('dashboard.profile_phone')}</label>
                         <div className="flex">
                             <div className="flex items-center gap-1.5 h-[52px] px-3 bg-gray-50 border border-r-0 border-gray-300 rounded-l-lg text-sm text-gray-600 shrink-0">
                                 <span className="text-lg">{selectedCountry?.flag ?? ''}</span>
                                 <span className="font-medium">{selectedCountry?.dialCode ?? '+...'}</span>
                             </div>
-                            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="6XX XXX XXX" className="flex-1 h-[52px] px-4 bg-white border border-gray-300 rounded-r-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200" />
+                            <input id="profile-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('dashboard.profile_phone_placeholder')} maxLength={25} className="flex-1 h-[52px] px-4 bg-white border border-gray-300 rounded-r-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200" />
                         </div>
                     </div>
                 </div>
             </SectionCard>
 
             {/* Section 2: Localisation */}
-            <SectionCard icon={MapPin} title="Localisation">
+            <SectionCard icon={MapPin} title={t('dashboard.profile_location')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <CountrySelect
-                        label="Pays"
+                        label={t('dashboard.profile_country')}
                         value={country}
                         onChange={setCountry}
-                        placeholder="Sélectionner un pays..."
+                        placeholder={t('dashboard.profile_country_placeholder')}
                     />
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Ville</label>
-                        <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Douala" className={inputClass} />
+                        <label htmlFor="profile-city" className="text-sm font-medium text-gray-700">{t('dashboard.profile_city')}</label>
+                        <input id="profile-city" type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t('dashboard.profile_city_placeholder')} maxLength={100} className={inputClass} />
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Adresse</label>
-                        <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="Quartier, rue..." className={inputClass} />
+                        <label htmlFor="profile-address" className="text-sm font-medium text-gray-700">{t('dashboard.profile_address')}</label>
+                        <input id="profile-address" type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder={t('dashboard.profile_address_placeholder')} maxLength={255} className={inputClass} />
                     </div>
                 </div>
             </SectionCard>
 
             {/* Section 3: Profil professionnel */}
-            <SectionCard icon={Briefcase} title="Profil professionnel">
+            <SectionCard icon={Briefcase} title={t('dashboard.profile_professional')}>
                 <div className="space-y-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Titre professionnel</label>
-                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Serial Entrepreneur | Fintech & EdTech" className={inputClass} />
-                        <p className="text-xs text-gray-400">Ce titre apparaît dans votre CV sur les pages projets</p>
+                        <label htmlFor="profile-title" className="text-sm font-medium text-gray-700">{t('dashboard.profile_title_label')}</label>
+                        <input id="profile-title" type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('dashboard.profile_title_placeholder')} maxLength={120} className={inputClass} />
+                        <div className="flex justify-between">
+                            <p className="text-xs text-gray-400">{t('dashboard.profile_title_hint')}</p>
+                            <p className="text-xs text-gray-400">{title.length}/120</p>
+                        </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Bio</label>
-                        <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Présentez-vous en quelques phrases..." maxLength={500} className={textareaClass} />
-                        <p className="text-xs text-gray-400 text-right">{bio.length}/500</p>
+                        <label htmlFor="profile-bio" className="text-sm font-medium text-gray-700">{t('dashboard.profile_bio')}</label>
+                        <textarea id="profile-bio" value={bio} onChange={e => setBio(e.target.value)} placeholder={t('dashboard.profile_bio_placeholder')} maxLength={2000} className={textareaClass} />
+                        <p className="text-xs text-gray-400 text-right">{bio.length}/2000</p>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Années d&apos;expérience</label>
-                        <input type="number" value={yearsOfExperience} onChange={e => setYearsOfExperience(e.target.value ? parseInt(e.target.value, 10) : '')} placeholder="7" min={0} max={50} className={inputClass} />
+                        <label htmlFor="profile-yearsOfExperience" className="text-sm font-medium text-gray-700">{t('dashboard.profile_years_exp')}</label>
+                        <input id="profile-yearsOfExperience" type="number" value={yearsOfExperience} onChange={e => setYearsOfExperience(e.target.value ? parseInt(e.target.value, 10) : '')} placeholder="7" min={0} max={50} className={inputClass} />
                     </div>
                 </div>
             </SectionCard>
 
             {/* Section 3: Liens */}
-            <SectionCard icon={Link2} title="Liens">
+            <SectionCard icon={Link2} title={t('dashboard.profile_links')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">LinkedIn</label>
-                        <input type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/..." className={inputClass} />
+                        <label htmlFor="profile-linkedinUrl" className="text-sm font-medium text-gray-700">{t('dashboard.profile_linkedin')}</label>
+                        <input id="profile-linkedinUrl" type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder={t('dashboard.profile_linkedin_placeholder')} maxLength={500} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Site web</label>
-                        <input type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://..." className={inputClass} />
+                        <label htmlFor="profile-websiteUrl" className="text-sm font-medium text-gray-700">{t('dashboard.profile_website')}</label>
+                        <input id="profile-websiteUrl" type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder={t('dashboard.profile_website_placeholder')} maxLength={500} className={inputClass} />
                     </div>
                 </div>
             </SectionCard>
 
             {/* Section 4: Compétences & Langues */}
-            <SectionCard icon={Sparkles} title="Compétences et langues">
+            <SectionCard icon={Sparkles} title={t('dashboard.profile_skills_languages')}>
                 <div className="space-y-6">
-                    <TagInput label="Compétences" value={skills} onChange={setSkills} placeholder="Ex: Product Management, React..." maxTags={15} />
-                    <TagInput label="Langues" value={languages} onChange={setLanguages} placeholder="Ex: Français, Anglais..." maxTags={10} />
+                    <TagInput label={t('dashboard.profile_skills_label')} value={skills} onChange={setSkills} placeholder={t('dashboard.profile_skills_placeholder')} maxTags={15} />
+                    <TagInput label={t('dashboard.profile_languages_label')} value={languages} onChange={setLanguages} placeholder={t('dashboard.profile_languages_placeholder')} maxTags={10} />
                 </div>
             </SectionCard>
 
             {/* Section 5: Parcours professionnel */}
-            <SectionCard icon={Briefcase} title="Parcours professionnel">
+            <SectionCard icon={Briefcase} title={t('dashboard.profile_work_experience')}>
                 <ExperienceList value={experience} onChange={setExperience} />
             </SectionCard>
 
             {/* Section 6: Formation */}
-            <SectionCard icon={GraduationCap} title="Formation">
+            <SectionCard icon={GraduationCap} title={t('dashboard.profile_education')}>
                 <EducationList value={education} onChange={setEducation} />
             </SectionCard>
 
@@ -227,7 +230,7 @@ export function ProfileForm({ user, onSaved }: ProfileFormProps) {
                     <span className="w-5 h-5 inline-flex items-center justify-center">
                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     </span>
-                    <span>Enregistrer le profil</span>
+                    <span>{t('dashboard.profile_save')}</span>
                 </button>
             </div>
         </div>

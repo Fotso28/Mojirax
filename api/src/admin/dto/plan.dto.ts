@@ -10,38 +10,38 @@ import {
   ArrayMaxSize,
   ValidateNested,
   IsEnum,
+  IsObject,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 import { UserPlan } from '@prisma/client';
 
 export class CreatePlanDto {
-  @IsString()
-  @MaxLength(50)
-  name: string;
+  @IsObject()
+  @IsNotEmpty()
+  name: Record<string, string>; // { "fr": "Plan Plus", "en": "Plus Plan" }
 
   @IsNumber()
   @Min(0)
   price: number;
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(20)
-  period?: string = 'mois';
+  @IsObject()
+  @IsNotEmpty()
+  period: Record<string, string>; // { "fr": "mois", "en": "month" }
 
   @IsString()
   @IsOptional()
   @MaxLength(10)
   currency?: string = 'EUR';
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  @MaxLength(200)
-  description?: string;
+  description?: Record<string, string>; // { "fr": "...", "en": "..." }
 
-  @IsArray()
-  @IsString({ each: true })
-  features: string[];
+  @IsObject()
+  @IsNotEmpty()
+  features: Record<string, string[]>; // { "fr": ["Feature 1"], "en": ["Feature 1"] }
 
   @IsBoolean()
   @IsOptional()
@@ -51,10 +51,9 @@ export class CreatePlanDto {
   @IsOptional()
   isActive?: boolean = true;
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  ctaLabel?: string = 'Commencer';
+  @IsObject()
+  @IsNotEmpty()
+  ctaLabel: Record<string, string>; // { "fr": "Commencer", "en": "Get Started" }
 
   @IsInt()
   @Min(0)

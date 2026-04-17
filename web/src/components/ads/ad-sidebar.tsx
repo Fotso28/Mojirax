@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AXIOS_INSTANCE as api } from '@/api/axios-instance';
 import { useAdTracker } from '@/hooks/use-ad-tracker';
 import { Megaphone, ExternalLink } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 interface SidebarAd {
   id: string;
@@ -15,6 +16,7 @@ interface SidebarAd {
 }
 
 function SidebarAdCard({ ad, index }: { ad: SidebarAd; index: number }) {
+  const { t } = useTranslation();
   const { ref, onClick } = useAdTracker({
     adId: ad.id,
     placement: 'SIDEBAR',
@@ -38,7 +40,7 @@ function SidebarAdCard({ ad, index }: { ad: SidebarAd; index: number }) {
       {/* Sponsored label */}
       <div className="flex items-center gap-1 px-3 pt-2.5 pb-1.5">
         <Megaphone className="w-3 h-3 text-gray-400" />
-        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Sponsorisé</span>
+        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{t('dashboard.ad_sponsored')}</span>
       </div>
 
       {/* Image — carré 1:1 */}

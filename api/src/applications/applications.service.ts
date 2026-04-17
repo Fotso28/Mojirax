@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { CandidateModerationService } from '../users/candidate-moderation.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -22,9 +23,10 @@ export class ApplicationsService {
         @Inject(forwardRef(() => CandidateModerationService))
         private candidateModerationService: CandidateModerationService,
         private notificationsService: NotificationsService,
+        private i18n: I18nService,
     ) { }
 
-    async apply(firebaseUid: string, dto: CreateApplicationDto) {
+    async apply(firebaseUid: string, dto: CreateApplicationDto, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: {
@@ -40,7 +42,7 @@ export class ApplicationsService {
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur non trouvé');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         // Validate profile completeness before applying
@@ -53,7 +55,7 @@ export class ApplicationsService {
 
         if (missingFields.length > 0) {
             throw new BadRequestException({
-                message: 'Veuillez compléter votre profil avant de postuler',
+                message: this.i18n.t('user.complete_profile_before_applying', locale),
                 missingFields,
                 code: 'INCOMPLETE_PROFILE',
             });
@@ -72,7 +74,7 @@ export class ApplicationsService {
             this.logger.log(`Auto-created candidate profile for user ${user.id}`);
 
             // Lancer la modération IA en fire-and-forget
-            this.candidateModerationService.moderateProfile(profile.id).catch(() => {});
+            this.candidateModerationService.moderateProfile(profile.id, locale).catch(() => {});
         }
 
         const project = await this.prisma.project.findUnique({
@@ -81,12 +83,12 @@ export class ApplicationsService {
         });
 
         if (!project || project.status !== 'PUBLISHED') {
-            throw new NotFoundException('Projet non trouvé ou non disponible');
+            throw new NotFoundException(this.i18n.t('application.project_unavailable', locale));
         }
 
         if (project.founderId === user.id) {
             this.logger.warn(`Self-application attempt: user=${user.id} project=${dto.projectId}`);
-            throw new ForbiddenException('Vous ne pouvez pas postuler à votre propre projet');
+            throw new ForbiddenException(this.i18n.t('application.cannot_apply_own', locale));
         }
 
         // Wrap in transaction for atomicity
@@ -104,7 +106,7 @@ export class ApplicationsService {
                 });
             } catch (error: any) {
                 if (error.code === 'P2002') {
-                    throw new ConflictException('Vous avez déjà postulé à ce projet');
+                    throw new ConflictException(this.i18n.t('application.already_applied', locale));
                 }
                 throw error;
             }
@@ -129,13 +131,16 @@ export class ApplicationsService {
             ? `${user.firstName} ${user.lastName || ''}`.trim()
             : user.name || 'Un candidat';
 
-        this.notificationsService.notify(
-            project.founderId,
-            'APPLICATION_RECEIVED',
-            'Nouvelle candidature',
-            `${userName} a postulé à ${project.name}`,
-            { applicationId: application.id, projectId: project.id, projectSlug: project.slug, candidateName: userName },
-        ).catch((err) => {
+        // Use the founder's locale for the notification, not the applicant's
+        this.notificationsService.getUserLocale(project.founderId).then((founderLocale) => {
+            return this.notificationsService.notify(
+                project.founderId,
+                'APPLICATION_RECEIVED',
+                this.i18n.t('notification.new_application_title', founderLocale),
+                this.i18n.t('notification.new_application_body', founderLocale, { applicantName: userName, projectName: project.name }),
+                { applicationId: application.id, projectId: project.id, projectSlug: project.slug, candidateName: userName },
+            );
+        }).catch((err) => {
             this.logger.warn(`Failed to notify founder: ${err?.message}`);
         });
 
@@ -190,14 +195,14 @@ export class ApplicationsService {
         });
     }
 
-    async findByProject(firebaseUid: string, projectId: string, take?: number, skip?: number) {
+    async findByProject(firebaseUid: string, projectId: string, take?: number, skip?: number, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true },
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur non trouvé');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         const project = await this.prisma.project.findUnique({
@@ -206,12 +211,12 @@ export class ApplicationsService {
         });
 
         if (!project) {
-            throw new NotFoundException('Projet non trouvé');
+            throw new NotFoundException(this.i18n.t('project.not_found', locale));
         }
 
         if (project.founderId !== user.id) {
             this.logger.warn(`Unauthorized project applications access: user=${user.id} project=${projectId}`);
-            throw new ForbiddenException('Vous n\'êtes pas le fondateur de ce projet');
+            throw new ForbiddenException(this.i18n.t('application.not_project_owner', locale));
         }
 
         const limit = Math.min(take || 20, 20);
@@ -227,10 +232,6 @@ export class ApplicationsService {
                 candidate: {
                     select: {
                         id: true,
-                        title: true,
-                        bio: true,
-                        skills: true,
-                        location: true,
                         user: {
                             select: {
                                 id: true,
@@ -238,6 +239,11 @@ export class ApplicationsService {
                                 lastName: true,
                                 name: true,
                                 image: true,
+                                title: true,
+                                bio: true,
+                                skills: true,
+                                city: true,
+                                country: true,
                             },
                         },
                     },
@@ -249,7 +255,7 @@ export class ApplicationsService {
         });
     }
 
-    async updateStatus(firebaseUid: string, applicationId: string, status: 'ACCEPTED' | 'REJECTED') {
+    async updateStatus(firebaseUid: string, applicationId: string, status: 'ACCEPTED' | 'REJECTED', locale: Locale = 'fr') {
         const application = await this.prisma.application.findUnique({
             where: { id: applicationId },
             select: {
@@ -266,7 +272,7 @@ export class ApplicationsService {
         });
 
         if (!application) {
-            throw new NotFoundException('Candidature non trouvée');
+            throw new NotFoundException(this.i18n.t('application.not_found', locale));
         }
 
         const user = await this.prisma.user.findUnique({
@@ -275,12 +281,12 @@ export class ApplicationsService {
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur non trouvé');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         if (application.project.founderId !== user.id) {
             this.logger.warn(`Unauthorized status update: user=${user.id} application=${applicationId}`);
-            throw new ForbiddenException('Vous n\'êtes pas le fondateur de ce projet');
+            throw new ForbiddenException(this.i18n.t('application.not_project_owner', locale));
         }
 
         // Atomic update + conversation creation in transaction
@@ -293,7 +299,7 @@ export class ApplicationsService {
 
             if (result.count === 0) {
                 throw new BadRequestException(
-                    `Cette candidature a déjà été traitée (statut: ${application.status})`,
+                    this.i18n.t('application.already_processed', locale, { status: application.status }),
                 );
             }
 
@@ -318,12 +324,15 @@ export class ApplicationsService {
             }
         });
 
-        // Notify candidate (with push FCM)
+        // Notify candidate (with push FCM) — use candidate's locale, not caller's
+        const candidateLocale = await this.notificationsService.getUserLocale(application.candidate.user.id);
         const notificationType = status === 'ACCEPTED' ? 'APPLICATION_ACCEPTED' : 'APPLICATION_REJECTED';
-        const notificationTitle = status === 'ACCEPTED' ? 'Candidature acceptée !' : 'Candidature refusée';
+        const notificationTitle = status === 'ACCEPTED'
+            ? this.i18n.t('notification.application_accepted_title', candidateLocale)
+            : this.i18n.t('notification.application_rejected_title', candidateLocale);
         const notificationMessage = status === 'ACCEPTED'
-            ? `Votre candidature à ${application.project.name} a été acceptée`
-            : `Votre candidature à ${application.project.name} n'a pas été retenue`;
+            ? this.i18n.t('notification.application_accepted_body', candidateLocale, { projectName: application.project.name })
+            : this.i18n.t('notification.application_rejected_body', candidateLocale, { projectName: application.project.name });
 
         this.notificationsService.notify(
             application.candidate.user.id,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
@@ -11,24 +11,7 @@ import {
     Clock, Inbox, CheckCircle2, XCircle, AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
-
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-    PENDING: { label: 'En attente', className: 'bg-amber-100 text-amber-700' },
-    ACCEPTED: { label: 'Acceptee', className: 'bg-emerald-100 text-emerald-700' },
-    REJECTED: { label: 'Refusee', className: 'bg-red-100 text-red-700' },
-};
-
-function timeAgo(dateStr: string): string {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return "A l'instant";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Il y a ${minutes}min`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `Il y a ${days}j`;
-    return `Il y a ${Math.floor(days / 30)} mois`;
-}
+import { useTranslation } from '@/context/i18n-context';
 
 export default function ProjectApplicationsPage() {
     const params = useParams();
@@ -36,12 +19,31 @@ export default function ProjectApplicationsPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const [project, setProject] = useState<any>(null);
     const [applications, setApplications] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
     const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null);
+
+    const STATUS_CONFIG = useMemo(() => ({
+        PENDING: { label: t('common.status_pending'), className: 'bg-amber-100 text-amber-700' },
+        ACCEPTED: { label: t('common.status_accepted'), className: 'bg-emerald-100 text-emerald-700' },
+        REJECTED: { label: t('common.status_rejected'), className: 'bg-red-100 text-red-700' },
+    }), [t]);
+
+    const timeAgo = (dateStr: string): string => {
+        const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+        if (seconds < 60) return t('common.time_just_now');
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return t('common.time_minutes_ago', { count: minutes });
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return t('common.time_hours_ago', { count: hours });
+        const days = Math.floor(hours / 24);
+        if (days < 30) return t('common.time_days_ago', { count: days });
+        return t('common.time_months_ago', { count: Math.floor(days / 30) });
+    };
 
     useEffect(() => {
         if (authLoading) return;
@@ -65,9 +67,9 @@ export default function ProjectApplicationsPage() {
             } catch (err: any) {
                 const status = err?.response?.status;
                 if (status === 403) {
-                    showToast('Vous n\'êtes pas autorisé à voir ces candidatures', 'error');
+                    showToast(t('dashboard.not_authorized_applications'), 'error');
                 } else if (status === 404) {
-                    showToast('Projet introuvable', 'error');
+                    showToast(t('dashboard.project_not_found'), 'error');
                 }
             } finally {
                 setIsLoading(false);
@@ -86,13 +88,13 @@ export default function ProjectApplicationsPage() {
                 )
             );
             showToast(
-                status === 'ACCEPTED' ? 'Candidature acceptee !' : 'Candidature refusee',
+                status === 'ACCEPTED' ? t('dashboard.application_accepted_toast') : t('dashboard.application_rejected_toast'),
                 'success'
             );
         } catch (err: any) {
             const msg = err?.response?.status === 400
-                ? 'Cette candidature a déjà été traitée'
-                : 'Une erreur est survenue';
+                ? t('dashboard.application_already_processed')
+                : t('dashboard.application_error');
             showToast(msg, 'error');
         } finally {
             setActionLoadingId(null);
@@ -104,7 +106,7 @@ export default function ProjectApplicationsPage() {
 
     if (authLoading || isLoading) {
         return (
-            <div className="space-y-8 p-4 sm:p-8">
+            <div className="space-y-8">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
                     <div className="h-8 w-64 bg-gray-200 rounded-lg animate-pulse" />
@@ -141,7 +143,7 @@ export default function ProjectApplicationsPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-8 p-4 sm:p-8"
+            className="space-y-8"
         >
             {/* Header */}
             <div className="flex items-center gap-3">
@@ -155,7 +157,7 @@ export default function ProjectApplicationsPage() {
                 )}
                 <div>
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-                        Candidatures
+                        {t('dashboard.applications_title')}
                     </h1>
                     {project && (
                         <p className="mt-1 text-lg text-gray-500">
@@ -172,10 +174,10 @@ export default function ProjectApplicationsPage() {
                         <Inbox className="w-8 h-8 text-kezak-primary" />
                     </div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">
-                        Aucune candidature
+                        {t('dashboard.no_applications_received_title')}
                     </h2>
                     <p className="text-gray-500 max-w-md mx-auto">
-                        Aucune candidature recue pour le moment. Partagez votre projet pour attirer des co-fondateurs.
+                        {t('dashboard.no_applications_received_description')}
                     </p>
                 </div>
             ) : (
@@ -183,10 +185,10 @@ export default function ProjectApplicationsPage() {
                     {applications.map((app: any) => {
                         const candidate = app.candidate;
                         const candidateUser = candidate?.user;
-                        const status = STATUS_CONFIG[app.status] ?? STATUS_CONFIG.PENDING;
+                        const status = STATUS_CONFIG[app.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.PENDING;
                         const candidateName = candidateUser?.name
                             || [candidateUser?.firstName, candidateUser?.lastName].filter(Boolean).join(' ')
-                            || 'Candidat';
+                            || t('common.candidate');
                         const skills: string[] = candidate?.skills ?? [];
                         const isActionLoading = actionLoadingId === app.id;
 
@@ -280,27 +282,27 @@ export default function ProjectApplicationsPage() {
                                                     ) : (
                                                         <UserCheck className="w-4 h-4" />
                                                     )}
-                                                    Accepter
+                                                    {t('common.accept')}
                                                 </button>
 
                                                 {confirmRejectId === app.id ? (
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xs text-gray-500 flex items-center gap-1">
                                                             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                                                            Confirmer ?
+                                                            {t('common.confirm')}
                                                         </span>
                                                         <button
                                                             onClick={() => handleStatusUpdate(app.id, 'REJECTED')}
                                                             disabled={isActionLoading}
                                                             className="inline-flex items-center justify-center gap-1 px-3 h-[32px] rounded-lg font-medium text-xs text-white bg-red-600 hover:bg-red-700 transition-all disabled:opacity-60"
                                                         >
-                                                            Oui
+                                                            {t('common.yes')}
                                                         </button>
                                                         <button
                                                             onClick={() => setConfirmRejectId(null)}
                                                             className="inline-flex items-center justify-center gap-1 px-3 h-[32px] rounded-lg font-medium text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
                                                         >
-                                                            Non
+                                                            {t('common.no')}
                                                         </button>
                                                     </div>
                                                 ) : (
@@ -310,7 +312,7 @@ export default function ProjectApplicationsPage() {
                                                         className="inline-flex items-center justify-center gap-2 px-5 h-[40px] rounded-lg font-semibold text-sm text-red-600 bg-white border-2 border-red-200 hover:bg-red-50 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                                     >
                                                         <UserX className="w-4 h-4" />
-                                                        Rejeter
+                                                        {t('common.reject')}
                                                     </button>
                                                 )}
                                             </div>
@@ -320,13 +322,13 @@ export default function ProjectApplicationsPage() {
                                         {app.status === 'ACCEPTED' && (
                                             <div className="flex items-center gap-2 mt-4 text-emerald-600">
                                                 <CheckCircle2 className="w-4 h-4" />
-                                                <span className="text-sm font-medium">Candidature acceptee</span>
+                                                <span className="text-sm font-medium">{t('dashboard.application_accepted')}</span>
                                             </div>
                                         )}
                                         {app.status === 'REJECTED' && (
                                             <div className="flex items-center gap-2 mt-4 text-red-500">
                                                 <XCircle className="w-4 h-4" />
-                                                <span className="text-sm font-medium">Candidature refusee</span>
+                                                <span className="text-sm font-medium">{t('dashboard.application_rejected')}</span>
                                             </div>
                                         )}
                                     </div>

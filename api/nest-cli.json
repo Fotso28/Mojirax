@@ -6,7 +6,8 @@
     "deleteOutDir": true,
     "assets": [
       { "include": "notifications/email/templates/**/*.mjml", "watchAssets": true },
-      { "include": "notifications/email/i18n/**/*.json", "watchAssets": true }
+      { "include": "notifications/email/i18n/**/*.json", "watchAssets": true },
+      { "include": "i18n/messages/**/*.json", "watchAssets": true }
     ]
   }
 }

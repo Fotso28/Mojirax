@@ -469,7 +469,7 @@ model Transaction {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user      User              @relation(fields: [userId], references: [id])
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   unlocks   Unlock[]
   auditLogs PaymentAuditLog[]
 
@@ -501,8 +501,8 @@ model Unlock {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  user        User              @relation(fields: [userId], references: [id])
-  transaction Transaction       @relation(fields: [transactionId], references: [id])
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction Transaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   candidate   CandidateProfile? @relation(fields: [targetCandidateId], references: [id], onDelete: SetNull)
   project     Project?          @relation(fields: [targetProjectId], references: [id], onDelete: SetNull)
 
@@ -937,16 +937,16 @@ model MessageReaction {
 
 model PricingPlan {
   id          String   @id @default(cuid())
-  name        String
+  name        Json     @db.JsonB
   price       Decimal  @default(0) @db.Decimal(10, 2)
-  period      String   @default("mois")
+  period      Json     @db.JsonB
   currency    String   @default("EUR")
-  description String?
-  features    String[]
+  description Json?    @db.JsonB
+  features    Json     @db.JsonB
   isPopular   Boolean  @default(false) @map("is_popular")
   isActive    Boolean  @default(true) @map("is_active")
   order       Int      @default(0)
-  ctaLabel    String   @default("Commencer") @map("cta_label")
+  ctaLabel    Json     @db.JsonB @map("cta_label")
   stripePriceId String?   @unique @map("stripe_price_id")
   planKey       UserPlan? @map("plan_key")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -958,8 +958,8 @@ model PricingPlan {
 
 model Faq {
   id        String   @id @default(cuid())
-  question  String
-  answer    String
+  question  Json     @db.JsonB
+  answer    Json     @db.JsonB
   isActive  Boolean  @default(true) @map("is_active")
   order     Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
@@ -972,9 +972,9 @@ model Faq {
 model Testimonial {
   id        String   @id @default(cuid())
   name      String
-  role      String
+  role      Json     @db.JsonB
   location  String
-  quote     String
+  quote     Json     @db.JsonB
   imageUrl  String   @map("image_url")
   isActive  Boolean  @default(true) @map("is_active")
   order     Int      @default(0)

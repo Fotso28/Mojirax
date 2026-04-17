@@ -65,9 +65,12 @@ export class PlanGuard implements CanActivate {
     }
 
     if (PLAN_HIERARCHY[user.plan] < PLAN_HIERARCHY[requiredPlan]) {
-      throw new ForbiddenException(
-        `Cette fonctionnalité nécessite le plan ${requiredPlan}. Votre plan actuel : ${user.plan}`,
-      );
+      throw new ForbiddenException({
+        code: 'PLAN_REQUIRED',
+        message: `Cette fonctionnalité nécessite le plan ${requiredPlan}. Votre plan actuel : ${user.plan}`,
+        requiredPlan,
+        currentPlan: user.plan,
+      });
     }
 
     return true;

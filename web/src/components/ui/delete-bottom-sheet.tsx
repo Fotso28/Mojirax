@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Trash2, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 export interface DeleteBottomSheetProps {
     open: boolean;
@@ -19,6 +20,7 @@ export function DeleteBottomSheet({
     onConfirm,
     onCancel,
 }: DeleteBottomSheetProps) {
+    const { t } = useTranslation();
     const [confirmText, setConfirmText] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
@@ -74,9 +76,9 @@ export function DeleteBottomSheet({
     );
 
     const consequences = [
-        'Le projet et toutes ses informations',
-        'Les candidatures reçues',
-        'Les statistiques et interactions',
+        t('common.delete_project_consequence_1'),
+        t('common.delete_project_consequence_2'),
+        t('common.delete_project_consequence_3'),
     ];
 
     return (
@@ -117,13 +119,12 @@ export function DeleteBottomSheet({
 
                             {/* Title */}
                             <h2 className="text-xl font-bold text-gray-900 text-center mb-2">
-                                Supprimer ce projet
+                                {t('common.delete_project_title')}
                             </h2>
 
                             {/* Warning message */}
                             <p className="text-sm text-gray-500 text-center mb-4">
-                                Cette action est irréversible. Toutes les données associées seront
-                                supprimées :
+                                {t('common.delete_project_warning')}
                             </p>
 
                             {/* Consequences list */}
@@ -142,7 +143,7 @@ export function DeleteBottomSheet({
                                     htmlFor="delete-confirm-input"
                                     className="block text-sm font-medium text-gray-700"
                                 >
-                                    Tapez &quot;{projectName}&quot; pour confirmer
+                                    {t('common.delete_project_confirm_label', { name: projectName })}
                                 </label>
                                 <input
                                     ref={inputRef}
@@ -169,7 +170,7 @@ export function DeleteBottomSheet({
                                         hover:bg-gray-50 transition-colors duration-200
                                         disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Annuler
+                                    {t('common.delete_project_cancel')}
                                 </button>
                                 <button
                                     type="button"
@@ -183,10 +184,10 @@ export function DeleteBottomSheet({
                                     {loading ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Suppression...
+                                            {t('common.delete_project_loading')}
                                         </>
                                     ) : (
-                                        'Supprimer définitivement'
+                                        t('common.delete_project_submit')
                                     )}
                                 </button>
                             </div>

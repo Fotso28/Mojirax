@@ -8,6 +8,7 @@ import { MessageBubble } from './message-bubble';
 import { TypingIndicator } from './typing-indicator';
 import { EmojiPicker } from './emoji-picker';
 import { OnlineBadge } from './online-badge';
+import { useTranslation } from '@/context/i18n-context';
 
 interface Message {
   id: string;
@@ -51,6 +52,7 @@ const ALLOWED_FILE_TYPES = [
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export function ChatView({ conversationId, currentUserId, otherUser, isOnline, onBack }: ChatViewProps) {
+  const { t } = useTranslation();
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -71,7 +73,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
   const abortRef = useRef<AbortController | null>(null);
   const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const otherName = `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || 'Utilisateur';
+  const otherName = `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || t('dashboard.messaging_user_default');
 
   // Load messages with AbortController
   const loadMessages = useCallback(async (convId: string, cursorParam?: string, signal?: AbortSignal) => {
@@ -451,7 +453,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
 
     // Client-side validation: MIME type (toast for validation errors only)
     if (!ALLOWED_FILE_TYPES.includes(file.type as (typeof ALLOWED_FILE_TYPES)[number])) {
-      setUploadError('Type de fichier non autorisé. Formats acceptés : PDF, DOCX, JPEG, PNG, WebP.');
+      setUploadError(t('dashboard.messaging_file_type_error'));
       setTimeout(() => setUploadError(null), 5000);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -459,7 +461,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
 
     // Client-side validation: file size (max 5 MB)
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError('Le fichier est trop volumineux. Taille maximale : 5 Mo.');
+      setUploadError(t('dashboard.messaging_file_size_error'));
       setTimeout(() => setUploadError(null), 5000);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -497,7 +499,8 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">
         <button
           onClick={onBack}
-          className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="md:hidden p-2 -ms-2 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label={t('common.aria.back')}
         >
           <ArrowLeft className="h-5 w-5 text-gray-600" />
         </button>
@@ -520,7 +523,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
         </div>
         <div>
           <p className="font-semibold text-gray-900">{otherName}</p>
-          <p className="text-xs text-gray-400">{isOnline ? 'En ligne' : 'Hors ligne'}</p>
+          <p className="text-xs text-gray-400">{isOnline ? t('dashboard.messaging_online') : t('dashboard.messaging_offline')}</p>
         </div>
       </div>
 
@@ -533,7 +536,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
               disabled={loadingMore}
               className="text-sm text-kezak-primary hover:underline disabled:opacity-50"
             >
-              {loadingMore ? 'Chargement...' : 'Voir les messages précédents'}
+              {loadingMore ? t('dashboard.messaging_loading') : t('dashboard.messaging_load_more')}
             </button>
           </div>
         )}
@@ -544,7 +547,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-            Commencez la conversation !
+            {t('dashboard.messaging_start_conversation')}
           </div>
         ) : (
           messages.map((msg) => (
@@ -567,7 +570,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       {uploadError && (
         <div className="mx-4 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center justify-between">
           <span>{uploadError}</span>
-          <button onClick={() => setUploadError(null)} className="ml-2 text-red-400 hover:text-red-600">
+          <button onClick={() => setUploadError(null)} className="ms-2 text-red-400 hover:text-red-600">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -582,7 +585,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           <button
             className="fixed inset-0 z-10"
             onClick={() => setShowEmojiPicker(false)}
-            aria-label="Fermer le picker"
+            aria-label={t('dashboard.messaging_close_emoji')}
           />
         </div>
       )}
@@ -600,7 +603,8 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            title="PDF, DOCX, JPEG, PNG, WebP · 5 Mo max"
+            title={t('dashboard.feed.chat_attach_hint')}
+            aria-label={t('common.aria.attach_file')}
             className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Paperclip className="h-5 w-5" />
@@ -609,6 +613,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           {/* Emoji toggle */}
           <button
             onClick={() => setShowEmojiPicker((v) => !v)}
+            aria-label={t('common.aria.emoji')}
             className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
               showEmojiPicker
                 ? 'text-kezak-primary bg-kezak-primary/10'
@@ -623,7 +628,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Votre message..."
+            placeholder={t('dashboard.messaging_placeholder')}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary max-h-32 overflow-y-auto"
             style={{ lineHeight: '1.5' }}
@@ -633,6 +638,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           <button
             onClick={handleSend}
             disabled={!input.trim() || !socket}
+            aria-label={t('common.aria.send')}
             className="flex-shrink-0 h-10 w-10 rounded-xl bg-kezak-primary text-white flex items-center justify-center hover:bg-kezak-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send className="h-4 w-4" />

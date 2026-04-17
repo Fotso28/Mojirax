@@ -16,7 +16,6 @@
     "deny": [
       "Bash(rm -rf /)",
       "Bash(rm -rf /*)",
-      "Bash(sudo *)",
       "Bash(chmod 777 *)",
       "Bash(git push --force *)",
       "Bash(git push -f *)",

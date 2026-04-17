@@ -2,43 +2,42 @@
 
 import { Lightbulb, TrendingUp, Globe } from 'lucide-react';
 import { Reveal } from './reveal';
-
-const personas = [
-  {
-    icon: Lightbulb,
-    title: 'Porteur de projet',
-    description:
-      'Vous avez une idée brillante mais il vous manque le partenaire technique ou business pour décider.',
-    hoverBg: 'hover:bg-kezak-primary',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Entrepreneur / Talent',
-    description:
-      "Expert en tech, marketing ou finance, vous cherchez l'aventure entrepreneuriale de votre vie.",
-    hoverBg: 'hover:bg-kezak-accent',
-  },
-  {
-    icon: Globe,
-    title: 'Diaspora',
-    description:
-      'Vous souhaitez investir vos compétences ou votre capital dans des projets locaux à fort impact.',
-    hoverBg: 'hover:bg-gray-900',
-  },
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function ForWhoSection() {
+  const { t } = useTranslation();
+
+  const personas = [
+    {
+      icon: Lightbulb,
+      title: t('landing.for_who_persona_1_title'),
+      description: t('landing.for_who_persona_1_desc'),
+      hoverBg: 'hover:bg-kezak-primary',
+    },
+    {
+      icon: TrendingUp,
+      title: t('landing.for_who_persona_2_title'),
+      description: t('landing.for_who_persona_2_desc'),
+      hoverBg: 'hover:bg-kezak-accent',
+    },
+    {
+      icon: Globe,
+      title: t('landing.for_who_persona_3_title'),
+      description: t('landing.for_who_persona_3_desc'),
+      hoverBg: 'hover:bg-gray-900',
+    },
+  ];
+
   return (
     <section id="for-who" className="py-16 lg:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal animation="fade-up">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Conçu pour l&apos;écosystème Africain
+              {t('landing.for_who_title')}
             </h2>
             <p className="text-base text-gray-500 max-w-xl mx-auto">
-              Rejoignez la communauté qui transforme les idées en leaders de
-              demain
+              {t('landing.for_who_subtitle')}
             </p>
           </div>
         </Reveal>

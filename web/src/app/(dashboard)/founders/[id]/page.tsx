@@ -10,46 +10,61 @@ import {
 } from 'lucide-react';
 import { useStartConversation } from '@/hooks/use-start-conversation';
 import { useAuth } from '@/context/auth-context';
+import { useUpsell } from '@/context/upsell-context';
+import { logger } from '@/lib/logger';
 import { getSectorLabel } from '@/lib/constants/sectors';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { COUNTRIES } from '@/lib/constants/countries';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { formatDate } from '@/lib/utils/format-date';
 
 import { useToast } from '@/context/toast-context';
 import { cn } from '@/lib/utils';
 import { PlanBadge } from '@/components/ui';
-
-// ─── Labels ───────────────────────────────────────────
-const STAGE_LABELS: Record<string, string> = {
-    IDEA: 'Idee', PROTOTYPE: 'Prototype', MVP_BUILD: 'MVP en cours',
-    MVP_LIVE: 'MVP lance', TRACTION: 'Traction', SCALE: 'Scale',
-};
-const ROLE_LABELS: Record<string, string> = {
-    TECH: 'Profil Tech', BIZ: 'Business', PRODUCT: 'Produit', FINANCE: 'Finance',
-};
-const ROLE_BADGE: Record<string, string> = {
-    FOUNDER: 'Fondateur', CANDIDATE: 'Candidat', ADMIN: 'Admin', USER: 'Membre',
-};
-
-function timeAgo(dateStr: string): string {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return "A l'instant";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Il y a ${minutes}min`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `Il y a ${days}j`;
-    return `Il y a ${Math.floor(days / 30)} mois`;
-}
 
 export default function FounderPublicProfilePage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
     const { showToast } = useToast();
     const { dbUser } = useAuth();
+    const { t } = useTranslation();
+    const locale = useLocale();
     const { startConversation, loading: messageLoading } = useStartConversation();
+    const { openUpsell } = useUpsell();
+    const isFreeUser = !dbUser?.plan || dbUser.plan === 'FREE';
     const [user, setUser] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // ---- Labels ----
+    const STAGE_LABELS = useMemo<Record<string, string>>(() => ({
+        IDEA: t('dashboard.stage_idea'), PROTOTYPE: t('dashboard.stage_prototype'), MVP_BUILD: t('dashboard.stage_mvp_build'),
+        MVP_LIVE: t('dashboard.stage_mvp_live'), TRACTION: t('dashboard.stage_traction'), SCALE: t('dashboard.stage_scale'),
+    }), [t]);
+
+    const ROLE_LABELS = useMemo<Record<string, string>>(() => ({
+        TECH: t('dashboard.role_tech'), BIZ: t('dashboard.role_biz'), PRODUCT: t('dashboard.role_product'), FINANCE: t('dashboard.role_finance'),
+    }), [t]);
+
+    const ROLE_BADGE = useMemo<Record<string, string>>(() => ({
+        ADMIN: t('common.admin'), USER: t('common.member'),
+    }), [t]);
+
+    const formatRoleLabels = (lookingForRole: string): string => {
+        return lookingForRole.split(',').filter(Boolean)
+            .map((r) => ROLE_LABELS[r] || r).join(', ');
+    };
+
+    const timeAgo = (dateStr: string): string => {
+        const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+        if (seconds < 60) return t('common.time_just_now');
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return t('common.time_minutes_ago', { count: minutes });
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return t('common.time_hours_ago', { count: hours });
+        const days = Math.floor(hours / 24);
+        if (days < 30) return t('common.time_days_ago', { count: days });
+        return t('common.time_months_ago', { count: Math.floor(days / 30) });
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -57,7 +72,7 @@ export default function FounderPublicProfilePage() {
                 const { data } = await AXIOS_INSTANCE.get(`/users/${id}/public`);
                 setUser(data);
             } catch {
-                console.error('Failed to load profile');
+                logger.error('Failed to load public profile');
             } finally {
                 setIsLoading(false);
             }
@@ -80,20 +95,20 @@ export default function FounderPublicProfilePage() {
         return (
             <div className="flex flex-col items-center justify-center py-32">
                 <User className="w-16 h-16 text-gray-300 mb-4" />
-                <p className="text-gray-500 mb-4">Profil introuvable.</p>
+                <p className="text-gray-500 mb-4">{t('dashboard.founder_profile_not_found')}</p>
                 {canGoBack && (
                     <button onClick={goBack} className="text-kezak-primary font-semibold hover:underline">
-                        Retour
+                        {t('common.back')}
                     </button>
                 )}
             </div>
         );
     }
 
-    const profile = user.founderProfile || {};
+    const profile = user; // Professional fields are now directly on User
     const displayName = user.name
         || [user.firstName, user.lastName].filter(Boolean).join(' ')
-        || 'Utilisateur';
+        || t('common.member');
     const locationParts = [profile.city, profile.country].filter(Boolean);
     const locationStr = locationParts.length > 0 ? locationParts.join(', ') : null;
     const founderCountry = profile.country
@@ -103,20 +118,20 @@ export default function FounderPublicProfilePage() {
         ? `${founderCountry?.dialCode || ''} ${user.phone}`.trim()
         : null;
     const memberSince = user.createdAt
-        ? new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+        ? formatDate(user.createdAt, locale, { month: 'long', year: 'numeric' })
         : null;
     const hasLinks = profile.linkedinUrl || profile.websiteUrl;
     const projects = user.projects || [];
 
     const handleShare = () => {
         navigator.clipboard?.writeText(window.location.href);
-        showToast('Lien du profil copie !', 'success');
+        showToast(t('dashboard.founder_link_copied'), 'success');
     };
 
     return (
         <div className="max-w-4xl mx-auto py-4 lg:py-6 space-y-6">
 
-            {/* ─── HERO ─── */}
+            {/* --- HERO --- */}
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
                 {/* Gradient banner */}
                 <div className="relative h-36 sm:h-44 bg-gradient-to-br from-kezak-dark via-kezak-primary to-blue-400">
@@ -160,23 +175,23 @@ export default function FounderPublicProfilePage() {
                             )}
                             <div className="flex items-center gap-3 mt-2 flex-wrap">
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                    {ROLE_BADGE[user.role] || 'Membre'}
+                                    {ROLE_BADGE[user.role] || t('common.member')}
                                 </span>
                                 {memberSince && (
                                     <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                                         <Calendar className="w-3 h-3" />
-                                        Membre depuis {memberSince}
+                                        {t('common.member_since', { date: memberSince })}
                                     </span>
                                 )}
                             </div>
                             {dbUser && dbUser.id !== user.id && (
                                 <button
-                                    onClick={() => startConversation(user.id)}
+                                    onClick={() => isFreeUser ? openUpsell('send_message') : startConversation(user.id)}
                                     disabled={messageLoading}
                                     className="flex items-center gap-2 px-5 h-[44px] rounded-xl text-sm font-semibold bg-kezak-primary text-white hover:bg-kezak-primary/90 transition-all duration-200 shadow-lg shadow-blue-500/20 disabled:opacity-50 mt-3"
                                 >
-                                    <MessageCircle className="w-4 h-4" />
-                                    Envoyer un message
+                                    {isFreeUser ? <Lock className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
+                                    {t('common.send_message')}
                                 </button>
                             )}
                         </div>
@@ -194,7 +209,7 @@ export default function FounderPublicProfilePage() {
                         {profile.yearsOfExperience != null && (
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
                                 <Briefcase className="w-3.5 h-3.5 text-gray-400" />
-                                {profile.yearsOfExperience} ans d&apos;exp.
+                                {t('common.years_exp', { count: profile.yearsOfExperience })}
                             </span>
                         )}
                         {user.email ? (
@@ -203,10 +218,10 @@ export default function FounderPublicProfilePage() {
                                 {user.email}
                             </span>
                         ) : user._isLocked && (
-                            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                            <Link href="/settings/billing" className="inline-flex items-center gap-1.5 text-sm font-medium text-kezak-primary bg-kezak-light/50 px-3 py-1.5 rounded-full border border-kezak-primary/20 hover:bg-kezak-light transition-colors">
                                 <Lock className="w-3.5 h-3.5" />
-                                Email masque
-                            </span>
+                                {t('common.email_hidden')}
+                            </Link>
                         )}
                         {phoneDisplay ? (
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
@@ -214,10 +229,10 @@ export default function FounderPublicProfilePage() {
                                 {phoneDisplay}
                             </span>
                         ) : user._isLocked && (
-                            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                            <Link href="/settings/billing" className="inline-flex items-center gap-1.5 text-sm font-medium text-kezak-primary bg-kezak-light/50 px-3 py-1.5 rounded-full border border-kezak-primary/20 hover:bg-kezak-light transition-colors">
                                 <Lock className="w-3.5 h-3.5" />
-                                Telephone masque
-                            </span>
+                                {t('common.phone_hidden')}
+                            </Link>
                         )}
                     </div>
 
@@ -228,7 +243,7 @@ export default function FounderPublicProfilePage() {
                                 <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0A66C2]/10 text-[#0A66C2] text-sm font-medium hover:bg-[#0A66C2]/20 transition-all">
                                     <Linkedin className="w-4 h-4" />
-                                    LinkedIn
+                                    {t('common.linkedin')}
                                     <ExternalLink className="w-3 h-3" />
                                 </a>
                             )}
@@ -236,31 +251,37 @@ export default function FounderPublicProfilePage() {
                                 <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-kezak-primary/10 text-kezak-primary text-sm font-medium hover:bg-kezak-primary/20 transition-all">
                                     <Globe className="w-4 h-4" />
-                                    Site web
+                                    {t('common.website')}
                                     <ExternalLink className="w-3 h-3" />
                                 </a>
                             )}
                         </div>
                     ) : user._isLocked && (
-                        <div className="flex items-center gap-2 mt-4">
-                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium border border-amber-200">
-                                <Lock className="w-4 h-4" />
-                                Liens sociaux masques
-                            </span>
-                        </div>
+                        <Link
+                            href="/settings/billing"
+                            className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-kezak-light/50 border border-kezak-primary/10 hover:bg-kezak-light hover:border-kezak-primary/20 transition-all group"
+                        >
+                            <div className="w-9 h-9 rounded-lg bg-kezak-primary/10 flex items-center justify-center shrink-0 group-hover:bg-kezak-primary/15 transition-colors">
+                                <Lock className="w-4 h-4 text-kezak-primary" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 leading-tight">{t('common.contact_info_hidden')}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{t('common.upgrade_to_see_contact')}</p>
+                            </div>
+                        </Link>
                     )}
                 </div>
             </div>
 
-            {/* ─── BIO ─── */}
+            {/* --- BIO --- */}
             {profile.bio && (
                 <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
-                    <h2 className="text-lg font-bold text-gray-900 mb-3">A propos</h2>
+                    <h2 className="text-lg font-bold text-gray-900 mb-3">{t('dashboard.founder_about')}</h2>
                     <p className="text-gray-600 leading-relaxed whitespace-pre-line">{profile.bio}</p>
                 </div>
             )}
 
-            {/* ─── COMPETENCES & LANGUES (side by side) ─── */}
+            {/* --- COMPETENCES & LANGUES (side by side) --- */}
             {((profile.skills && profile.skills.length > 0) || (profile.languages && profile.languages.length > 0)) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {profile.skills && profile.skills.length > 0 && (
@@ -269,7 +290,7 @@ export default function FounderPublicProfilePage() {
                                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                                     <Sparkles className="w-4 h-4 text-blue-500" />
                                 </div>
-                                <h2 className="text-lg font-bold text-gray-900">Competences</h2>
+                                <h2 className="text-lg font-bold text-gray-900">{t('dashboard.founder_skills')}</h2>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {profile.skills.map((skill: string) => (
@@ -286,7 +307,7 @@ export default function FounderPublicProfilePage() {
                                 <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
                                     <Globe className="w-4 h-4 text-purple-500" />
                                 </div>
-                                <h2 className="text-lg font-bold text-gray-900">Langues</h2>
+                                <h2 className="text-lg font-bold text-gray-900">{t('dashboard.founder_languages')}</h2>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {profile.languages.map((lang: string) => (
@@ -300,14 +321,14 @@ export default function FounderPublicProfilePage() {
                 </div>
             )}
 
-            {/* ─── PARCOURS PROFESSIONNEL ─── */}
+            {/* --- PARCOURS PROFESSIONNEL --- */}
             {profile.experience && profile.experience.length > 0 && (
                 <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <div className="w-8 h-8 rounded-lg bg-kezak-light flex items-center justify-center">
                             <Briefcase className="w-4 h-4 text-kezak-primary" />
                         </div>
-                        <h2 className="text-lg font-bold text-gray-900">Parcours professionnel</h2>
+                        <h2 className="text-lg font-bold text-gray-900">{t('dashboard.founder_experience')}</h2>
                     </div>
                     <div className="space-y-0">
                         {profile.experience.map((exp: any, i: number) => (
@@ -324,7 +345,7 @@ export default function FounderPublicProfilePage() {
                                     <p className="text-base font-semibold text-gray-900 leading-tight">{exp.role}</p>
                                     <p className="text-sm text-gray-600 mt-0.5">{exp.company}</p>
                                     <p className="text-xs text-gray-400 mt-1">
-                                        {exp.startYear} — {exp.endYear ?? "Aujourd'hui"}
+                                        {exp.startYear} — {exp.endYear ?? t('dashboard.founder_today')}
                                     </p>
                                 </div>
                             </div>
@@ -333,14 +354,14 @@ export default function FounderPublicProfilePage() {
                 </div>
             )}
 
-            {/* ─── FORMATION ─── */}
+            {/* --- FORMATION --- */}
             {profile.education && profile.education.length > 0 && (
                 <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
                             <GraduationCap className="w-4 h-4 text-amber-600" />
                         </div>
-                        <h2 className="text-lg font-bold text-gray-900">Formation</h2>
+                        <h2 className="text-lg font-bold text-gray-900">{t('dashboard.founder_education')}</h2>
                     </div>
                     <div className="space-y-4">
                         {profile.education.map((edu: any, i: number) => (
@@ -360,7 +381,7 @@ export default function FounderPublicProfilePage() {
                 </div>
             )}
 
-            {/* ─── PROJETS ─── */}
+            {/* --- PROJETS --- */}
             {projects.length > 0 && (
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 px-2">
@@ -368,9 +389,9 @@ export default function FounderPublicProfilePage() {
                             <Briefcase className="w-4 h-4 text-emerald-600" />
                         </div>
                         <h2 className="text-lg font-bold text-gray-900">
-                            Projets de {user.firstName || displayName}
+                            {t('dashboard.founder_projects', { name: user.firstName || displayName })}
                         </h2>
-                        <span className="text-sm text-gray-400 ml-1">({projects.length})</span>
+                        <span className="text-sm text-gray-400 ms-1">({projects.length})</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {projects.map((project: any) => (
@@ -396,7 +417,10 @@ export default function FounderPublicProfilePage() {
                                         <p className="text-xs text-gray-500 mt-0.5">
                                             {timeAgo(project.createdAt)}
                                             {project._count?.applications > 0 && (
-                                                <> · {project._count.applications} candidature{project._count.applications > 1 ? 's' : ''}</>
+                                                <> · {project._count.applications > 1
+                                                    ? t('common.application_count_plural', { count: project._count.applications })
+                                                    : t('common.application_count', { count: project._count.applications })
+                                                }</>
                                             )}
                                         </p>
                                     </div>
@@ -417,12 +441,12 @@ export default function FounderPublicProfilePage() {
                                     )}
                                     {project.lookingForRole && (
                                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                            Cherche: {ROLE_LABELS[project.lookingForRole] || project.lookingForRole}
+                                            {t('common.looking_for', { roles: formatRoleLabels(project.lookingForRole) })}
                                         </span>
                                     )}
                                     {project.location && (
                                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100">
-                                            <MapPin className="w-3 h-3 inline mr-0.5" />
+                                            <MapPin className="w-3 h-3 inline me-0.5" />
                                             {project.location}
                                         </span>
                                     )}

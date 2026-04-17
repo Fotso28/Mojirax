@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertTriangle, X } from 'lucide-react';
 
@@ -18,19 +18,34 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-let toastId = 0;
+const TOAST_DURATION_MS: Record<ToastType, number> = {
+    success: 3500,
+    warning: 5000,
+    error: 5000,
+};
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    const nextIdRef = useRef(0);
 
     const showToast = useCallback((message: string, type: ToastType = 'success') => {
-        const id = ++toastId;
+        const id = ++nextIdRef.current;
         setToasts(prev => [...prev, { id, message, type }]);
 
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
-        }, type === 'warning' ? 4000 : 2000);
+        }, TOAST_DURATION_MS[type]);
     }, []);
+
+    // Bridge for non-React contexts (e.g. axios interceptor) to trigger toasts
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const detail = (e as CustomEvent<{ message: string; type?: ToastType }>).detail;
+            if (detail?.message) showToast(detail.message, detail.type ?? 'error');
+        };
+        window.addEventListener('app:toast', handler);
+        return () => window.removeEventListener('app:toast', handler);
+    }, [showToast]);
 
     const removeToast = useCallback((id: number) => {
         setToasts(prev => prev.filter(t => t.id !== id));
@@ -66,7 +81,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                             <span className="text-sm font-medium">{toast.message}</span>
                             <button
                                 onClick={() => removeToast(toast.id)}
-                                className="ml-1 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                                className="ms-1 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 <X className="w-3.5 h-3.5" />
                             </button>

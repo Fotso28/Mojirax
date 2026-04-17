@@ -26,17 +26,20 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // Enable CORS
-  app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
+  // Enable CORS — strict en production (OWASP A05)
+  const corsOrigins = [process.env.FRONTEND_URL || 'http://localhost:3000'];
+  if (process.env.NODE_ENV !== 'production') {
+    corsOrigins.push(
       'http://127.0.0.1:3000',
       'http://localhost:3000',
       'http://localhost:5000',
       'http://127.0.0.1:5000',
       'http://localhost:5002',
-      'http://127.0.0.1:5002'
-    ],
+      'http://127.0.0.1:5002',
+    );
+  }
+  app.enableCors({
+    origin: corsOrigins,
     credentials: true,
   });
 

@@ -1,12 +1,23 @@
 'use client';
 
 import { useAuth } from '@/context/auth-context';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { FeedStream } from '@/components/feed/feed-stream';
 import { LandingPage } from '@/components/landing/landing-page';
+import { useTranslation } from '@/context/i18n-context';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, dbUser, loading } = useAuth();
+  const router = useRouter();
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!loading && user && dbUser && !dbUser.title && !dbUser.bio && !(dbUser.projects?.length > 0) && !dbUser.candidateProfile) {
+      router.replace('/onboarding/start');
+    }
+  }, [loading, user, dbUser, router]);
 
   if (loading) {
     return (
@@ -23,10 +34,10 @@ export default function Home() {
       <div className="max-w-2xl mx-auto space-y-8 pt-8">
         <header>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Découvrez les projets
+            {t('landing.feed_title')}
           </h1>
           <p className="mt-2 text-lg text-gray-600">
-            Des fondateurs passionnés cherchent leur binôme.
+            {t('landing.feed_subtitle')}
           </p>
         </header>
         <FeedStream />

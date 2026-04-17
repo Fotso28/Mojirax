@@ -7,9 +7,11 @@ import { useAuth } from '@/context/auth-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
 import { getPlanIntent, triggerCheckoutByPlanKey } from '@/lib/utils/plan-intent';
+import { useTranslation } from '@/context/i18n-context';
 
 export function FounderTeamStep() {
     const { data, updateData, submitForm } = useOnboarding();
+    const { t } = useTranslation();
     const { refreshDbUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
@@ -34,7 +36,7 @@ export function FounderTeamStep() {
                 stage: formData.stage || 'IDEA',
             });
 
-            showToast('Projet cree avec succes !', 'success');
+            showToast(t('auth.founder_toast_success'), 'success');
             await refreshDbUser();
             if (planIntent) {
                 const ok = await triggerCheckoutByPlanKey(planIntent);
@@ -47,35 +49,35 @@ export function FounderTeamStep() {
 
     return (
         <WizardStep
-            title="Equipe Recherchee"
-            description="Quelles competences manquent a votre equipe ?"
+            title={t('auth.founder_team_title')}
+            description={t('auth.founder_team_desc')}
             onNext={handleSubmit}
             isValid={isValid}
-            nextLabel="Lancer mon projet"
+            nextLabel={t('auth.founder_submit')}
         >
             <div className="space-y-6">
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                        Competences recherchees
+                        {t('auth.founder_skills_label')}
                     </label>
                     <input
                         type="text"
-                        placeholder="Ex: React, Marketing Digital, Finance, UX Design..."
+                        placeholder={t('auth.founder_skills_placeholder')}
                         value={data.requiredSkills || ''}
                         onChange={(e) => updateData('requiredSkills', e.target.value)}
                         className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
                         autoFocus
                     />
-                    <p className="text-xs text-gray-400">Separees par des virgules</p>
+                    <p className="text-xs text-gray-400">{t('auth.founder_skills_hint')}</p>
                 </div>
 
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                        Ce que vous offrez au co-fondateur
+                        {t('auth.founder_offer_label')}
                     </label>
                     <textarea
                         className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none min-h-[100px] bg-white"
-                        placeholder="Ex: Equity, salaire, experience unique, reseau..."
+                        placeholder={t('auth.founder_offer_placeholder')}
                         value={data.offer || ''}
                         onChange={(e) => updateData('offer', e.target.value)}
                         maxLength={500}
@@ -85,11 +87,11 @@ export function FounderTeamStep() {
 
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                        Message pour les candidats
+                        {t('auth.founder_message_label')}
                     </label>
                     <textarea
                         className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none min-h-[100px] bg-white"
-                        placeholder="Pourquoi rejoindre votre aventure ?"
+                        placeholder={t('auth.founder_message_placeholder')}
                         value={data.founderMessage || ''}
                         onChange={(e) => updateData('founderMessage', e.target.value)}
                         maxLength={500}

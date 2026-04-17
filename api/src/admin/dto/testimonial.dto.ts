@@ -8,7 +8,8 @@ import {
   MaxLength,
   ArrayMaxSize,
   ValidateNested,
-  IsUrl,
+  IsObject,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
@@ -18,17 +19,17 @@ export class CreateTestimonialDto {
   @MaxLength(100)
   name: string;
 
-  @IsString()
-  @MaxLength(100)
-  role: string;
+  @IsObject()
+  @IsNotEmpty()
+  role: Record<string, string>; // { "fr": "Développeur", "en": "Developer" }
 
   @IsString()
   @MaxLength(100)
   location: string;
 
-  @IsString()
-  @MaxLength(1000)
-  quote: string;
+  @IsObject()
+  @IsNotEmpty()
+  quote: Record<string, string>; // { "fr": "...", "en": "..." }
 
   @IsString()
   @IsOptional()

@@ -23,6 +23,8 @@ import { getAvailableFlags } from '../common/config/feature-flags';
 import { PrismaService } from '../prisma/prisma.service';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiQuery } from '@nestjs/swagger';
+import { I18nService } from '../i18n/i18n.service';
+import { Locale } from '../common/decorators/locale.decorator';
 
 @ApiTags('users')
 @Controller('users')
@@ -35,6 +37,7 @@ export class UsersController {
         private readonly candidateModerationService: CandidateModerationService,
         private readonly profileViewsService: ProfileViewsService,
         private readonly prisma: PrismaService,
+        private readonly i18n: I18nService,
     ) { }
 
     // ─── Protected ─────────────────────────────────────
@@ -70,8 +73,8 @@ export class UsersController {
     @UseGuards(FirebaseAuthGuard)
     @Patch('onboarding')
     @ApiOperation({ summary: 'Save onboarding draft state' })
-    async saveOnboardingState(@Request() req, @Body() dto: SaveOnboardingStateDto) {
-        return this.usersService.saveOnboardingState(req.user.uid, dto);
+    async saveOnboardingState(@Request() req, @Body() dto: SaveOnboardingStateDto, @Locale() locale: 'fr' | 'en') {
+        return this.usersService.saveOnboardingState(req.user.uid, dto, locale);
     }
 
     @ApiBearerAuth()
@@ -88,8 +91,8 @@ export class UsersController {
     @Patch('creating-projet')
     @ApiOperation({ summary: 'Save project creation draft' })
     @ApiResponse({ status: 200, description: 'Project draft saved successfully.' })
-    async saveProjectDraft(@Request() req, @Body() dto: SaveProjectDraftDto) {
-        return this.usersService.saveProjectDraft(req.user.uid, dto);
+    async saveProjectDraft(@Request() req, @Body() dto: SaveProjectDraftDto, @Locale() locale: 'fr' | 'en') {
+        return this.usersService.saveProjectDraft(req.user.uid, dto, locale);
     }
 
     @ApiBearerAuth()
@@ -105,15 +108,15 @@ export class UsersController {
             if (/^image\/(jpeg|png|webp)$/.test(file.mimetype)) {
                 cb(null, true);
             } else {
-                cb(new BadRequestException('Format non supporté. Utilisez JPG, PNG ou WebP.'), false);
+                cb(new BadRequestException('upload.format_image'), false);
             }
         },
     }))
-    async uploadAvatar(@Request() req, @UploadedFile() file: Express.Multer.File) {
+    async uploadAvatar(@Request() req, @UploadedFile() file: Express.Multer.File, @Locale() locale: 'fr' | 'en') {
         if (!file) {
-            throw new BadRequestException('Aucun fichier fourni.');
+            throw new BadRequestException(this.i18n.t('upload.no_file', locale));
         }
-        return this.usersService.updateAvatar(req.user.uid, file.buffer);
+        return this.usersService.updateAvatar(req.user.uid, file.buffer, locale);
     }
 
     @ApiBearerAuth()
@@ -122,11 +125,11 @@ export class UsersController {
     @ApiOperation({ summary: 'Create candidate profile from onboarding data' })
     @ApiResponse({ status: 201, description: 'Candidate profile created.' })
     @ApiResponse({ status: 409, description: 'Candidate profile already exists.' })
-    async createCandidateProfile(@Request() req, @Body() dto: CreateCandidateProfileDto) {
-        const profile = await this.usersService.createCandidateProfile(req.user.uid, dto);
+    async createCandidateProfile(@Request() req, @Body() dto: CreateCandidateProfileDto, @Locale() locale: 'fr' | 'en') {
+        const profile = await this.usersService.createCandidateProfile(req.user.uid, dto, locale);
 
         // Lancer la modération IA en fire-and-forget
-        this.candidateModerationService.moderateProfile(profile.id).catch((err) => {
+        this.candidateModerationService.moderateProfile(profile.id, locale).catch((err) => {
             this.logger.error(`Moderation failed for profile ${profile.id}: ${err.message}`);
         });
 
@@ -139,11 +142,11 @@ export class UsersController {
     @ApiOperation({ summary: 'Update candidate profile and re-run moderation' })
     @ApiResponse({ status: 200, description: 'Candidate profile updated.' })
     @ApiResponse({ status: 404, description: 'No candidate profile found.' })
-    async updateCandidateProfile(@Request() req, @Body() dto: CreateCandidateProfileDto) {
-        const profile = await this.usersService.updateCandidateProfile(req.user.uid, dto);
+    async updateCandidateProfile(@Request() req, @Body() dto: CreateCandidateProfileDto, @Locale() locale: 'fr' | 'en') {
+        const profile = await this.usersService.updateCandidateProfile(req.user.uid, dto, locale);
 
         // Relancer la modération IA en fire-and-forget
-        this.candidateModerationService.moderateProfile(profile.id).catch((err) => {
+        this.candidateModerationService.moderateProfile(profile.id, locale).catch((err) => {
             this.logger.error(`Moderation failed for profile ${profile.id}: ${err.message}`);
         });
 
@@ -171,8 +174,8 @@ export class UsersController {
     @ApiOperation({ summary: 'Get profile viewers (PLUS+ only)' })
     @ApiResponse({ status: 200, description: 'Profile viewers returned.' })
     @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
-    async getProfileViewers(@Request() req) {
-        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+    async getProfileViewers(@Request() req, @Locale() locale: 'fr' | 'en') {
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid, locale);
         return this.profileViewsService.getViewers(user.id, user.plan);
     }
 
@@ -181,8 +184,8 @@ export class UsersController {
     @Get('profile-views/count')
     @ApiOperation({ summary: 'Get profile view count (last 30 days)' })
     @ApiResponse({ status: 200, description: 'View count returned.' })
-    async getProfileViewCount(@Request() req) {
-        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+    async getProfileViewCount(@Request() req, @Locale() locale: 'fr' | 'en') {
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid, locale);
         const count = await this.profileViewsService.getViewCount(user.id);
         return { count };
     }
@@ -195,8 +198,8 @@ export class UsersController {
     @ApiOperation({ summary: 'Get profile stats per project (PRO+ only)' })
     @ApiResponse({ status: 200, description: 'Profile stats returned.' })
     @ApiResponse({ status: 403, description: 'Plan insuffisant.' })
-    async getStats(@Request() req) {
-        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+    async getStats(@Request() req, @Locale() locale: 'fr' | 'en') {
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid, locale);
         return this.statsService.getProfileStats(user.id);
     }
 
@@ -218,8 +221,8 @@ export class UsersController {
     @Get('features')
     @ApiOperation({ summary: 'Get available feature flags for current user plan' })
     @ApiResponse({ status: 200, description: 'Feature flags returned.' })
-    async getFeatures(@Request() req) {
-        const user = await this.usersService.getUserIdAndPlan(req.user.uid);
+    async getFeatures(@Request() req, @Locale() locale: 'fr' | 'en') {
+        const user = await this.usersService.getUserIdAndPlan(req.user.uid, locale);
         return { features: getAvailableFlags(user.plan) };
     }
 
@@ -268,8 +271,8 @@ export class UsersController {
     @ApiOperation({ summary: 'Get public user profile by ID' })
     @ApiResponse({ status: 200, description: 'Public profile returned.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
-    async getPublicProfile(@Request() req, @Param('id') id: string) {
-        const profile = await this.usersService.findPublicProfile(id);
+    async getPublicProfile(@Request() req, @Param('id') id: string, @Locale() locale: 'fr' | 'en') {
+        const profile = await this.usersService.findPublicProfile(id, locale);
 
         // Fire-and-forget: track the profile view if the viewer is authenticated
         if (req.user?.uid) {

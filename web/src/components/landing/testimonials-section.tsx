@@ -3,13 +3,15 @@
 import Image from 'next/image';
 import { MapPin } from 'lucide-react';
 import { Reveal } from './reveal';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { localized } from '@/lib/utils/localized';
 
 interface Testimonial {
   id: string;
   name: string;
-  role: string;
+  role: string | Record<string, string>;
   location: string;
-  quote: string;
+  quote: string | Record<string, string>;
   imageUrl: string;
 }
 
@@ -37,17 +39,19 @@ function Skeleton() {
 }
 
 export function TestimonialsSection({ testimonials, loading }: Props) {
+  const { t } = useTranslation();
+  const locale = useLocale();
+
   return (
     <section className="py-20 lg:py-28 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal animation="fade-up">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Ils ont trouvé leur perle rare
+              {t('landing.testimonials_title')}
             </h2>
             <p className="text-base text-gray-500 max-w-xl mx-auto">
-              Découvrez les histoires de ceux qui ont trouvé leur cofondateur
-              sur MoJiraX
+              {t('landing.testimonials_subtitle')}
             </p>
           </div>
         </Reveal>
@@ -56,14 +60,14 @@ export function TestimonialsSection({ testimonials, loading }: Props) {
           <Skeleton />
         ) : testimonials.length === 0 ? null : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {testimonials.map((t, i) => (
-              <Reveal key={t.id} animation="fade-up" delay={i * 150}>
+            {testimonials.map((item, i) => (
+              <Reveal key={item.id} animation="fade-up" delay={i * 150}>
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center h-full">
                   <div className="relative mb-6 inline-block">
                     <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-br from-kezak-primary to-kezak-accent">
                       <Image
-                        src={t.imageUrl}
-                        alt={t.name}
+                        src={item.imageUrl}
+                        alt={item.name}
                         width={80}
                         height={80}
                         className="w-full h-full rounded-full object-cover border-2 border-white"
@@ -71,17 +75,17 @@ export function TestimonialsSection({ testimonials, loading }: Props) {
                     </div>
                   </div>
                   <p className="text-gray-600 italic mb-6 leading-relaxed text-sm">
-                    &laquo; {t.quote} &raquo;
+                    &laquo; {localized(item.quote, locale)} &raquo;
                   </p>
                   <h4 className="font-bold text-lg text-gray-900 mb-1">
-                    {t.name}
+                    {item.name}
                   </h4>
                   <p className="text-kezak-primary font-medium text-sm mb-2">
-                    {t.role}
+                    {localized(item.role, locale)}
                   </p>
                   <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
                     <MapPin className="w-3 h-3" />
-                    <span>{t.location}</span>
+                    <span>{item.location}</span>
                   </div>
                 </div>
               </Reveal>

@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/context/i18n-context';
 
 interface PrivacyWallProps {
     children: React.ReactNode;
@@ -14,6 +15,8 @@ export function PrivacyWall({
     blurIntensity = 'md',
     lockedFieldsCount,
 }: PrivacyWallProps) {
+    const { t } = useTranslation();
+
     if (isPremium) {
         return <>{children}</>;
     }
@@ -34,17 +37,19 @@ export function PrivacyWall({
                     <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
                         <Lock size={20} />
                     </div>
-                    <h4 className="font-bold text-gray-900 mb-1">Information Masquée</h4>
+                    <h4 className="font-bold text-gray-900 mb-1">{t('project.privacy_wall.title')}</h4>
                     <p className="text-xs text-gray-500 mb-4">
                         {lockedFieldsCount
-                            ? `${lockedFieldsCount} information${lockedFieldsCount > 1 ? 's' : ''} masquée${lockedFieldsCount > 1 ? 's' : ''}`
-                            : 'Souscrivez à un plan payant pour voir les détails de contact et les liens.'}
+                            ? (lockedFieldsCount > 1
+                                ? t('project.privacy_wall.locked_count_plural', { count: lockedFieldsCount })
+                                : t('project.privacy_wall.locked_count', { count: lockedFieldsCount }))
+                            : t('project.privacy_wall.upgrade_hint')}
                     </p>
                     <a
-                        href="/#pricing"
-                        className="block w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transition-all text-center"
+                        href="/settings/billing"
+                        className="block w-full py-2 px-4 bg-kezak-primary hover:bg-kezak-dark text-white rounded-lg text-sm font-semibold shadow-lg shadow-kezak-primary/30 hover:shadow-kezak-primary/40 transition-all text-center"
                     >
-                        Passer au plan payant
+                        {t('project.privacy_wall.view_plans')}
                     </a>
                 </div>
             </div>

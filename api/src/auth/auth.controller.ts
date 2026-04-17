@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { VisitsService } from './visits.service';
+import { Locale } from '../common/decorators/locale.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -24,9 +25,10 @@ export class AuthController {
         @Request() req,
         @Ip() ip: string,
         @Headers('user-agent') userAgent: string,
+        @Locale() locale: 'fr' | 'en',
     ) {
         // req.user is set by FirebaseStrategy.validate()
-        const user = await this.authService.syncUser(req.user);
+        const user = await this.authService.syncUser(req.user, locale);
 
         // Track visit (fire & forget — ne bloque pas la réponse)
         this.visitsService.trackVisit(user.id, ip, userAgent);

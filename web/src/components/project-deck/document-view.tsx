@@ -11,30 +11,27 @@ import {
     Download,
     FileText,
 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 interface BlockConfig {
     key: string;
-    label: string;
+    labelKey: string;
     icon: React.ElementType;
     iconColor: string;
     iconBg: string;
 }
 
 const BLOCKS: BlockConfig[] = [
-    { key: 'problem', label: 'Problème', icon: AlertCircle, iconColor: 'text-red-500', iconBg: 'bg-red-50' },
-    { key: 'solution', label: 'Solution', icon: Lightbulb, iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
-    { key: 'market', label: 'Marché', icon: TrendingUp, iconColor: 'text-blue-500', iconBg: 'bg-blue-50' },
-    { key: 'traction', label: 'Traction', icon: Rocket, iconColor: 'text-emerald-500', iconBg: 'bg-emerald-50' },
-    { key: 'team', label: 'Équipe', icon: Users, iconColor: 'text-purple-500', iconBg: 'bg-purple-50' },
-    { key: 'cofounder', label: 'Cofondateur recherché', icon: UserPlus, iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
+    { key: 'problem', labelKey: 'project.deck_document.block_problem', icon: AlertCircle, iconColor: 'text-red-500', iconBg: 'bg-red-50' },
+    { key: 'solution', labelKey: 'project.deck_document.block_solution', icon: Lightbulb, iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
+    { key: 'market', labelKey: 'project.deck_document.block_market', icon: TrendingUp, iconColor: 'text-blue-500', iconBg: 'bg-blue-50' },
+    { key: 'traction', labelKey: 'project.deck_document.block_traction', icon: Rocket, iconColor: 'text-emerald-500', iconBg: 'bg-emerald-50' },
+    { key: 'team', labelKey: 'project.deck_document.block_team', icon: Users, iconColor: 'text-purple-500', iconBg: 'bg-purple-50' },
+    { key: 'cofounder', labelKey: 'project.deck_document.block_cofounder', icon: UserPlus, iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
 ];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-/**
- * Resolve document URL: if relative (starts with /), prefix with API base URL.
- * Production URLs from MinIO are already absolute.
- */
 function resolveDocumentUrl(url: string): string {
     if (url.startsWith('/')) {
         return `${API_URL}${url}`;
@@ -43,6 +40,7 @@ function resolveDocumentUrl(url: string): string {
 }
 
 export function DocumentView({ project }: { project: any }) {
+    const { t } = useTranslation();
     const summary = project.aiSummary;
     const documentUrl = project.documentUrl ? resolveDocumentUrl(project.documentUrl) : null;
 
@@ -50,7 +48,7 @@ export function DocumentView({ project }: { project: any }) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
                 <FileText className="w-10 h-10 text-gray-300 mb-3" />
-                <p className="text-gray-400 text-sm">Aucune synthèse disponible pour ce projet.</p>
+                <p className="text-gray-400 text-sm">{t('project.deck_document.no_summary')}</p>
             </div>
         );
     }
@@ -63,7 +61,7 @@ export function DocumentView({ project }: { project: any }) {
             {hasBlocks && (
                 <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Synthèse du projet
+                        {t('project.deck_document.summary_title')}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {BLOCKS.map((block, index) => {
@@ -84,7 +82,7 @@ export function DocumentView({ project }: { project: any }) {
                                             <Icon className={`w-4 h-4 ${block.iconColor}`} />
                                         </div>
                                         <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                                            {block.label}
+                                            {t(block.labelKey)}
                                         </h4>
                                     </div>
                                     <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
@@ -108,7 +106,7 @@ export function DocumentView({ project }: { project: any }) {
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
                     >
                         <Download className="w-4 h-4" />
-                        Télécharger le document
+                        {t('project.deck_document.download_document')}
                     </a>
                 </div>
             )}

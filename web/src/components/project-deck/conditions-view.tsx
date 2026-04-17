@@ -1,30 +1,10 @@
 import { Clock, PieChart, Briefcase, MapPin, Wallet, Users, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
-const COLLAB_LABELS: Record<string, { label: string; desc: string; color: string }> = {
-    EQUITY: { label: 'Equity', desc: 'Parts du projet uniquement', color: 'indigo' },
-    PAID: { label: 'Rémunéré', desc: 'Rétribution financière', color: 'emerald' },
-    HYBRID: { label: 'Hybride', desc: 'Equity + rémunération', color: 'amber' },
-};
-
-const TIME_LABELS: Record<string, string> = {
-    '2-5H': '2-5h / semaine',
-    '5-10H': '5-10h / semaine',
-    '10-20H': '10-20h / semaine',
-    FULLTIME: 'Temps plein',
-};
-
-const FOUNDER_ROLE_LABELS: Record<string, string> = {
-    CEO: 'CEO / General',
-    CTO: 'CTO / Tech',
-    CPO: 'CPO / Product',
-    CMO: 'CMO / Marketing',
-    COO: 'COO / Operations',
-};
-
-const COMMITMENT_LABELS: Record<string, string> = {
-    FULL_TIME: 'Temps plein',
-    PART_TIME: 'Temps partiel',
-    FREELANCE: 'Freelance',
+const COLLAB_COLORS: Record<string, string> = {
+    EQUITY: 'indigo',
+    PAID: 'emerald',
+    HYBRID: 'amber',
 };
 
 function StatCard({ icon: Icon, label, value, sub, accent = 'gray' }: {
@@ -54,37 +34,58 @@ function StatCard({ icon: Icon, label, value, sub, accent = 'gray' }: {
 }
 
 export function ConditionsView({ project }: { project: any }) {
-    const collab = COLLAB_LABELS[project.collabType];
+    const { t, locale } = useTranslation();
+
+    const collabType = project.collabType;
+    const collabLabel = collabType ? (t(`project.collab.${collabType}`) !== `project.collab.${collabType}` ? t(`project.collab.${collabType}`) : collabType) : '';
+    const collabDesc = collabType ? (t(`project.collab.${collabType}_desc`) !== `project.collab.${collabType}_desc` ? t(`project.collab.${collabType}_desc`) : '') : '';
+    const collabColor = COLLAB_COLORS[collabType] || 'gray';
+
     const hasAnyCondition = project.collabType || project.timeAvailability || project.commitment || project.isRemote || project.budget;
 
     if (!hasAnyCondition) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
                 <AlertCircle className="w-10 h-10 text-gray-300 mb-3" />
-                <p className="text-gray-400 text-sm">Aucune condition spécifiée pour ce projet.</p>
+                <p className="text-gray-400 text-sm">{t('project.deck_conditions.no_conditions')}</p>
             </div>
         );
     }
+
+    const getTimeLabel = (key: string) => {
+        const translated = t(`project.time.${key}`);
+        return translated !== `project.time.${key}` ? translated : key;
+    };
+
+    const getCommitmentLabel = (key: string) => {
+        const translated = t(`project.commitment_type.${key}`);
+        return translated !== `project.commitment_type.${key}` ? translated : key;
+    };
+
+    const getFounderRoleLabel = (key: string) => {
+        const translated = t(`project.founderRole.${key}`);
+        return translated !== `project.founderRole.${key}` ? translated : key;
+    };
 
     return (
         <div className="space-y-8 py-2">
             {/* Main conditions grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {project.collabType && collab && (
+                {project.collabType && (
                     <StatCard
                         icon={PieChart}
-                        label="Type de collaboration"
-                        value={collab.label}
-                        sub={collab.desc}
-                        accent={collab.color}
+                        label={t('project.deck_conditions.collab_type')}
+                        value={collabLabel}
+                        sub={collabDesc}
+                        accent={collabColor}
                     />
                 )}
 
                 {project.timeAvailability && (
                     <StatCard
                         icon={Clock}
-                        label="Disponibilité attendue"
-                        value={TIME_LABELS[project.timeAvailability] || project.timeAvailability}
+                        label={t('project.deck_conditions.expected_availability')}
+                        value={getTimeLabel(project.timeAvailability)}
                         accent="orange"
                     />
                 )}
@@ -92,8 +93,8 @@ export function ConditionsView({ project }: { project: any }) {
                 {project.commitment && (
                     <StatCard
                         icon={Briefcase}
-                        label="Engagement"
-                        value={COMMITMENT_LABELS[project.commitment] || project.commitment}
+                        label={t('project.deck_conditions.commitment')}
+                        value={getCommitmentLabel(project.commitment)}
                         accent="blue"
                     />
                 )}
@@ -101,8 +102,8 @@ export function ConditionsView({ project }: { project: any }) {
                 {project.isRemote !== undefined && (
                     <StatCard
                         icon={MapPin}
-                        label="Mode de travail"
-                        value={project.isRemote ? 'Remote OK' : 'Sur place'}
+                        label={t('project.deck_conditions.work_mode')}
+                        value={project.isRemote ? t('project.deck_conditions.remote_ok') : t('project.deck_conditions.on_site')}
                         sub={project.location || undefined}
                         accent={project.isRemote ? 'emerald' : 'gray'}
                     />
@@ -111,8 +112,8 @@ export function ConditionsView({ project }: { project: any }) {
                 {project.budget && (
                     <StatCard
                         icon={Wallet}
-                        label="Budget"
-                        value={formatBudget(project.budget)}
+                        label={t('project.deck_conditions.budget_label')}
+                        value={formatBudget(project.budget, locale)}
                         accent="purple"
                     />
                 )}
@@ -121,18 +122,18 @@ export function ConditionsView({ project }: { project: any }) {
             {/* Founder section */}
             {project.founderRole && (
                 <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                    <h4 className="text-xs text-gray-500 uppercase tracking-wide mb-3">Le fondateur</h4>
+                    <h4 className="text-xs text-gray-500 uppercase tracking-wide mb-3">{t('project.deck_conditions.founder')}</h4>
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold">
                             {(project.founder?.firstName || project.founder?.name || 'F').charAt(0).toUpperCase()}
                         </div>
                         <div>
                             <p className="font-semibold text-gray-900">
-                                {project.founder?.name || [project.founder?.firstName, project.founder?.lastName].filter(Boolean).join(' ') || 'Fondateur'}
+                                {project.founder?.name || [project.founder?.firstName, project.founder?.lastName].filter(Boolean).join(' ') || t('project.founder_default')}
                             </p>
                             <p className="text-sm text-gray-500">
-                                {FOUNDER_ROLE_LABELS[project.founderRole] || project.founderRole}
-                                {project.timeAvailability && ` · ${TIME_LABELS[project.timeAvailability] || project.timeAvailability}`}
+                                {getFounderRoleLabel(project.founderRole)}
+                                {project.timeAvailability && ` · ${getTimeLabel(project.timeAvailability)}`}
                             </p>
                         </div>
                     </div>
@@ -146,9 +147,9 @@ export function ConditionsView({ project }: { project: any }) {
                         <AlertCircle className="w-4 h-4 text-red-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-red-900">Date limite de recrutement</p>
+                        <p className="text-sm font-semibold text-red-900">{t('project.deck_conditions.deadline')}</p>
                         <p className="text-sm text-red-700">
-                            {new Date(project.deadline).toLocaleDateString('fr-FR', {
+                            {new Date(project.deadline).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', {
                                 day: 'numeric', month: 'long', year: 'numeric',
                             })}
                         </p>
@@ -164,8 +165,12 @@ export function ConditionsView({ project }: { project: any }) {
                             <Users className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                            <h4 className="text-xs text-gray-500 uppercase tracking-wide">Taille de l'équipe</h4>
-                            <p className="font-semibold text-gray-900">{project.teamSize} personne{project.teamSize > 1 ? 's' : ''}</p>
+                            <h4 className="text-xs text-gray-500 uppercase tracking-wide">{t('project.deck_conditions.team_size')}</h4>
+                            <p className="font-semibold text-gray-900">
+                                {project.teamSize > 1
+                                    ? t('project.deck_conditions.persons', { count: project.teamSize })
+                                    : t('project.deck_conditions.person', { count: project.teamSize })}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -174,12 +179,12 @@ export function ConditionsView({ project }: { project: any }) {
     );
 }
 
-function formatBudget(budget: any): string {
+function formatBudget(budget: any, locale: string = 'fr'): string {
     if (!budget) return '—';
-    const fmt = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
+    const fmt = (n: number) => new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'fr-FR').format(n);
     const currency = budget.currency || 'EUR';
     if (budget.min && budget.max) return `${fmt(budget.min)} - ${fmt(budget.max)} ${currency}`;
-    if (budget.min) return `À partir de ${fmt(budget.min)} ${currency}`;
-    if (budget.max) return `Jusqu'à ${fmt(budget.max)} ${currency}`;
+    if (budget.min) return `${fmt(budget.min)}+ ${currency}`;
+    if (budget.max) return `${fmt(budget.max)} ${currency}`;
     return '—';
 }

@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { Reveal } from './reveal';
+import { useTranslation } from '@/context/i18n-context';
 
 export function LandingFooter() {
+  const { t } = useTranslation();
+
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,15 +24,14 @@ export function LandingFooter() {
                 </span>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                Trouvez votre cofondateur idéal en Afrique francophone et dans
-                la diaspora.
+                {t('landing.footer_tagline')}
               </p>
             </div>
 
             {/* Navigation */}
             <div>
               <h5 className="font-bold mb-4 text-sm uppercase tracking-wider text-gray-300">
-                Navigation
+                {t('landing.footer_nav_title')}
               </h5>
               <ul className="space-y-3 text-sm text-gray-400">
                 <li>
@@ -37,7 +39,7 @@ export function LandingFooter() {
                     href="#for-who"
                     className="hover:text-white transition-colors"
                   >
-                    Concept
+                    {t('landing.footer_nav_concept')}
                   </Link>
                 </li>
                 <li>
@@ -45,7 +47,7 @@ export function LandingFooter() {
                     href="#how-it-works"
                     className="hover:text-white transition-colors"
                   >
-                    Comment ça marche
+                    {t('landing.footer_nav_how_it_works')}
                   </Link>
                 </li>
                 <li>
@@ -53,7 +55,7 @@ export function LandingFooter() {
                     href="#pricing"
                     className="hover:text-white transition-colors"
                   >
-                    Tarifs
+                    {t('landing.footer_nav_pricing')}
                   </Link>
                 </li>
                 <li>
@@ -61,7 +63,7 @@ export function LandingFooter() {
                     href="#faq"
                     className="hover:text-white transition-colors"
                   >
-                    FAQ
+                    {t('landing.footer_nav_faq')}
                   </Link>
                 </li>
               </ul>
@@ -70,7 +72,7 @@ export function LandingFooter() {
             {/* Legal */}
             <div>
               <h5 className="font-bold mb-4 text-sm uppercase tracking-wider text-gray-300">
-                Légal
+                {t('landing.footer_legal_title')}
               </h5>
               <ul className="space-y-3 text-sm text-gray-400">
                 <li>
@@ -78,7 +80,7 @@ export function LandingFooter() {
                     href="#"
                     className="hover:text-white transition-colors"
                   >
-                    Mentions légales
+                    {t('landing.footer_legal_mentions')}
                   </Link>
                 </li>
                 <li>
@@ -86,7 +88,7 @@ export function LandingFooter() {
                     href="#"
                     className="hover:text-white transition-colors"
                   >
-                    Confidentialité
+                    {t('landing.footer_legal_privacy')}
                   </Link>
                 </li>
                 <li>
@@ -94,7 +96,7 @@ export function LandingFooter() {
                     href="#"
                     className="hover:text-white transition-colors"
                   >
-                    CGU
+                    {t('landing.footer_legal_terms')}
                   </Link>
                 </li>
               </ul>
@@ -103,7 +105,7 @@ export function LandingFooter() {
             {/* Social */}
             <div>
               <h5 className="font-bold mb-4 text-sm uppercase tracking-wider text-gray-300">
-                Réseaux sociaux
+                {t('landing.footer_social_title')}
               </h5>
               <div className="flex gap-3">
                 {[Facebook, Twitter, Linkedin, Instagram].map((Icon, i) => (
@@ -123,7 +125,7 @@ export function LandingFooter() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-gray-800 text-center">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} MoJiraX. Tous droits réservés.
+            {t('landing.footer_copyright', { year: new Date().getFullYear() })}
           </p>
         </div>
       </div>

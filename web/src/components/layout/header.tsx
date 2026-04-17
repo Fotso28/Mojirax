@@ -8,6 +8,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useSidebar } from '@/context/sidebar-context';
 import { NotificationDropdown } from '@/components/layout/notification-dropdown';
+import { LanguageToggle } from '@/components/ui/language-toggle';
+import { useTranslation } from '@/context/i18n-context';
 
 const UniversalSearch = dynamic(() =>
     import('@/components/search/universal-search').then(m => ({ default: m.UniversalSearch })),
@@ -24,6 +26,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
     const router = useRouter();
     const { hidden: isSidebarHidden } = useSidebar();
     const [showSearch, setShowSearch] = useState(false);
+    const { t } = useTranslation();
 
     // Raccourci clavier Ctrl+K / Cmd+K
     useEffect(() => {
@@ -56,10 +59,10 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                     <div className="hidden lg:flex flex-1 max-w-xl mx-8">
                         <button
                             onClick={() => setShowSearch(true)}
-                            className="relative w-full h-11 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-400 text-left hover:border-gray-300 hover:bg-gray-100/50 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all cursor-pointer group"
+                            className="relative w-full h-11 ps-10 pe-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-400 text-left hover:border-gray-300 hover:bg-gray-100/50 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all cursor-pointer group"
                         >
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-gray-500 transition-colors" />
-                            <span>Rechercher un projet, un talent, une idée...</span>
+                            <span>{t('dashboard.header_search_placeholder')}</span>
                             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-medium text-gray-400 bg-white/80 rounded border border-gray-200">
                                 Ctrl K
                             </kbd>
@@ -72,6 +75,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                         <button
                             onClick={() => setShowSearch(true)}
                             className="lg:hidden p-2 text-gray-400 hover:text-kezak-primary hover:bg-gray-50 rounded-full transition-colors"
+                            aria-label={t('common.aria.search')}
                         >
                             <Search className="w-6 h-6" />
                         </button>
@@ -81,17 +85,21 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                             <button
                                 onClick={() => router.push('/admin')}
                                 className="p-2 text-gray-400 hover:text-kezak-primary hover:bg-gray-50 rounded-full transition-colors"
-                                title="Administration"
+                                title={t('dashboard.feed.header_admin')}
+                                aria-label={t('dashboard.feed.header_admin')}
                             >
                                 <ShieldCheck className="w-5 h-5" />
                             </button>
                         )}
 
+                        {/* Language Toggle */}
+                        <LanguageToggle />
+
                         {/* Notifications (Mobile + Desktop) */}
                         <NotificationDropdown />
 
                         {/* Desktop: Profile */}
-                        <div className="hidden md:flex items-center gap-3 pl-2 border-l border-gray-100">
+                        <div className="hidden md:flex items-center gap-3 ps-2 border-l border-gray-100">
                             <div
                                 onClick={() => router.push('/profile')}
                                 className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-kezak-primary/20 transition-all cursor-pointer relative"
@@ -117,6 +125,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                             <button
                                 onClick={onOpenMobileWidgets}
                                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                                aria-label={t('common.aria.widgets')}
                             >
                                 <Grid className="w-6 h-6" />
                             </button>
@@ -126,6 +135,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                         <button
                             onClick={onOpenMobileNav}
                             className="md:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                            aria-label={t('common.aria.menu')}
                         >
                             <Menu className="w-6 h-6" />
                         </button>

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Briefcase, Eye, CircleCheck } from 'lucide-react';
 import { Reveal } from './reveal';
+import { useTranslation } from '@/context/i18n-context';
 
 const SLIDESHOW_INTERVAL = 5_000;
 
@@ -27,62 +28,26 @@ const heroBackgrounds = [
   },
 ] as const;
 
-const previewProjects = [
-  {
-    name: 'AgriTech Sahel',
-    pitch:
-      "Plateforme de digitalisation de la chaîne agricole en Afrique de l'Ouest",
-    sector: 'AgriTech',
-    location: 'Dakar, Sénégal',
-    stage: 'MVP',
-    founder: {
-      name: 'Moussa Diallo',
-      label: 'Fondateur',
-      image:
-        'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=200&h=200&fit=crop&crop=face',
-    },
-    tags: ['Cherche: Profil Tech', 'Equity'],
-  },
-  {
-    name: 'FinPay Africa',
-    pitch:
-      'Solution de paiement mobile interopérable pour les marchés francophones',
-    sector: 'FinTech',
-    location: "Abidjan, Côte d'Ivoire",
-    stage: 'Traction',
-    founder: {
-      name: 'Amina Koné',
-      label: 'Fondatrice',
-      image:
-        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&h=200&fit=crop&crop=face',
-    },
-    tags: ['Cherche: Business', 'Rémunéré'],
-  },
-  {
-    name: 'EduConnect',
-    pitch:
-      'Marketplace de formation professionnelle pour les jeunes diplômés africains',
-    sector: 'EdTech',
-    location: 'Douala, Cameroun',
-    stage: 'Prototype',
-    founder: {
-      name: 'Samuel Mbarga',
-      label: 'Fondateur',
-      image:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-    },
-    tags: ['Cherche: Produit', 'Hybride'],
-  },
-];
+// previewProjects is defined inside HeroSection to access t()
 
 const cardRotations = ['-rotate-2', 'rotate-0', 'rotate-2'];
 const cardOffsets = ['translate-y-4', 'translate-y-0', 'translate-y-4'];
+
+interface PreviewProject {
+  name: string;
+  pitch: string;
+  sector: string;
+  location: string;
+  stage: string;
+  founder: { name: string; label: string; image: string };
+  tags: string[];
+}
 
 function PreviewCard({
   project,
   index,
 }: {
-  project: (typeof previewProjects)[number];
+  project: PreviewProject;
   index: number;
 }) {
   return (
@@ -152,6 +117,52 @@ function PreviewCard({
 
 export function HeroSection() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useTranslation();
+
+  const previewProjects = [
+    {
+      name: 'AgriTech Sahel',
+      pitch: t('landing.hero_preview_pitch_1'),
+      sector: 'AgriTech',
+      location: 'Dakar, Sénégal',
+      stage: 'MVP',
+      founder: {
+        name: 'Moussa Diallo',
+        label: t('landing.hero_card_founder_m'),
+        image:
+          'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=200&h=200&fit=crop&crop=face',
+      },
+      tags: [t('landing.hero_card_looking_for_tech'), t('landing.hero_card_collab_equity')],
+    },
+    {
+      name: 'FinPay Africa',
+      pitch: t('landing.hero_preview_pitch_2'),
+      sector: 'FinTech',
+      location: "Abidjan, Côte d'Ivoire",
+      stage: 'Traction',
+      founder: {
+        name: 'Amina Koné',
+        label: t('landing.hero_card_founder_f'),
+        image:
+          'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&h=200&fit=crop&crop=face',
+      },
+      tags: [t('landing.hero_card_looking_for_biz'), t('landing.hero_card_collab_paid')],
+    },
+    {
+      name: 'EduConnect',
+      pitch: t('landing.hero_preview_pitch_3'),
+      sector: 'EdTech',
+      location: 'Douala, Cameroun',
+      stage: 'Prototype',
+      founder: {
+        name: 'Samuel Mbarga',
+        label: t('landing.hero_card_founder_m'),
+        image:
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+      },
+      tags: [t('landing.hero_card_looking_for_product'), t('landing.hero_card_collab_hybrid')],
+    },
+  ];
 
   const advance = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % heroBackgrounds.length);
@@ -188,21 +199,20 @@ export function HeroSection() {
         <div className="text-center max-w-3xl mx-auto mb-16 lg:mb-20">
           <Reveal animation="fade-down" duration={600}>
             <span className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/15 text-white text-xs font-bold border border-white/25 shadow-sm backdrop-blur-sm">
-              La plateforme des fondateurs ambitieux
+              {t('landing.hero_badge')}
             </span>
           </Reveal>
           <Reveal animation="fade-up" delay={100}>
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold mb-6 leading-[1.1] text-white tracking-tight">
-              Vous lancez un projet ou vous avez{' '}
+              {t('landing.hero_title_1')}{' '}
               <br className="hidden sm:block" />
-              déjà une startup ?{' '}
-              <span className="text-kezak-light">Trouvez les bons associés.</span>
+              {t('landing.hero_title_2')}{' '}
+              <span className="text-kezak-light">{t('landing.hero_title_highlight')}</span>
             </h1>
           </Reveal>
           <Reveal animation="fade-up" delay={200}>
             <p className="text-base sm:text-lg text-gray-200 mb-10 max-w-2xl mx-auto leading-relaxed">
-              MoJiraX vous connecte aux cofondateurs, talents et partenaires
-              pour construire et faire évoluer votre entreprise.
+              {t('landing.hero_subtitle')}
             </p>
           </Reveal>
           <Reveal animation="fade-up" delay={300}>
@@ -211,13 +221,13 @@ export function HeroSection() {
                 href="/login"
                 className="h-[52px] px-8 rounded-xl bg-kezak-primary text-white font-semibold text-sm flex items-center justify-center hover:bg-kezak-dark transition-all duration-200 shadow-lg shadow-kezak-primary/25 hover:-translate-y-0.5"
               >
-                Créer mon profil gratuitement
+                {t('landing.hero_cta_primary')}
               </Link>
               <Link
                 href="/login"
                 className="h-[52px] px-8 rounded-xl border border-white/30 bg-white/10 text-white font-semibold text-sm flex items-center justify-center hover:bg-white/20 transition-all duration-200 backdrop-blur-sm"
               >
-                Voir les profils
+                {t('landing.hero_cta_secondary')}
               </Link>
             </div>
           </Reveal>

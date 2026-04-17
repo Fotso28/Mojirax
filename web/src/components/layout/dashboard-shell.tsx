@@ -7,6 +7,7 @@ import { SidebarLeft } from './sidebar-left';
 import { SidebarRight } from './sidebar-right';
 import { MobileNavDrawer } from './mobile-nav-drawer';
 import { MobileWidgetDrawer } from './mobile-widget-drawer';
+import { BottomNav } from './bottom-nav';
 import { AdBanner } from '@/components/ads/ad-banner';
 import { useSidebar } from '@/context/sidebar-context';
 import { cn } from '@/lib/utils';
@@ -37,8 +38,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
             <div className={cn(
                 "flex-1 max-w-[1600px] w-full mx-auto",
                 isMessagesPage
-                    ? "px-0 md:px-4 md:sm:px-6 lg:px-8 pt-16 md:pt-24 pb-0 md:pb-8"
-                    : "px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-8"
+                    ? "px-0 md:px-4 sm:px-6 lg:px-8 pt-16 md:pt-24 pb-0 md:pb-8"
+                    // pb-24 on mobile leaves room for the fixed bottom-nav (h-16).
+                    : "px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-24 md:pb-8"
             )}>
                 <div className={cn(
                     "grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start",
@@ -68,6 +70,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
             {/* Mobile Drawers */}
             <MobileNavDrawer isOpen={isMobileNavOpen} onClose={() => setIsMobileNavOpen(false)} />
             <MobileWidgetDrawer isOpen={isMobileWidgetsOpen} onClose={() => setIsMobileWidgetsOpen(false)} />
+
+            {/* Bottom Navigation - Mobile only */}
+            <BottomNav />
         </div>
     );
 }

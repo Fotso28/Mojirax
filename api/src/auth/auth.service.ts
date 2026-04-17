@@ -1,72 +1,136 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email/email.service';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class AuthService {
     private readonly logger = new Logger(AuthService.name);
 
+    private maskEmail(email: string): string {
+        const [local, domain] = email.split('@');
+        if (!domain) return '***';
+        return `${local[0]}***@${domain[0]}***`;
+    }
+
     constructor(
         private prisma: PrismaService,
         private emailService: EmailService,
+        private i18n: I18nService,
     ) { }
 
-    async syncUser(firebaseUser: any) {
+    async syncUser(firebaseUser: any, locale: Locale = 'fr') {
         const { uid, email, name, picture } = firebaseUser;
 
         if (!email) {
-            throw new Error('Email is required from Firebase Provider');
+            throw new BadRequestException(this.i18n.t('auth.email_required', locale));
         }
 
-        // Look up by firebaseUid first, then by email
+        const safeSelect = {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            name: true,
+            image: true,
+            role: true,
+            plan: true,
+            title: true,
+            bio: true,
+            country: true,
+            city: true,
+            skills: true,
+            languages: true,
+        };
+
+        const userSelect = { id: true, firebaseUid: true, image: true, firstName: true, lastName: true, email: true };
+
         const existingByUid = await this.prisma.user.findUnique({
             where: { firebaseUid: uid },
-            select: { id: true, image: true, firstName: true, lastName: true, email: true },
+            select: userSelect,
         });
 
         const existing = existingByUid || await this.prisma.user.findUnique({
             where: { email },
-            select: { id: true, image: true, firstName: true, lastName: true, email: true },
+            select: userSelect,
         });
 
         const hasCustomAvatar = existing?.image?.includes('/avatars/');
 
         if (existing) {
-            // Update existing user
+            if (existingByUid === null && existing.firebaseUid && existing.firebaseUid !== uid) {
+                this.logger.warn(
+                    `Blocked account takeover: email=${this.maskEmail(email)}, existingUid=${existing.firebaseUid}, newUid=${uid}`,
+                );
+                throw new ConflictException(this.i18n.t('auth.account_linked_other_provider', locale));
+            }
+
+            this.logger.log(`User synced: id=${existing.id}`);
+
+            // Check if email changed and new email is available
+            let emailUpdate = {};
+            if (existing.email !== email) {
+                const emailTaken = await this.prisma.user.findUnique({
+                    where: { email },
+                    select: { id: true },
+                });
+                if (emailTaken && emailTaken.id !== existing.id) {
+                    this.logger.warn(`Email change blocked: new email already in use, userId=${existing.id}`);
+                } else {
+                    emailUpdate = { email };
+                }
+            }
+
             const user = await this.prisma.user.update({
                 where: { id: existing.id },
                 data: {
                     firebaseUid: uid,
-                    // Update email if changed in Firebase
-                    ...(existing.email !== email ? { email } : {}),
-                    // Fill firstName/lastName if missing in DB but available from Firebase
+                    ...emailUpdate,
                     ...(name && !existing.firstName ? { firstName: name.split(' ')[0] } : {}),
                     ...(name && !existing.lastName ? { lastName: name.split(' ').slice(1).join(' ') || undefined } : {}),
-                    // Don't overwrite custom avatar with Google photo
+                    ...(name && !existing.firstName ? { name } : {}),
                     ...(hasCustomAvatar ? {} : { image: picture }),
                 },
+                select: safeSelect,
             });
             return user;
         }
 
-        // Create new user
-        const user = await this.prisma.user.create({
-            data: {
-                email,
-                firebaseUid: uid,
-                firstName: name ? name.split(' ')[0] : undefined,
-                lastName: name ? name.split(' ').slice(1).join(' ') : undefined,
-                image: picture,
-                role: 'USER',
-                planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            },
-        });
+        try {
+            const user = await this.prisma.user.create({
+                data: {
+                    email,
+                    firebaseUid: uid,
+                    firstName: name ? name.split(' ')[0] : undefined,
+                    lastName: name ? name.split(' ').slice(1).join(' ') : undefined,
+                    name: name || undefined,
+                    image: picture,
+                    role: 'USER',
+                },
+                select: safeSelect,
+            });
 
-        // Send welcome email (fire & forget)
-        this.emailService.sendWelcome(user.id).catch((e) =>
-            this.logger.warn('Welcome email failed', e),
-        );
+            this.logger.log(`New user created: id=${user.id}, email=${this.maskEmail(email)}`);
 
-        return user;
+            this.emailService.sendWelcome(user.id).catch((e) =>
+                this.logger.warn('Welcome email failed', e),
+            );
+
+            return user;
+        } catch (error: any) {
+            if (error?.code === 'P2002') {
+                this.logger.warn(`Race condition on syncUser for email=${this.maskEmail(email)}, retrying lookup`);
+                const retryUser = await this.prisma.user.findUnique({
+                    where: { firebaseUid: uid },
+                    select: safeSelect,
+                })
+                    || await this.prisma.user.findUnique({
+                        where: { email },
+                        select: safeSelect,
+                    });
+                if (retryUser) return retryUser;
+            }
+            throw error;
+        }
     }
 }

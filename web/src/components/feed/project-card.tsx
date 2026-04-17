@@ -7,8 +7,10 @@ import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
 import { getSectorLabel } from '@/lib/constants/sectors';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/context/auth-context';
 import { useStartConversation } from '@/hooks/use-start-conversation';
+import { useTranslation } from '@/context/i18n-context';
 
 interface ProjectCardProps {
     project: {
@@ -37,34 +39,39 @@ interface ProjectCardProps {
     initialSaved?: boolean;
 }
 
-// Format relative time
-function timeAgo(dateStr: string): string {
+// Format relative time using translation function
+function timeAgo(dateStr: string, t: (key: string, params?: Record<string, string | number>) => string): string {
     const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return "À l'instant";
+    if (seconds < 60) return t('dashboard.card_time_now');
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Il y a ${minutes}min`;
+    if (minutes < 60) return t('dashboard.card_time_minutes', { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
+    if (hours < 24) return t('dashboard.card_time_hours', { count: hours });
     const days = Math.floor(hours / 24);
-    if (days < 30) return `Il y a ${days}j`;
-    return `Il y a ${Math.floor(days / 30)} mois`;
+    if (days < 30) return t('dashboard.card_time_days', { count: days });
+    return t('dashboard.card_time_months', { count: Math.floor(days / 30) });
 }
 
-// Role labels
-const ROLE_LABELS: Record<string, string> = {
-    TECH: 'Profil Tech',
-    BIZ: 'Business',
-    PRODUCT: 'Produit',
-    FINANCE: 'Finance',
+// Role labels keyed to translation
+const ROLE_KEYS: Record<string, string> = {
+    TECH: 'dashboard.role_tech',
+    BIZ: 'dashboard.role_biz',
+    PRODUCT: 'dashboard.role_product',
+    FINANCE: 'dashboard.role_finance',
 };
 
-const STAGE_LABELS: Record<string, string> = {
-    IDEA: 'Idée',
-    PROTOTYPE: 'Prototype',
-    MVP_BUILD: 'MVP en cours',
-    MVP_LIVE: 'MVP lancé',
-    TRACTION: 'Traction',
-    SCALE: 'Scale',
+function formatRoleLabels(lookingForRole: string, t: (key: string) => string): string {
+    return lookingForRole.split(',').filter(Boolean)
+        .map((r) => ROLE_KEYS[r] ? t(ROLE_KEYS[r]) : r).join(', ');
+}
+
+const STAGE_KEYS: Record<string, string> = {
+    IDEA: 'dashboard.stage_idea',
+    PROTOTYPE: 'dashboard.stage_prototype',
+    MVP_BUILD: 'dashboard.stage_mvp_build',
+    MVP_LIVE: 'dashboard.stage_mvp_live',
+    TRACTION: 'dashboard.stage_traction',
+    SCALE: 'dashboard.stage_scale',
 };
 
 // Silent tracker — fire and forget
@@ -84,6 +91,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
     const { showToast } = useToast();
     const { dbUser } = useAuth();
     const { startConversation, loading: messageLoading } = useStartConversation();
+    const { t } = useTranslation();
 
     // Sync if initialSaved changes after async load
     useEffect(() => {
@@ -92,7 +100,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
 
     const founderName = project.founder.name
         || [project.founder.firstName, project.founder.lastName].filter(Boolean).join(' ')
-        || 'Fondateur';
+        || t('dashboard.card_founder');
 
     // Track VIEW + dwell time via IntersectionObserver
     useEffect(() => {
@@ -124,7 +132,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
         const next = !isSaved;
         setIsSaved(next);
         trackInteraction(project.id, next ? 'SAVE' : 'UNSAVE');
-        showToast(next ? 'Projet sauvegardé' : 'Projet retiré', 'success');
+        showToast(next ? t('dashboard.card_project_saved') : t('dashboard.card_project_removed'), 'success');
     }, [isSaved, project.id, showToast]);
 
     const handleClick = useCallback(() => {
@@ -134,10 +142,10 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
     // Build tags from available data
     const tags: string[] = [];
     if (project.lookingForRole) {
-        tags.push(`Cherche: ${ROLE_LABELS[project.lookingForRole] || project.lookingForRole}`);
+        tags.push(`${t('dashboard.card_looking_for')} ${formatRoleLabels(project.lookingForRole, t)}`);
     }
     if (project.collabType) {
-        const collabLabel = project.collabType === 'EQUITY' ? 'Equity' : project.collabType === 'PAID' ? 'Rémunéré' : 'Hybride';
+        const collabLabel = project.collabType === 'EQUITY' ? t('dashboard.card_collab_equity') : project.collabType === 'PAID' ? t('dashboard.card_collab_paid') : t('dashboard.card_collab_hybrid');
         tags.push(collabLabel);
     }
     if (project.requiredSkills) {
@@ -151,7 +159,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                 <Link href={`/founders/${project.founder.id}`} className="flex items-center gap-3 group/founder" onClick={e => e.stopPropagation()}>
                     <div className="w-12 h-12 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden ring-2 ring-transparent group-hover/founder:ring-kezak-primary/20 transition-all">
                         {project.founder.image ? (
-                            <img src={project.founder.image} alt={founderName} className="w-full h-full rounded-full object-cover" />
+                            <Image src={project.founder.image} alt={founderName} width={48} height={48} className="w-full h-full rounded-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-kezak-light text-kezak-primary font-bold text-lg">
                                 {founderName.charAt(0).toUpperCase()}
@@ -163,12 +171,12 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                             <h3 className="font-bold text-gray-900 leading-tight group-hover/founder:text-kezak-primary transition-colors">{founderName}</h3>
                             <PlanBadge plan={project.founder.plan} />
                         </div>
-                        <p className="text-xs text-gray-500">Fondateur</p>
+                        <p className="text-xs text-gray-500">{t('dashboard.card_founder')}</p>
                     </div>
                 </Link>
                 {project.isUrgent && (
                     <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100">
-                        Urgent
+                        {t('dashboard.card_urgent')}
                     </span>
                 )}
             </div>
@@ -202,12 +210,12 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                 {project.stage && (
                     <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100">
                         <Eye className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{STAGE_LABELS[project.stage] || project.stage}</span>
+                        <span>{STAGE_KEYS[project.stage] ? t(STAGE_KEYS[project.stage]) : project.stage}</span>
                     </div>
                 )}
                 <div className="flex items-center gap-1.5 text-gray-400">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>{timeAgo(project.createdAt)}</span>
+                    <span>{timeAgo(project.createdAt, t)}</span>
                 </div>
             </div>
 
@@ -226,7 +234,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
             <div className="flex items-center gap-3 pt-4 mt-auto">
                 <Link href={`/projects/${project.slug || project.id}`} onClick={handleClick} className="flex-1">
                     <Button className="w-full rounded-xl h-11 text-base font-semibold shadow-lg shadow-blue-500/20">
-                        Voir projet
+                        {t('dashboard.card_view_project')}
                     </Button>
                 </Link>
                 {dbUser && dbUser.id !== project.founder?.id && (
@@ -236,7 +244,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                     className="flex items-center gap-2 px-4 h-11 rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 flex-shrink-0 disabled:opacity-50"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Message</span>
+                    <span className="hidden sm:inline">{t('dashboard.card_message')}</span>
                   </button>
                 )}
                 <button
@@ -247,7 +255,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                         }`}
                 >
                     {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{isSaved ? 'Sauvé' : 'Sauver'}</span>
+                    <span className="hidden sm:inline">{isSaved ? t('dashboard.card_saved') : t('dashboard.card_save')}</span>
                 </button>
             </div>
         </article>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from '@/context/i18n-context';
 import { AXIOS_INSTANCE as api } from '@/api/axios-instance';
 import { CreditCard, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 
@@ -30,6 +31,7 @@ function formatEUR(value: string | number) {
 }
 
 export default function AdminTransactionsPage() {
+  const { t } = useTranslation();
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -62,8 +64,8 @@ export default function AdminTransactionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Transactions</h1>
-        <p className="text-sm text-gray-500 mt-1">{total} transaction(s) au total</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{t('admin.transactions_title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('admin.transactions_count', { count: total })}</p>
       </div>
 
       {/* Filter */}
@@ -74,7 +76,7 @@ export default function AdminTransactionsPage() {
           onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
           className="h-[44px] px-4 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
         >
-          <option value="">Tous les statuts</option>
+          <option value="">{t('admin.transactions_all_statuses')}</option>
           {STATUSES.filter(Boolean).map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
@@ -87,12 +89,12 @@ export default function AdminTransactionsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Utilisateur</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Montant</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Statut</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Provider</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Unlocks</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Date</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.transactions_col_user')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.transactions_col_amount')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.transactions_col_status')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.transactions_col_provider')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.transactions_col_unlocks')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.transactions_col_date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -110,7 +112,7 @@ export default function AdminTransactionsPage() {
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-gray-500">
                     <CreditCard className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                    Aucune transaction trouvée
+                    {t('admin.transactions_no_transactions')}
                   </td>
                 </tr>
               ) : (
@@ -126,7 +128,7 @@ export default function AdminTransactionsPage() {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-gray-900 text-sm">{tx.user.name || 'Sans nom'}</p>
+                          <p className="font-medium text-gray-900 text-sm">{tx.user.name || t('admin.transactions_no_name')}</p>
                           <p className="text-xs text-gray-500 truncate max-w-[150px]">{tx.user.email}</p>
                         </div>
                       </div>
@@ -152,7 +154,7 @@ export default function AdminTransactionsPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
-            <p className="text-xs text-gray-500">Page {page + 1} sur {totalPages}</p>
+            <p className="text-xs text-gray-500">{t('admin.page_of', { current: page + 1, total: totalPages })}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}

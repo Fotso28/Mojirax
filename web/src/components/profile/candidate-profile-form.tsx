@@ -2,17 +2,16 @@
 
 import { useState } from 'react';
 import {
-    Loader2, Save, Briefcase, User, Sparkles,
-    Target, Clock, Handshake, MessageSquare, MapPin,
+    Loader2, Save,
+    Target, Clock, Handshake, MessageSquare, FileText,
     CheckCircle, AlertCircle, RefreshCw,
 } from 'lucide-react';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
-import { TagInput } from '@/components/ui/tag-input';
+import { useTranslation } from '@/context/i18n-context';
 
 // ─── Shared styles ───────────────────────────────────
 
-const inputClass = 'w-full h-[52px] px-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200';
 const selectClass = 'w-full h-[52px] px-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-base hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200';
 const textareaClass = 'w-full min-h-[120px] p-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200 resize-y';
 
@@ -26,7 +25,7 @@ function SectionCard({ icon: Icon, title, badge, children }: {
                     <Icon className="w-5 h-5 text-kezak-primary" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-                {badge && <div className="ml-auto">{badge}</div>}
+                {badge && <div className="ms-auto">{badge}</div>}
             </div>
             {children}
         </div>
@@ -60,12 +59,13 @@ function ToggleGroup({ options, value, onChange }: {
 // ─── Status badge ────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-    const config: Record<string, { icon: any; label: string; className: string }> = {
-        PUBLISHED: { icon: CheckCircle, label: 'Publié', className: 'bg-green-50 text-green-700 border-green-200' },
-        ANALYZING: { icon: RefreshCw, label: 'En analyse', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-        PENDING_AI: { icon: AlertCircle, label: 'En vérification', className: 'bg-orange-50 text-orange-700 border-orange-200' },
-        DRAFT: { icon: AlertCircle, label: 'Brouillon', className: 'bg-gray-50 text-gray-600 border-gray-200' },
-        REJECTED: { icon: AlertCircle, label: 'Rejeté', className: 'bg-red-50 text-red-700 border-red-200' },
+    const { t } = useTranslation();
+    const config: Record<string, { icon: any; labelKey: string; className: string }> = {
+        PUBLISHED: { icon: CheckCircle, labelKey: 'dashboard.candidate_status_published', className: 'bg-green-50 text-green-700 border-green-200' },
+        ANALYZING: { icon: RefreshCw, labelKey: 'dashboard.candidate_status_analyzing', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+        PENDING_AI: { icon: AlertCircle, labelKey: 'dashboard.candidate_status_pending_ai', className: 'bg-orange-50 text-orange-700 border-orange-200' },
+        DRAFT: { icon: AlertCircle, labelKey: 'dashboard.candidate_status_draft', className: 'bg-gray-50 text-gray-600 border-gray-200' },
+        REJECTED: { icon: AlertCircle, labelKey: 'dashboard.candidate_status_rejected', className: 'bg-red-50 text-red-700 border-red-200' },
     };
     const c = config[status] || config.DRAFT;
     const Icon = c.icon;
@@ -73,7 +73,7 @@ function StatusBadge({ status }: { status: string }) {
     return (
         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${c.className}`}>
             <Icon className={`w-3.5 h-3.5 ${status === 'ANALYZING' ? 'animate-spin' : ''}`} />
-            {c.label}
+            {t(c.labelKey)}
         </span>
     );
 }
@@ -81,13 +81,14 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Completeness bar ────────────────────────────────
 
 function CompletenessBar({ value }: { value: number }) {
+    const { t } = useTranslation();
     const pct = Math.round(value);
     const color = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
 
     return (
         <div className="space-y-1.5">
             <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Complétude du profil</span>
+                <span className="text-gray-500">{t('dashboard.candidate_completeness')}</span>
                 <span className="font-semibold text-gray-900">{pct}%</span>
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -105,81 +106,34 @@ interface CandidateProfileFormProps {
 }
 
 export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProps) {
+    const { t } = useTranslation();
     const { showToast } = useToast();
     const cp = user.candidateProfile || {};
 
-    // ─── Personal info (from User)
-    const [firstName, setFirstName] = useState(user.firstName || '');
-    const [lastName, setLastName] = useState(user.lastName || '');
-    const [email, setEmail] = useState(user.email || '');
-    const [phone, setPhone] = useState(user.phone || '');
-
-    // ─── Expertise & Profil
-    const [title, setTitle] = useState(cp.title || '');
-    const [bio, setBio] = useState(cp.bio || '');
-    const [skills, setSkills] = useState<string[]>(cp.skills || []);
-    const [yearsExp, setYearsExp] = useState(() => {
-        const y = cp.yearsOfExperience;
-        if (!y && y !== 0) return '';
-        if (y <= 2) return '0-2';
-        if (y <= 5) return '3-5';
-        if (y <= 10) return '6-10';
-        return '10+';
-    });
+    // ─── Candidate-specific fields only
     const [roleType, setRoleType] = useState(cp.roleType || '');
-
-    // ─── Vision
     const [vision, setVision] = useState(cp.vision || '');
     const [hasCofounded, setHasCofounded] = useState(cp.hasCofounded || '');
     const [projectPref, setProjectPref] = useState<string[]>(cp.desiredSectors || []);
-
-    // ─── Disponibilité
     const [availability, setAvailability] = useState(cp.availability || '');
     const [commitmentType, setCommitmentType] = useState(cp.commitmentType || '');
-
-    // ─── Conditions
     const [collabPref, setCollabPref] = useState(cp.collabPref || '');
     const [locationPref, setLocationPref] = useState(() => {
         if (cp.remoteOnly) return 'REMOTE';
         return cp.locationPref || '';
     });
-
-    // ─── Pitch
     const [shortPitch, setShortPitch] = useState(cp.shortPitch || '');
     const [longPitch, setLongPitch] = useState(cp.longPitch || '');
-
-    // ─── Extra fields from CandidateProfile model
-    const [location, setLocation] = useState(cp.location || '');
-    const [linkedinUrl, setLinkedinUrl] = useState(cp.linkedinUrl || '');
-    const [githubUrl, setGithubUrl] = useState(cp.githubUrl || '');
-    const [portfolioUrl, setPortfolioUrl] = useState(cp.portfolioUrl || '');
-    const [languages, setLanguages] = useState<string[]>(cp.languages || []);
-    const [certifications, setCertifications] = useState<string[]>(cp.certifications || []);
+    const [resumeUrl, setResumeUrl] = useState(cp.resumeUrl || '');
 
     const [isSaving, setIsSaving] = useState(false);
 
     const saveAll = async () => {
         setIsSaving(true);
         try {
-            // 1. Save user personal info
-            await AXIOS_INSTANCE.patch('/users/profile', {
-                firstName, lastName, email, phone,
-            });
-
-            // 2. Save candidate profile via PATCH
             await AXIOS_INSTANCE.patch('/users/candidate-profile', {
-                title,
-                bio,
                 shortPitch,
                 longPitch,
-                skills,
-                languages,
-                certifications,
-                location,
-                linkedinUrl,
-                githubUrl,
-                portfolioUrl,
-                yearsExp,
                 vision,
                 locationPref,
                 availability,
@@ -188,14 +142,14 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
                 roleType,
                 commitmentType,
                 hasCofounded,
+                resumeUrl: resumeUrl || undefined,
             });
 
-            // 3. Refresh profile data
             const { data } = await AXIOS_INSTANCE.get('/users/profile');
             onSaved?.(data);
-            showToast('Profil mis à jour avec succès', 'success');
+            showToast(t('dashboard.candidate_save_success'), 'success');
         } catch {
-            showToast('Erreur lors de la sauvegarde', 'error');
+            showToast(t('dashboard.candidate_save_error'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -203,85 +157,27 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
 
     return (
         <div className="space-y-8">
-            {/* ─── Section: Informations personnelles ─── */}
-            <SectionCard icon={User} title="Informations personnelles">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Prénom</label>
-                        <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Votre prénom" className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Nom</label>
-                        <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Votre nom" className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Téléphone</label>
-                        <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+237 6XX XXX XXX" className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Localisation</label>
-                        <input type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="Douala, Cameroun" className={inputClass} />
-                    </div>
-                </div>
-            </SectionCard>
-
-            {/* ─── Section: Expertise & Profil ─── */}
-            <SectionCard icon={Briefcase} title="Expertise & Profil">
-                <div className="space-y-6">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Titre professionnel</label>
-                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Senior React Developer, CTO, Growth Hacker..." className={inputClass} />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Rôle principal</label>
-                            <select value={roleType} onChange={e => setRoleType(e.target.value)} className={selectClass}>
-                                <option value="">Sélectionner...</option>
-                                <option value="TECH">CTO / Tech</option>
-                                <option value="PRODUCT">CPO / Product</option>
-                                <option value="MARKETING">CMO / Marketing</option>
-                                <option value="OPS">COO / Operations</option>
-                                <option value="FINANCE">CFO / Finance</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Expérience</label>
-                            <select value={yearsExp} onChange={e => setYearsExp(e.target.value)} className={selectClass}>
-                                <option value="">Sélectionner...</option>
-                                <option value="0-2">0-2 ans (Junior)</option>
-                                <option value="3-5">3-5 ans (Confirmé)</option>
-                                <option value="6-10">6-10 ans (Senior)</option>
-                                <option value="10+">10+ ans (Expert)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Bio</label>
-                        <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Présentez-vous en quelques phrases..." maxLength={600} className={textareaClass} />
-                        <p className="text-xs text-gray-400 text-right">{bio.length}/600</p>
-                    </div>
-
-                    <TagInput label="Compétences" value={skills} onChange={setSkills} placeholder="Ex: React, Node.js, Product Management..." maxTags={15} />
-                    <TagInput label="Langues" value={languages} onChange={setLanguages} placeholder="Ex: Français, Anglais..." maxTags={10} />
-                    <TagInput label="Certifications" value={certifications} onChange={setCertifications} placeholder="Ex: AWS Certified, PMP..." maxTags={10} />
-                </div>
-            </SectionCard>
-
             {/* ─── Section: Vision & Projet recherché ─── */}
-            <SectionCard icon={Target} title="Vision & Projet recherché">
+            <SectionCard icon={Target} title={t('dashboard.candidate_vision_title')}>
                 <div className="space-y-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Avez-vous déjà cofondé ?</label>
+                        <label htmlFor="candidate-roleType" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_role_type')}</label>
+                        <select id="candidate-roleType" value={roleType} onChange={e => setRoleType(e.target.value)} className={selectClass}>
+                            <option value="">{t('dashboard.candidate_role_select')}</option>
+                            <option value="TECH">{t('dashboard.candidate_role_tech')}</option>
+                            <option value="PRODUCT">{t('dashboard.candidate_role_product')}</option>
+                            <option value="MARKETING">{t('dashboard.candidate_role_marketing')}</option>
+                            <option value="OPS">{t('dashboard.candidate_role_ops')}</option>
+                            <option value="FINANCE">{t('dashboard.candidate_role_finance')}</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">{t('dashboard.candidate_has_cofounded')}</label>
                         <ToggleGroup
                             options={[
-                                { value: 'YES', label: 'Oui, déjà fait' },
-                                { value: 'NO', label: 'Non, première fois' },
+                                { value: 'YES', label: t('dashboard.candidate_cofounded_yes') },
+                                { value: 'NO', label: t('dashboard.candidate_cofounded_no') },
                             ]}
                             value={hasCofounded}
                             onChange={setHasCofounded}
@@ -289,21 +185,22 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Vision personnelle à 3-5 ans</label>
-                        <textarea value={vision} onChange={e => setVision(e.target.value)} placeholder="Décrivez votre ambition à moyen terme..." maxLength={500} className={textareaClass} />
+                        <label htmlFor="candidate-vision" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_vision')}</label>
+                        <textarea id="candidate-vision" value={vision} onChange={e => setVision(e.target.value)} placeholder={t('dashboard.candidate_vision_placeholder')} maxLength={500} className={textareaClass} />
+                        <p className="text-xs text-gray-400 text-right">{vision.length}/500</p>
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">
-                            Type de projet recherché
-                            <span className="text-gray-400 font-normal ml-1">(plusieurs choix possibles)</span>
+                            {t('dashboard.candidate_project_type')}
+                            <span className="text-gray-400 font-normal ms-1">{t('dashboard.candidate_project_type_hint')}</span>
                         </label>
                         <div className="flex gap-3 flex-wrap">
                             {[
-                                { value: 'TECH', label: 'Tech pure (SaaS, Mobile)' },
-                                { value: 'HYBRID', label: 'Hybride (Tech + Retail/Ops)' },
-                                { value: 'IMPACT', label: 'Impact Social' },
-                                { value: 'ANY', label: 'Peu importe' },
+                                { value: 'TECH', label: t('dashboard.candidate_project_tech') },
+                                { value: 'HYBRID', label: t('dashboard.candidate_project_hybrid') },
+                                { value: 'IMPACT', label: t('dashboard.candidate_project_impact') },
+                                { value: 'ANY', label: t('dashboard.candidate_project_any') },
                             ].map((opt) => (
                                 <button
                                     key={opt.value}
@@ -328,41 +225,41 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
             </SectionCard>
 
             {/* ─── Section: Disponibilité ─── */}
-            <SectionCard icon={Clock} title="Disponibilité">
+            <SectionCard icon={Clock} title={t('dashboard.candidate_availability_title')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Temps disponible (Hebdo)</label>
-                        <select value={availability} onChange={e => setAvailability(e.target.value)} className={selectClass}>
-                            <option value="">Sélectionner...</option>
-                            <option value="2-5H">2-5h (Soirs & WE)</option>
-                            <option value="5-10H">5-10h</option>
-                            <option value="10-20H">10-20h (Mi-temps)</option>
-                            <option value="FULLTIME">Temps plein</option>
+                        <label htmlFor="candidate-availability" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_time_label')}</label>
+                        <select id="candidate-availability" value={availability} onChange={e => setAvailability(e.target.value)} className={selectClass}>
+                            <option value="">{t('dashboard.candidate_time_select')}</option>
+                            <option value="2-5H">{t('dashboard.candidate_time_2_5')}</option>
+                            <option value="5-10H">{t('dashboard.candidate_time_5_10')}</option>
+                            <option value="10-20H">{t('dashboard.candidate_time_10_20')}</option>
+                            <option value="FULLTIME">{t('dashboard.candidate_time_fulltime')}</option>
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Type d'engagement visé</label>
-                        <select value={commitmentType} onChange={e => setCommitmentType(e.target.value)} className={selectClass}>
-                            <option value="">Sélectionner...</option>
-                            <option value="SIDE">Side Project</option>
-                            <option value="SERIOUS">Sérieux (Obj. Full-time)</option>
-                            <option value="FULLTIME">Full-time immédiat</option>
+                        <label htmlFor="candidate-commitmentType" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_commitment_label')}</label>
+                        <select id="candidate-commitmentType" value={commitmentType} onChange={e => setCommitmentType(e.target.value)} className={selectClass}>
+                            <option value="">{t('dashboard.candidate_commitment_select')}</option>
+                            <option value="SIDE">{t('dashboard.candidate_commitment_side')}</option>
+                            <option value="SERIOUS">{t('dashboard.candidate_commitment_serious')}</option>
+                            <option value="FULLTIME">{t('dashboard.candidate_commitment_fulltime')}</option>
                         </select>
                     </div>
                 </div>
             </SectionCard>
 
             {/* ─── Section: Conditions de collaboration ─── */}
-            <SectionCard icon={Handshake} title="Conditions de collaboration">
+            <SectionCard icon={Handshake} title={t('dashboard.candidate_collab_title')}>
                 <div className="space-y-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Type de collaboration recherchée</label>
+                        <label className="text-sm font-medium text-gray-700">{t('dashboard.candidate_collab_type')}</label>
                         <ToggleGroup
                             options={[
-                                { value: 'EQUITY', label: 'Parts (Associé)' },
-                                { value: 'PAID', label: 'Mission rémunérée' },
-                                { value: 'HYBRID', label: 'Mixte' },
-                                { value: 'DISCUSS', label: 'À discuter' },
+                                { value: 'EQUITY', label: t('dashboard.candidate_collab_equity') },
+                                { value: 'PAID', label: t('dashboard.candidate_collab_paid') },
+                                { value: 'HYBRID', label: t('dashboard.candidate_collab_hybrid') },
+                                { value: 'DISCUSS', label: t('dashboard.candidate_collab_discuss') },
                             ]}
                             value={collabPref}
                             onChange={setCollabPref}
@@ -370,12 +267,12 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Préférence de localisation</label>
+                        <label className="text-sm font-medium text-gray-700">{t('dashboard.candidate_location_pref')}</label>
                         <ToggleGroup
                             options={[
-                                { value: 'REMOTE', label: 'Remote' },
-                                { value: 'HYBRID', label: 'Hybride' },
-                                { value: 'ONSITE', label: 'Présentiel' },
+                                { value: 'REMOTE', label: t('dashboard.candidate_location_remote') },
+                                { value: 'HYBRID', label: t('dashboard.candidate_location_hybrid') },
+                                { value: 'ONSITE', label: t('dashboard.candidate_location_onsite') },
                             ]}
                             value={locationPref}
                             onChange={setLocationPref}
@@ -385,46 +282,49 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
             </SectionCard>
 
             {/* ─── Section: Pitch ─── */}
-            <SectionCard icon={MessageSquare} title="Pitch">
+            <SectionCard icon={MessageSquare} title={t('dashboard.candidate_pitch_title')}>
                 <div className="space-y-6">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Pitch court</label>
+                        <label htmlFor="candidate-shortPitch" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_short_pitch')}</label>
                         <textarea
+                            id="candidate-shortPitch"
                             value={shortPitch}
                             onChange={e => setShortPitch(e.target.value)}
-                            placeholder="Expert React cherchant CTO ambitieux sur projet Fintech..."
+                            placeholder={t('dashboard.candidate_short_pitch_placeholder')}
                             maxLength={280}
                             className={`${textareaClass} min-h-[80px]`}
                         />
                         <p className="text-xs text-gray-400 text-right">{shortPitch.length}/280</p>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Message libre</label>
+                        <label htmlFor="candidate-longPitch" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_long_pitch')}</label>
                         <textarea
+                            id="candidate-longPitch"
                             value={longPitch}
                             onChange={e => setLongPitch(e.target.value)}
-                            placeholder="Ce qui n'est pas dans le CV : votre motivation, votre histoire..."
+                            placeholder={t('dashboard.candidate_long_pitch_placeholder')}
+                            maxLength={2000}
                             className={textareaClass}
                         />
+                        <p className="text-xs text-gray-400 text-right">{longPitch.length}/2000</p>
                     </div>
                 </div>
             </SectionCard>
 
-            {/* ─── Section: Liens ─── */}
-            <SectionCard icon={MapPin} title="Liens professionnels">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">LinkedIn</label>
-                        <input type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/..." className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">GitHub</label>
-                        <input type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/..." className={inputClass} />
-                    </div>
-                    <div className="space-y-1.5 sm:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">Portfolio</label>
-                        <input type="url" value={portfolioUrl} onChange={e => setPortfolioUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-                    </div>
+            {/* ─── Section: CV / Resume ─── */}
+            <SectionCard icon={FileText} title={t('dashboard.candidate_cv_title')}>
+                <div className="space-y-1.5">
+                    <label htmlFor="candidate-resumeUrl" className="text-sm font-medium text-gray-700">{t('dashboard.candidate_cv_link')}</label>
+                    <input
+                        id="candidate-resumeUrl"
+                        type="url"
+                        value={resumeUrl}
+                        onChange={e => setResumeUrl(e.target.value)}
+                        placeholder={t('dashboard.candidate_cv_placeholder')}
+                        maxLength={500}
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none bg-white"
+                    />
+                    <p className="text-xs text-gray-400">{t('dashboard.candidate_cv_hint')}</p>
                 </div>
             </SectionCard>
 
@@ -439,7 +339,7 @@ export function CandidateProfileForm({ user, onSaved }: CandidateProfileFormProp
                     <span className="w-5 h-5 inline-flex items-center justify-center">
                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     </span>
-                    <span>Enregistrer le profil</span>
+                    <span>{t('dashboard.candidate_save')}</span>
                 </button>
             </div>
         </div>

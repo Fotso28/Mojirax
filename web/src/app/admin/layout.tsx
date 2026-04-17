@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/i18n-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -21,22 +22,23 @@ import {
   X,
 } from 'lucide-react';
 
-const adminNav = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/projects', label: 'Projets', icon: Briefcase },
-  { href: '/admin/users', label: 'Utilisateurs', icon: Users },
-  { href: '/admin/moderation', label: 'Modération', icon: Shield },
-  { href: '/admin/tarifs', label: 'Tarifs', icon: Tags },
-  { href: '/admin/faq', label: 'FAQ', icon: HelpCircle },
-  { href: '/admin/temoignages', label: 'Témoignages', icon: Quote },
-  { href: '/admin/ads', label: 'Publicités', icon: Megaphone },
-  { href: '/admin/ai', label: 'IA', icon: Brain },
-  { href: '/admin/transactions', label: 'Transactions', icon: CreditCard },
-  { href: '/admin/logs', label: 'Logs', icon: ScrollText },
+const adminNavKeys = [
+  { href: '/admin', labelKey: 'admin.nav_dashboard', icon: LayoutDashboard },
+  { href: '/admin/projects', labelKey: 'admin.nav_projects', icon: Briefcase },
+  { href: '/admin/users', labelKey: 'admin.nav_users', icon: Users },
+  { href: '/admin/moderation', labelKey: 'admin.nav_moderation', icon: Shield },
+  { href: '/admin/tarifs', labelKey: 'admin.nav_tarifs', icon: Tags },
+  { href: '/admin/faq', labelKey: 'admin.nav_faq', icon: HelpCircle },
+  { href: '/admin/temoignages', labelKey: 'admin.nav_testimonials', icon: Quote },
+  { href: '/admin/ads', labelKey: 'admin.nav_ads', icon: Megaphone },
+  { href: '/admin/ai', labelKey: 'admin.nav_ai', icon: Brain },
+  { href: '/admin/transactions', labelKey: 'admin.nav_transactions', icon: CreditCard },
+  { href: '/admin/logs', labelKey: 'admin.nav_logs', icon: ScrollText },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { dbUser, loading } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -86,7 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       <div className="p-5 border-b border-gray-100 flex items-center justify-between">
         <div className="min-w-0">
-          <h1 className="text-lg font-bold text-kezak-dark truncate">Admin MojiraX</h1>
+          <h1 className="text-lg font-bold text-kezak-dark truncate">{t('admin.admin_title')}</h1>
           <p className="text-xs text-gray-500 mt-0.5 truncate">{dbUser?.name || dbUser?.email}</p>
         </div>
         {/* Bouton fermer visible uniquement sur mobile */}
@@ -99,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {adminNav.map((item) => {
+        {adminNavKeys.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -112,7 +114,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               }`}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="truncate">{item.label}</span>
+              <span className="truncate">{t(item.labelKey)}</span>
             </Link>
           );
         })}
@@ -124,7 +126,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
         >
           <ArrowLeft className="w-5 h-5 flex-shrink-0" />
-          <span className="truncate">Retour au site</span>
+          <span className="truncate">{t('admin.back_to_site')}</span>
         </Link>
       </div>
     </>
@@ -140,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           <Menu className="w-5 h-5" />
         </button>
-        <h1 className="ml-3 text-sm font-bold text-kezak-dark truncate">Admin MojiraX</h1>
+        <h1 className="ms-3 text-sm font-bold text-kezak-dark truncate">{t('admin.admin_title')}</h1>
       </div>
 
       {/* Mobile drawer overlay */}

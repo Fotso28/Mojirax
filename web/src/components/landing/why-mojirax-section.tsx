@@ -4,14 +4,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Reveal } from './reveal';
-
-const points = [
-  'Correspondance intelligente basée sur vos compétences et objectifs',
-  "Profils vérifiés d'entrepreneurs et talents sérieux",
-  'Plan 30 jours pour structurer votre collaboration',
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function WhyMojiraxSection() {
+  const { t } = useTranslation();
+
+  const points = [
+    t('landing.why_point_1'),
+    t('landing.why_point_2'),
+    t('landing.why_point_3'),
+  ];
+
   return (
     <section className="py-20 lg:py-28 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,34 +25,27 @@ export function WhyMojiraxSection() {
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-5">
                   <Image
-                    src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=1000&fit=crop"
-                    alt="Réunion professionnelle"
-                    width={400}
-                    height={500}
+                    src="https://images.unsplash.com/photo-1613592237018-bbf8973eef4f?w=500&h=700&fit=crop&auto=format&q=80"
+                    alt="Fondatrice africaine en réflexion stratégique"
+                    width={500}
+                    height={700}
                     className="w-full h-72 object-cover rounded-3xl shadow-xl"
                   />
                   <Image
-                    src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=640&fit=crop"
-                    alt="Coworking"
-                    width={400}
-                    height={320}
+                    src="https://images.unsplash.com/photo-1739298061740-5ed03045b280?w=900&h=640&fit=crop&auto=format&q=80"
+                    alt="Équipe africaine en réunion de travail"
+                    width={900}
+                    height={640}
                     className="w-full h-56 object-cover rounded-3xl shadow-xl translate-x-8"
                   />
                 </div>
-                <div className="space-y-5 pt-10">
+                <div className="pt-10">
                   <Image
-                    src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=640&fit=crop"
-                    alt="Équipe startup"
-                    width={400}
-                    height={320}
-                    className="w-full h-56 object-cover rounded-3xl shadow-xl"
-                  />
-                  <Image
-                    src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=1000&fit=crop"
-                    alt="Collaboration"
-                    width={400}
-                    height={500}
-                    className="w-full h-72 object-cover rounded-3xl shadow-xl -translate-x-8"
+                    src="https://images.unsplash.com/photo-1655720357761-f18ea9e5e7e6?w=500&h=900&fit=crop&auto=format&q=80"
+                    alt="Cofondateurs africains en collaboration"
+                    width={500}
+                    height={900}
+                    className="w-full h-[30rem] object-cover rounded-3xl shadow-xl -translate-x-8"
                   />
                 </div>
               </div>
@@ -61,18 +57,15 @@ export function WhyMojiraxSection() {
           <div>
             <Reveal animation="fade-up">
               <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight text-gray-900">
-                Arrêtez de chercher.{' '}
+                {t('landing.why_title_1')}{' '}
                 <span className="text-kezak-primary">
-                  Commencez à matcher.
+                  {t('landing.why_title_highlight')}
                 </span>
               </h2>
             </Reveal>
             <Reveal animation="fade-up" delay={150}>
               <p className="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed">
-                Nous croyons que les meilleures startups naissent de la
-                rencontre des talents, sans frontières. Sur MojiraX, des
-                entrepreneurs du monde entier collaborent déjà pour
-                construire l&apos;avenir.
+                {t('landing.why_subtitle')}
               </p>
             </Reveal>
             <ul className="space-y-4 mb-10">
@@ -92,7 +85,7 @@ export function WhyMojiraxSection() {
                 href="/login"
                 className="inline-flex h-[48px] px-8 rounded-lg bg-kezak-primary text-white font-semibold items-center hover:bg-kezak-dark transition-all duration-200 shadow-lg shadow-kezak-primary/20 hover:-translate-y-0.5"
               >
-                Commencer maintenant
+                {t('landing.why_cta')}
               </Link>
             </Reveal>
           </div>

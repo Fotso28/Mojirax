@@ -2,34 +2,36 @@
 
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
-
-const COLLAB_OPTIONS = [
-    { value: 'EQUITY', label: 'Parts (Associé)' },
-    { value: 'PAID', label: 'Mission rémunérée' },
-    { value: 'HYBRID', label: 'Mixte' },
-    { value: 'DISCUSS', label: 'À discuter' },
-];
-
-const LOCATION_OPTIONS = [
-    { value: 'REMOTE', label: 'Remote (Télétravail)' },
-    { value: 'HYBRID', label: 'Hybride' },
-    { value: 'ONSITE', label: 'Présentiel' },
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function CandidateConditionsStep() {
     const { data, updateData, nextStep } = useOnboarding();
+    const { t } = useTranslation();
+
+    const COLLAB_OPTIONS = [
+        { value: 'EQUITY', label: t('auth.candidate_collab_equity') },
+        { value: 'PAID', label: t('auth.candidate_collab_paid') },
+        { value: 'HYBRID', label: t('auth.candidate_collab_hybrid') },
+        { value: 'DISCUSS', label: t('auth.candidate_collab_discuss') },
+    ];
+
+    const LOCATION_OPTIONS = [
+        { value: 'REMOTE', label: t('auth.candidate_location_remote') },
+        { value: 'HYBRID', label: t('auth.candidate_location_hybrid') },
+        { value: 'ONSITE', label: t('auth.candidate_location_onsite') },
+    ];
 
     return (
         <WizardStep
-            title="Conditions"
-            description="Vos attentes pour collaborer."
+            title={t('auth.candidate_conditions_title')}
+            description={t('auth.candidate_conditions_desc')}
             onNext={nextStep}
             isValid={!!data.collab_pref}
         >
             <div className="space-y-6">
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Type de collaboration recherchée
+                        {t('auth.candidate_collab_label')}
                     </label>
                     <div className="flex gap-3 flex-wrap">
                         {COLLAB_OPTIONS.map((opt) => (
@@ -50,7 +52,7 @@ export function CandidateConditionsStep() {
 
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Où voulez-vous travailler ?
+                        {t('auth.candidate_location_label')}
                     </label>
                     <div className="flex gap-3 flex-wrap">
                         {LOCATION_OPTIONS.map((opt) => (

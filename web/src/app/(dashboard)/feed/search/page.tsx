@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Search, ArrowLeft, X, Clock, Target, Users, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { formatDate } from '@/lib/utils/format-date';
 
 interface SearchProject {
     id: string;
@@ -43,6 +45,8 @@ interface SearchHistoryEntry {
 
 export default function SearchPage() {
     const router = useRouter();
+    const { t } = useTranslation();
+    const locale = useLocale();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult | null>(null);
     const [history, setHistory] = useState<SearchHistoryEntry[]>([]);
@@ -111,10 +115,10 @@ export default function SearchPage() {
                     <input
                         type="text"
                         autoFocus
-                        placeholder="Recherche sémantique (ex: 'développeur web Douala')"
+                        placeholder={t('dashboard.search_placeholder')}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="w-full h-[52px] pl-10 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all text-base"
+                        className="w-full h-[52px] ps-10 pe-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all text-base"
                     />
                     {query && (
                         <button
@@ -134,7 +138,7 @@ export default function SearchPage() {
                     <section className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <Target className="w-4 h-4" />
-                            Suggestions sémantiques
+                            {t('dashboard.search_semantic_suggestions')}
                         </h2>
                         <div className="flex flex-wrap gap-2">
                             {['Développeur Fullstack', 'Expert Marketing', 'Directeur Artistique', 'Growth Hacker', 'CTO à Douala'].map((term) => (
@@ -158,7 +162,7 @@ export default function SearchPage() {
                             <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-xl flex items-center gap-3">
                                 <Search className="w-4 h-4 text-blue-500" />
                                 <p className="text-xs text-blue-700">
-                                    Résultats pour <span className="font-bold">&quot;{query}&quot;</span> et termes sémantiquement proches (ex: {query === 'Développeur' ? 'Webmaster, Codeur' : 'profils similaires'}).
+                                    {t('dashboard.search_results_for')} <span className="font-bold">&quot;{query}&quot;</span> {t('dashboard.search_similar_terms', { example: query === 'Développeur' ? 'Webmaster, Codeur' : 'profils similaires' })}
                                 </p>
                             </div>
                         )}
@@ -168,7 +172,7 @@ export default function SearchPage() {
                             <section>
                                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                                     <Target className="w-4 h-4" />
-                                    Projets ({results.projects.length})
+                                    {t('dashboard.search_projects', { count: results.projects.length })}
                                 </h2>
                                 <div className="grid gap-3">
                                     {results.projects.map((p) => (
@@ -197,7 +201,7 @@ export default function SearchPage() {
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     <span className="text-[10px] bg-kezak-primary/10 text-kezak-primary px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
-                                                        {Math.round(Number(p.similarity) * 100)}% Match
+                                                        {t('common.match_percent', { percent: Math.round(Number(p.similarity) * 100) })}
                                                     </span>
                                                 </div>
                                             </div>
@@ -213,11 +217,11 @@ export default function SearchPage() {
                             <section>
                                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                                     <Users className="w-4 h-4" />
-                                    Talents ({results.candidates.length})
+                                    {t('dashboard.search_talents', { count: results.candidates.length })}
                                 </h2>
                                 <div className="grid gap-3">
                                     {results.candidates.map((c) => {
-                                        const displayName = c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Candidat';
+                                        const displayName = c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || t('common.candidate');
                                         return (
                                             <div
                                                 key={c.id}
@@ -242,7 +246,7 @@ export default function SearchPage() {
                                                         </div>
                                                     </div>
                                                     <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
-                                                        {Math.round(Number(c.similarity) * 100)}% Match
+                                                        {t('common.match_percent', { percent: Math.round(Number(c.similarity) * 100) })}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm text-gray-500 mt-2 line-clamp-2">{c.bio}</p>
@@ -255,8 +259,8 @@ export default function SearchPage() {
 
                         {results.projects.length === 0 && results.candidates.length === 0 && (
                             <div className="text-center py-12">
-                                <p className="text-gray-500">Aucun résultat pour &quot;{query}&quot;</p>
-                                <p className="text-sm text-gray-400 mt-1">Essayez des termes plus généraux (ex: "Développeur", "Yaoundé")</p>
+                                <p className="text-gray-500">{t('dashboard.search_no_results')} &quot;{query}&quot;</p>
+                                <p className="text-sm text-gray-400 mt-1">{t('dashboard.search_try_broader')}</p>
                             </div>
                         )}
                     </div>
@@ -268,14 +272,14 @@ export default function SearchPage() {
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                Historique
+                                {t('dashboard.search_history')}
                             </h2>
                             <button
                                 onClick={clearHistory}
                                 className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
                             >
                                 <Trash2 className="w-3 h-3" />
-                                Effacer
+                                {t('dashboard.search_clear_history')}
                             </button>
                         </div>
                         <div className="space-y-1">
@@ -290,7 +294,7 @@ export default function SearchPage() {
                                         {item.query}
                                     </span>
                                     <span className="text-[10px] text-gray-400">
-                                        {new Date(item.createdAt).toLocaleDateString('fr-FR')}
+                                        {formatDate(item.createdAt, locale)}
                                     </span>
                                 </button>
                             ))}
@@ -304,8 +308,8 @@ export default function SearchPage() {
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Search className="w-8 h-8 text-gray-300" />
                         </div>
-                        <h3 className="text-gray-900 font-medium">Commencez votre recherche</h3>
-                        <p className="text-sm text-gray-500 mt-1">Trouvez le cofondateur ou le projet idéal par mots clés ou par sens.</p>
+                        <h3 className="text-gray-900 font-medium">{t('dashboard.search_start_title')}</h3>
+                        <p className="text-sm text-gray-500 mt-1">{t('dashboard.search_start_subtitle')}</p>
                     </div>
                 )}
             </div>

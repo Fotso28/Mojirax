@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface OnboardingState {
     data: Record<string, any>;
@@ -57,7 +58,7 @@ export function OnboardingProvider({ children, storageKey, initialData, editProj
                         loadedFromServer = true;
                     }
                 } catch (e) {
-                    console.warn("Failed to load server draft", e);
+                    logger.warn("Failed to load server draft", e);
                 }
             }
 
@@ -70,7 +71,7 @@ export function OnboardingProvider({ children, storageKey, initialData, editProj
                         setDataState(parsed.data || {});
                         if (typeof parsed.step === 'number') setCurrentStep(parsed.step);
                     } catch (e) {
-                        console.error("Failed to load local draft", e);
+                        logger.error("Failed to load local draft", e);
                     }
                 }
             }
@@ -93,7 +94,7 @@ export function OnboardingProvider({ children, storageKey, initialData, editProj
             try {
                 await AXIOS_INSTANCE.patch('/users/creating-projet', stateToSave);
             } catch (e) {
-                console.warn("Auto-save failed", e);
+                logger.warn("Auto-save failed", e);
             }
         }, 1500); // 1.5s debounce
 
@@ -118,7 +119,7 @@ export function OnboardingProvider({ children, storageKey, initialData, editProj
             await submitFn(data);
             localStorage.removeItem(storageKey); // Clear draft on success
         } catch (error) {
-            console.error(error);
+            logger.error('Onboarding submit failed:', error);
             throw error;
         } finally {
             setIsSubmitting(false);

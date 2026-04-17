@@ -3,28 +3,17 @@
 import { useAuth } from '@/context/auth-context';
 import { Button, Input } from '@/components/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { getPlanIntent, withPlanIntent, triggerCheckoutByPlanKey } from '@/lib/utils/plan-intent';
 import { getFirebaseErrorMessage } from '@/utils/firebase-errors';
 import { AXIOS_INSTANCE as axiosInstance } from '@/api/axios-instance';
 import { Rocket, Compass, CheckCircle, ArrowRight, Zap, ShieldCheck, Users } from 'lucide-react';
 import { CountrySelect } from '@/components/ui/country-select';
 import { COUNTRIES } from '@/lib/constants/countries';
-
-const intentions = [
-    {
-        id: 'PUBLISH',
-        label: 'Publier un projet',
-        description: 'J\'ai une vision et je cherche des partenaires pour la concrétiser.',
-        icon: Rocket,
-    },
-    {
-        id: 'SEARCH',
-        label: 'Chercher un projet',
-        description: 'Je veux rejoindre un projet ambitieux en tant que co-fondateur technique ou business.',
-        icon: Compass,
-    }
-];
+import { useTranslation } from '@/context/i18n-context';
+import { useToast } from '@/context/toast-context';
+import { logger } from '@/lib/logger';
+import Image from 'next/image';
 
 // Icons
 const GoogleIcon = () => (
@@ -45,13 +34,31 @@ const LinkedInIcon = () => (
 const CoFounderLogo = () => (
     <div className="flex items-center gap-2">
         <img src="/logo/logo.svg" alt="MojiraX Logo" className="w-10 h-10 object-contain" />
-        <span className="text-xl font-bold text-slate-900">Mojira<span className="text-blue-600">X</span></span>
+        <span className="text-xl font-bold text-slate-900">Mojira<span className="text-kezak-primary">X</span></span>
     </div>
 );
 
+// Required-field marker. Visible asterisk for sighted users,
+// translated hint for screen readers.
+function RequiredMark({ t }: { t: (k: string) => string }) {
+    return <span aria-label={t('common.required')} className="text-red-500 ms-0.5">*</span>;
+}
 
+
+// Next 16.2+ requires components that call useSearchParams() to be wrapped
+// in a Suspense boundary to allow CSR bailout during SSG.
 export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginPageContent />
+        </Suspense>
+    );
+}
+
+function LoginPageContent() {
     const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
+    const { t } = useTranslation();
+    const { showToast } = useToast();
     const router = useRouter();
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
     const [step, setStep] = useState<'auth' | 'role'>('auth');
@@ -100,8 +107,8 @@ export default function LoginPage() {
         setError('');
         const trimmedEmail = email.trim();
 
-        if (!trimmedEmail) { setError('Veuillez entrer une adresse email.'); return; }
-        if (!password) { setError('Veuillez entrer votre mot de passe.'); return; }
+        if (!trimmedEmail) { setError(t('auth.error_email_required')); return; }
+        if (!password) { setError(t('auth.error_password_required')); return; }
 
         setIsSubmitting(true);
         justSignedUp.current = false;
@@ -115,7 +122,7 @@ export default function LoginPage() {
                 router.push('/');
             }
         } catch (err: any) {
-            console.error("Login error:", err);
+            logger.error("Login error:", err);
             setError(getFirebaseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
@@ -126,8 +133,8 @@ export default function LoginPage() {
         setError('');
         const trimmedEmail = email.trim();
 
-        if (!trimmedEmail) { setError('Veuillez entrer une adresse email.'); return; }
-        if (!password || password.length < 6) { setError('Le mot de passe doit contenir au moins 6 caractères.'); return; }
+        if (!trimmedEmail) { setError(t('auth.error_email_required')); return; }
+        if (!password || password.length < 6) { setError(t('auth.error_password_min')); return; }
 
         setIsSubmitting(true);
         justSignedUp.current = true;
@@ -136,7 +143,7 @@ export default function LoginPage() {
             setStep('role');
         } catch (err: any) {
             justSignedUp.current = false;
-            console.error("Signup error:", err);
+            logger.error("Signup error:", err);
             setError(getFirebaseErrorMessage(err));
         } finally {
             setIsSubmitting(false);
@@ -160,8 +167,8 @@ export default function LoginPage() {
             const onboardingPath = selectedIntention === 'PUBLISH' ? '/onboarding/founder' : '/onboarding/candidate';
             router.push(withPlanIntent(onboardingPath, planIntent));
         } catch (error) {
-            console.error('Failed to update profile:', error);
-            setError('Une erreur est survenue lors de la mise à jour du profil.');
+            logger.error('Failed to update profile:', error);
+            setError(t('auth.error_profile_update'));
         } finally {
             setIsUpdatingProfile(false);
         }
@@ -179,13 +186,13 @@ export default function LoginPage() {
     if (loading || (user && !justSignedUp.current)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kezak-primary"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen grid lg:grid-cols-2 bg-white font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
+        <div className="min-h-screen grid lg:grid-cols-2 bg-white font-sans text-slate-900 selection:bg-kezak-light selection:text-kezak-dark overflow-hidden">
             {/* Section Gauche : Authentification */}
             <div className="flex flex-col h-full overflow-y-auto relative bg-white lg:shadow-[20px_0_40px_-15px_rgba(0,0,0,0.05)] z-20">
                 <div className="flex flex-col p-6 lg:p-14 max-w-[500px] mx-auto w-full min-h-full">
@@ -198,10 +205,10 @@ export default function LoginPage() {
                             <div className="w-full transition-all duration-500 animate-in fade-in zoom-in-95">
                                 <div className="mb-8">
                                     <h1 className="text-3xl lg:text-[2rem] font-bold tracking-tight text-slate-900 mb-2 leading-tight">
-                                        {authMode === 'signin' ? 'Bon retour' : 'Créer un compte'}
+                                        {authMode === 'signin' ? t('auth.welcome_back') : t('auth.create_account')}
                                     </h1>
                                     <p className="text-slate-500 font-medium text-[15px]">
-                                        Bienvenue sur <span className="text-slate-900 font-semibold">MojiraX</span>, le hub exclusif des fondateurs.
+                                        {t('auth.welcome_subtitle_text')} <span className="text-slate-900 font-semibold">MojiraX</span>{t('auth.welcome_subtitle_suffix')}
                                     </p>
                                 </div>
 
@@ -212,14 +219,14 @@ export default function LoginPage() {
                                         onClick={() => { setAuthMode('signin'); setError(''); }}
                                         className={`flex-1 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-300 ${authMode === 'signin' ? 'bg-white text-slate-900 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] scale-[1.02]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
                                     >
-                                        Connexion
+                                        {t('auth.tab_signin')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => { setAuthMode('signup'); setError(''); }}
                                         className={`flex-1 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-300 ${authMode === 'signup' ? 'bg-white text-slate-900 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] scale-[1.02]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
                                     >
-                                        Inscription
+                                        {t('auth.tab_signup')}
                                     </button>
                                 </div>
 
@@ -230,7 +237,7 @@ export default function LoginPage() {
                                             <GoogleIcon />
                                             <span>Google</span>
                                         </button>
-                                        <button type="button" onClick={() => alert('LinkedIn login coming soon')} className="group flex items-center justify-center gap-3 h-[46px] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-semibold text-[14px] text-slate-700 shadow-sm hover:shadow">
+                                        <button type="button" onClick={() => showToast(t('auth.linkedin_coming_soon'), 'warning')} className="group flex items-center justify-center gap-3 h-[46px] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-semibold text-[14px] text-slate-700 shadow-sm hover:shadow">
                                             <LinkedInIcon />
                                             <span>LinkedIn</span>
                                         </button>
@@ -238,7 +245,7 @@ export default function LoginPage() {
 
                                     <div className="relative flex items-center py-1">
                                         <div className="flex-grow border-t border-slate-100"></div>
-                                        <span className="flex-shrink-0 mx-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">Ou email</span>
+                                        <span className="flex-shrink-0 mx-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">{t('auth.or_email')}</span>
                                         <div className="flex-grow border-t border-slate-100"></div>
                                     </div>
 
@@ -254,25 +261,25 @@ export default function LoginPage() {
                                         {authMode === 'signup' && (
                                             <div className="grid grid-cols-2 gap-3.5 mb-4.5">
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ml-1">Prénom</label>
-                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="John" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.first_name')}<RequiredMark t={t} /></label>
+                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.first_name_placeholder')} required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ml-1">Nom</label>
-                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="Doe" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.last_name')}<RequiredMark t={t} /></label>
+                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.last_name_placeholder')} required value={lastName} onChange={(e) => setLastName(e.target.value)} />
                                                 </div>
                                             </div>
                                         )}
 
                                         <div className="space-y-1.5 mb-4.5">
-                                            <label className="text-[13px] font-semibold text-slate-700 ml-1">Adresse Email</label>
-                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="nom@entreprise.com" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                            <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.email_label')}<RequiredMark t={t} /></label>
+                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.email_placeholder')} required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                                         </div>
 
                                         {authMode === 'signup' && (
                                             <>
                                                 <div className="space-y-1.5 mb-4.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ml-1">Pays</label>
+                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.country_label')}<RequiredMark t={t} /></label>
                                                     <CountrySelect
                                                         value={country}
                                                         onChange={(val) => {
@@ -290,20 +297,20 @@ export default function LoginPage() {
                                                                 }
                                                             }
                                                         }}
-                                                        placeholder="Sélectionner votre pays..."
+                                                        placeholder={t('auth.country_placeholder')}
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3.5 mb-4.5">
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[13px] font-semibold text-slate-700 ml-1">Téléphone</label>
+                                                        <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.phone_label')}<RequiredMark t={t} /></label>
                                                         <div className="relative flex items-center">
                                                             {dialCode && (
                                                                 <span className="absolute left-4 text-[15px] text-slate-500 font-medium pointer-events-none">{dialCode}</span>
                                                             )}
                                                             <input
-                                                                className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400"
+                                                                className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400"
                                                                 style={{ paddingLeft: dialCode ? `${dialCode.length * 10 + 20}px` : '16px', paddingRight: '16px' }}
-                                                                placeholder={dialCode ? '600 000 000' : '+237 600 000 000'}
+                                                                placeholder={dialCode ? t('auth.phone_placeholder') : t('auth.phone_placeholder_full')}
                                                                 required
                                                                 type="tel"
                                                                 value={dialCode && phone.startsWith(dialCode) ? phone.slice(dialCode.length).trimStart() : phone}
@@ -315,39 +322,39 @@ export default function LoginPage() {
                                                         </div>
                                                     </div>
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[13px] font-semibold text-slate-700 ml-1">Ville</label>
-                                                        <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder="Douala" required value={address} onChange={(e) => setAddress(e.target.value)} />
+                                                        <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.city_label')}<RequiredMark t={t} /></label>
+                                                        <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.city_placeholder')} required value={address} onChange={(e) => setAddress(e.target.value)} />
                                                     </div>
                                                 </div>
                                             </>
                                         )}
 
                                         <div className="space-y-1.5">
-                                            <div className="flex justify-between items-center ml-1 mb-0.5">
-                                                <label className="text-[13px] font-semibold text-slate-700">Mot de passe</label>
+                                            <div className="flex justify-between items-center ms-1 mb-0.5">
+                                                <label className="text-[13px] font-semibold text-slate-700">{t('auth.password_label')}<RequiredMark t={t} /></label>
                                                 {authMode === 'signin' && (
-                                                    <a href="#" className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors">Mot de passe oublié ?</a>
+                                                    <a href="#" className="text-[13px] font-semibold text-kezak-primary hover:text-kezak-dark hover:underline transition-colors">{t('auth.forgot_password')}</a>
                                                 )}
                                             </div>
-                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400 tracking-wider" placeholder="••••••••" required type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400 tracking-wider" placeholder={t('auth.password_placeholder')} required type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                                         </div>
 
                                         <div className="pt-5">
                                             <button
                                                 type="submit"
                                                 disabled={isSubmitting}
-                                                className="w-full h-[48px] bg-[#0D6EFD] hover:bg-blue-700 text-white rounded-xl font-bold transition-all disabled:opacity-70 disabled:hover:bg-[#0D6EFD] flex items-center justify-center shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-px"
+                                                className="w-full h-[52px] bg-kezak-primary hover:bg-kezak-dark text-white rounded-xl font-bold transition-all disabled:opacity-70 disabled:hover:bg-kezak-primary flex items-center justify-center shadow-lg shadow-kezak-primary/20 hover:shadow-xl hover:shadow-kezak-primary/30 hover:-translate-y-px"
                                             >
-                                                {isSubmitting ? 'Traitement...' : (authMode === 'signin' ? 'Accéder au Dashboard' : "Créer le compte")}
+                                                {isSubmitting ? t('auth.submitting') : (authMode === 'signin' ? t('auth.submit_signin') : t('auth.submit_signup'))}
                                             </button>
                                         </div>
                                     </form>
 
                                     <div className="text-center pt-3">
                                         <p className="text-slate-500 font-medium text-[14px]">
-                                            {authMode === 'signup' ? 'Vous avez déjà un compte ? ' : 'Vous n\'avez pas de compte ? '}
-                                            <button type="button" onClick={() => { setAuthMode(authMode === 'signup' ? 'signin' : 'signup'); setError(''); }} className="text-blue-600 font-bold hover:underline hover:text-blue-700 transition-colors">
-                                                {authMode === 'signup' ? 'Connectez-vous' : 'Inscrivez-vous'}
+                                            {authMode === 'signup' ? t('auth.already_have_account') : t('auth.no_account')}
+                                            <button type="button" onClick={() => { setAuthMode(authMode === 'signup' ? 'signin' : 'signup'); setError(''); }} className="text-kezak-primary font-bold hover:underline hover:text-kezak-dark transition-colors">
+                                                {authMode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup')}
                                             </button>
                                         </p>
                                     </div>
@@ -356,18 +363,21 @@ export default function LoginPage() {
                         ) : (
                             <div className="w-full transition-all duration-500 animate-in slide-in-from-right-8 fade-in">
                                 <div className="text-center mb-10">
-                                    <h2 className="text-[28px] font-bold tracking-tight text-slate-900 mb-2">Que souhaitez-vous faire ?</h2>
-                                    <p className="text-slate-500 font-medium text-[15px]">Vous pourrez toujours faire les deux par la suite.</p>
+                                    <h2 className="text-[28px] font-bold tracking-tight text-slate-900 mb-2">{t('auth.what_do_you_want')}</h2>
+                                    <p className="text-slate-500 font-medium text-[15px]">{t('auth.can_do_both_later')}</p>
                                 </div>
                                 <div className="space-y-4 mb-8">
-                                    {intentions.map((item) => (
+                                    {[
+                                        { id: 'PUBLISH', label: t('auth.intention_publish_label'), description: t('auth.intention_publish_desc'), icon: Rocket },
+                                        { id: 'SEARCH', label: t('auth.intention_search_label'), description: t('auth.intention_search_desc'), icon: Compass },
+                                    ].map((item) => (
                                         <div
                                             key={item.id}
                                             onClick={() => setSelectedIntention(item.id)}
                                             className={`relative p-5 rounded-2xl border-[2px] cursor-pointer transition-all duration-200 group flex items-start gap-4 bg-white
-                                                ${selectedIntention === item.id ? 'border-blue-600 shadow-md outline outline-4 outline-blue-50/50 scale-[1.01]' : 'border-slate-200 hover:border-blue-200 hover:bg-slate-50'}`}
+                                                ${selectedIntention === item.id ? 'border-kezak-primary shadow-md outline outline-4 outline-kezak-light/50 scale-[1.01]' : 'border-slate-200 hover:border-kezak-light hover:bg-slate-50'}`}
                                         >
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${selectedIntention === item.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${selectedIntention === item.id ? 'bg-kezak-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                                                 <item.icon className="w-6 h-6" />
                                             </div>
                                             <div className="flex-1">
@@ -375,7 +385,7 @@ export default function LoginPage() {
                                                 <p className="text-slate-500 text-[14px] font-medium leading-relaxed">{item.description}</p>
                                             </div>
                                             {selectedIntention === item.id && (
-                                                <div className="absolute top-5 right-5 text-blue-600 animate-in zoom-in">
+                                                <div className="absolute top-5 right-5 text-kezak-primary animate-in zoom-in">
                                                     <CheckCircle className="w-5 h-5 bg-white rounded-full bg-blend-lighten" />
                                                 </div>
                                             )}
@@ -385,17 +395,17 @@ export default function LoginPage() {
                                 <button
                                     onClick={handleContinueIntention}
                                     disabled={!selectedIntention || isUpdatingProfile}
-                                    className="w-full h-[48px] bg-slate-900 hover:bg-black text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:hover:bg-slate-900 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-px"
+                                    className="w-full h-[52px] bg-kezak-primary hover:bg-kezak-dark text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:hover:bg-kezak-primary flex items-center justify-center gap-2 shadow-lg shadow-kezak-primary/20 hover:shadow-xl hover:-translate-y-px"
                                 >
-                                    {isUpdatingProfile ? 'Configuration...' : 'Continuer'}
-                                    {!isUpdatingProfile && <ArrowRight className="w-5 h-5 ml-1" />}
+                                    {isUpdatingProfile ? t('auth.configuring') : t('common.continue')}
+                                    {!isUpdatingProfile && <ArrowRight className="w-5 h-5 ms-1" />}
                                 </button>
                                 <div className="mt-6 flex justify-center">
                                     <button
                                         onClick={() => setStep('auth')}
                                         className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
                                     >
-                                        Retour à l'inscription
+                                        {t('auth.back_to_signup')}
                                     </button>
                                 </div>
                             </div>
@@ -412,10 +422,10 @@ export default function LoginPage() {
                 <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
                     {/* Title */}
                     <h2 className="text-3xl lg:text-[36px] font-bold text-center text-slate-900 mb-3 leading-tight tracking-tight">
-                        Trouvez votre <span className="text-blue-600">associé idéal</span>
+                        {t('auth.hero_title_start')}<span className="text-kezak-primary">{t('auth.hero_title_highlight')}</span>
                     </h2>
                     <p className="text-slate-500 text-center text-[15px] font-medium mb-12 max-w-sm leading-relaxed">
-                        MojiraX connecte les fondateurs visionnaires avec les talents qui feront décoller leur projet.
+                        {t('auth.hero_subtitle')}
                     </p>
 
                     {/* Two profile cards with handshake */}
@@ -423,45 +433,61 @@ export default function LoginPage() {
                         {/* Founder card */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-left">
                             <div className="flex items-center gap-3 mb-3.5">
-                                <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">AF</div>
+                                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-kezak-light flex-shrink-0 ring-2 ring-white shadow-sm">
+                                    <Image
+                                        src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=88&h=88&fit=crop&crop=faces&q=80"
+                                        alt={t('auth.card_founder_name')}
+                                        fill
+                                        sizes="44px"
+                                        className="object-cover"
+                                    />
+                                </div>
                                 <div>
-                                    <p className="font-semibold text-slate-900 text-[14px] leading-tight">Amina F.</p>
-                                    <p className="text-[12px] text-slate-500 font-medium">Fondatrice</p>
+                                    <p className="font-semibold text-slate-900 text-[14px] leading-tight">{t('auth.card_founder_name')}</p>
+                                    <p className="text-[12px] text-slate-500 font-medium">{t('auth.card_founder_role')}</p>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">FinTech</span>
+                                    <span className="text-[11px] font-semibold bg-kezak-light text-kezak-dark px-2 py-0.5 rounded-md">FinTech</span>
                                     <span className="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">Douala</span>
                                 </div>
-                                <p className="text-[12px] text-slate-500 leading-relaxed">Cherche un CTO pour lancer une app de paiement mobile.</p>
+                                <p className="text-[12px] text-slate-500 leading-relaxed">{t('auth.card_founder_desc')}</p>
                             </div>
                         </div>
 
                         {/* Handshake icon center */}
                         <div className="flex flex-col items-center gap-2 animate-pulse-slow">
-                            <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/25">
+                            <div className="w-14 h-14 rounded-full bg-kezak-primary flex items-center justify-center shadow-lg shadow-kezak-primary/25">
                                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z" />
                                 </svg>
                             </div>
-                            <span className="text-[11px] font-bold text-blue-600 tracking-wide uppercase">Match</span>
+                            <span className="text-[11px] font-bold text-kezak-primary tracking-wide uppercase">Match</span>
                         </div>
 
                         {/* Candidate card */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-right">
                             <div className="flex items-center gap-3 mb-3.5">
-                                <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm flex-shrink-0">KM</div>
+                                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-emerald-100 flex-shrink-0 ring-2 ring-white shadow-sm">
+                                    <Image
+                                        src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=88&h=88&fit=crop&crop=faces&q=80"
+                                        alt={t('auth.card_candidate_name')}
+                                        fill
+                                        sizes="44px"
+                                        className="object-cover"
+                                    />
+                                </div>
                                 <div>
-                                    <p className="font-semibold text-slate-900 text-[14px] leading-tight">Kevin M.</p>
-                                    <p className="text-[12px] text-slate-500 font-medium">Candidat</p>
+                                    <p className="font-semibold text-slate-900 text-[14px] leading-tight">{t('auth.card_candidate_name')}</p>
+                                    <p className="text-[12px] text-slate-500 font-medium">{t('auth.card_candidate_role')}</p>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md">Dev Full-Stack</span>
                                 </div>
-                                <p className="text-[12px] text-slate-500 leading-relaxed">5 ans d'expérience, prêt à co-fonder un projet ambitieux.</p>
+                                <p className="text-[12px] text-slate-500 leading-relaxed">{t('auth.card_candidate_desc')}</p>
                             </div>
                         </div>
                     </div>
@@ -469,23 +495,23 @@ export default function LoginPage() {
                     {/* Match percentage bar */}
                     <div className="w-full max-w-xs mb-12">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-[13px] font-semibold text-slate-700">Compatibilité</span>
-                            <span className="text-[13px] font-bold text-blue-600">94%</span>
+                            <span className="text-[13px] font-semibold text-slate-700">{t('auth.compatibility')}</span>
+                            <span className="text-[13px] font-bold text-kezak-primary">94%</span>
                         </div>
                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full animate-fill-bar" style={{ width: '94%' }}></div>
+                            <div className="h-full bg-gradient-to-r from-kezak-primary to-kezak-dark rounded-full animate-fill-bar" style={{ width: '94%' }}></div>
                         </div>
                     </div>
 
                     {/* 3 features */}
                     <div className="grid grid-cols-3 gap-6 w-full">
                         <div className="flex flex-col items-center text-center gap-2.5">
-                            <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <Zap className="w-5 h-5 text-blue-600" />
+                            <div className="w-11 h-11 rounded-xl bg-kezak-light flex items-center justify-center">
+                                <Zap className="w-5 h-5 text-kezak-primary" />
                             </div>
                             <div>
-                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">Matching intelligent</p>
-                                <p className="text-[11px] text-slate-500 font-medium leading-snug">Algorithme de compatibilité avancé</p>
+                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">{t('auth.feature_matching_title')}</p>
+                                <p className="text-[11px] text-slate-500 font-medium leading-snug">{t('auth.feature_matching_desc')}</p>
                             </div>
                         </div>
                         <div className="flex flex-col items-center text-center gap-2.5">
@@ -493,8 +519,8 @@ export default function LoginPage() {
                                 <ShieldCheck className="w-5 h-5 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">Profils vérifiés</p>
-                                <p className="text-[11px] text-slate-500 font-medium leading-snug">Communauté de confiance</p>
+                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">{t('auth.feature_verified_title')}</p>
+                                <p className="text-[11px] text-slate-500 font-medium leading-snug">{t('auth.feature_verified_desc')}</p>
                             </div>
                         </div>
                         <div className="flex flex-col items-center text-center gap-2.5">
@@ -502,8 +528,8 @@ export default function LoginPage() {
                                 <Users className="w-5 h-5 text-purple-600" />
                             </div>
                             <div>
-                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">Réseau africain</p>
-                                <p className="text-[11px] text-slate-500 font-medium leading-snug">Fondateurs du continent</p>
+                                <p className="text-[13px] font-bold text-slate-900 mb-0.5">{t('auth.feature_network_title')}</p>
+                                <p className="text-[11px] text-slate-500 font-medium leading-snug">{t('auth.feature_network_desc')}</p>
                             </div>
                         </div>
                     </div>

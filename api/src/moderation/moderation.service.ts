@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class ModerationService {
@@ -11,6 +12,7 @@ export class ModerationService {
         private readonly prisma: PrismaService,
         private readonly aiService: AiService,
         private readonly notificationsService: NotificationsService,
+        private readonly i18n: I18nService,
     ) {}
 
     /**
@@ -62,7 +64,8 @@ export class ModerationService {
             // Si clairement illegal, rejeter immediatement
             if (!legalityResult.isLegal && legalityResult.confidence >= 0.7) {
                 const score = 0.1;
-                const reason = legalityResult.reason || 'Projet non conforme aux conditions de la plateforme';
+                const locale = await this.notificationsService.getUserLocale(project.founderId);
+                const reason = legalityResult.reason || this.i18n.t('moderation.reject_reason', locale);
 
                 await this.createModerationLog(projectId, null, score, reason, {
                     legality: legalityResult,
@@ -77,8 +80,8 @@ export class ModerationService {
                 await this.notificationsService.notify(
                     project.founderId,
                     'MODERATION_ALERT',
-                    'Projet rejete',
-                    `Votre projet "${project.name}" n'est pas conforme : ${reason}`,
+                    this.i18n.t('notification.project_rejected_title', locale),
+                    this.i18n.t('notification.project_illegal_body', locale, { projectName: project.name, reason }),
                     { projectId, reason },
                 );
 
@@ -124,28 +127,29 @@ export class ModerationService {
             });
 
             // 7. Notifier le fondateur
+            const founderLocale = await this.notificationsService.getUserLocale(project.founderId);
             if (newStatus === 'PUBLISHED') {
                 await this.notificationsService.notify(
                     project.founderId,
                     'MODERATION_ALERT',
-                    'Projet publie',
-                    `Votre projet "${project.name}" a ete verifie et publie avec succes.`,
+                    this.i18n.t('notification.project_published_title', founderLocale),
+                    this.i18n.t('notification.project_published_body', founderLocale, { projectName: project.name }),
                     { projectId },
                 );
             } else if (newStatus === 'REJECTED') {
                 await this.notificationsService.notify(
                     project.founderId,
                     'MODERATION_ALERT',
-                    'Projet rejete',
-                    `Votre projet "${project.name}" a ete rejete : ${reason}`,
+                    this.i18n.t('notification.project_rejected_title', founderLocale),
+                    this.i18n.t('notification.project_rejected_body', founderLocale, { projectName: project.name, reason }),
                     { projectId, reason },
                 );
             } else {
                 await this.notificationsService.notify(
                     project.founderId,
                     'MODERATION_ALERT',
-                    'Projet en verification',
-                    `Votre projet "${project.name}" est en cours de verification par notre equipe.`,
+                    this.i18n.t('notification.project_pending_title', founderLocale),
+                    this.i18n.t('notification.project_pending_body', founderLocale, { projectName: project.name }),
                     { projectId },
                 );
             }
@@ -185,14 +189,19 @@ export class ModerationService {
                 select: {
                     id: true,
                     userId: true,
-                    title: true,
-                    bio: true,
-                    skills: true,
-                    yearsOfExperience: true,
-                    location: true,
                     shortPitch: true,
                     vision: true,
                     roleType: true,
+                    user: {
+                        select: {
+                            title: true,
+                            bio: true,
+                            skills: true,
+                            yearsOfExperience: true,
+                            city: true,
+                            country: true,
+                        },
+                    },
                 },
             });
 
@@ -202,12 +211,13 @@ export class ModerationService {
             }
 
             // Appeler la validation IA
+            const location = [profile.user.city, profile.user.country].filter(Boolean).join(', ') || null;
             const result = await this.aiService.validateCandidateProfile({
-                title: profile.title,
-                bio: profile.bio,
-                skills: profile.skills,
-                yearsOfExperience: profile.yearsOfExperience,
-                location: profile.location,
+                title: profile.user.title,
+                bio: profile.user.bio,
+                skills: profile.user.skills,
+                yearsOfExperience: profile.user.yearsOfExperience,
+                location,
                 shortPitch: profile.shortPitch,
                 vision: profile.vision,
                 roleType: profile.roleType,
@@ -230,19 +240,20 @@ export class ModerationService {
             });
 
             // Notifier le candidat
+            const candidateLocale = await this.notificationsService.getUserLocale(profile.userId);
             if (newStatus === 'PUBLISHED') {
                 await this.notificationsService.notify(
                     profile.userId,
                     'PROFILE_PUBLISHED',
-                    'Profil publie',
-                    'Votre profil candidat est maintenant visible dans le feed.',
+                    this.i18n.t('notification.profile_published_title', candidateLocale),
+                    this.i18n.t('notification.profile_published_body', candidateLocale),
                 );
             } else {
                 await this.notificationsService.notify(
                     profile.userId,
                     'PROFILE_REVIEW',
-                    'Profil en verification',
-                    'Votre profil est en cours de verification par notre equipe.',
+                    this.i18n.t('notification.profile_review_title', candidateLocale),
+                    this.i18n.t('notification.profile_review_body', candidateLocale),
                 );
             }
 

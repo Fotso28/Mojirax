@@ -5,21 +5,22 @@ import {
   IsArray,
   IsInt,
   Min,
-  MaxLength,
   ArrayMaxSize,
   ValidateNested,
+  IsObject,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateFaqDto {
-  @IsString()
-  @MaxLength(300)
-  question: string;
+  @IsObject()
+  @IsNotEmpty()
+  question: Record<string, string>; // { "fr": "...", "en": "..." }
 
-  @IsString()
-  @MaxLength(2000)
-  answer: string;
+  @IsObject()
+  @IsNotEmpty()
+  answer: Record<string, string>; // { "fr": "...", "en": "..." }
 
   @IsBoolean()
   @IsOptional()

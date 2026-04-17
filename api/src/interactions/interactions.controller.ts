@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Param, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, Param, Query, ForbiddenException, Headers } from '@nestjs/common';
 import { InteractionsService } from './interactions.service';
 import { CreateInteractionDto } from './dto/create-interaction.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
@@ -6,13 +6,17 @@ import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagg
 import { PlanGuard } from '../payment/guards/plan.guard';
 import { RequiresPlan } from '../payment/decorators/requires-plan.decorator';
 import { UserPlan } from '@prisma/client';
+import { I18nService } from '../i18n/i18n.service';
 
 @ApiTags('interactions')
 @ApiBearerAuth()
 @UseGuards(FirebaseAuthGuard)
 @Controller('interactions')
 export class InteractionsController {
-    constructor(private readonly interactionsService: InteractionsService) { }
+    constructor(
+        private readonly interactionsService: InteractionsService,
+        private readonly i18n: I18nService,
+    ) { }
 
     @Post()
     @ApiOperation({ summary: 'Track a user-project interaction' })
@@ -33,10 +37,11 @@ export class InteractionsController {
     @Post('undo')
     @ApiOperation({ summary: 'Undo the last skip within the last 5 minutes (PLUS+)' })
     @ApiResponse({ status: 200, description: 'Undo result.' })
-    async undoLastSkip(@Request() req) {
+    async undoLastSkip(@Request() req, @Headers('accept-language') acceptLang?: string) {
+        const locale = this.i18n.resolveLocale(acceptLang);
         const result = await this.interactionsService.undoLastSkip(req.user.uid);
         if (!result) {
-            return { success: false, message: 'Aucun skip récent à annuler' };
+            return { success: false, message: this.i18n.t('interaction.no_recent_skip', locale) };
         }
         return { success: true, projectId: result.projectId };
     }
@@ -47,10 +52,15 @@ export class InteractionsController {
     @ApiOperation({ summary: 'Get users who liked a project (PRO+)' })
     @ApiResponse({ status: 200, description: 'List of likers with user info.' })
     async getLikers(
+        @Request() req,
         @Param('projectId') projectId: string,
         @Query('take') take?: string,
         @Query('skip') skip?: string,
     ) {
+        const project = await this.interactionsService.getProjectOwner(projectId);
+        if (!project || project.founderId !== req.user.dbUser.id) {
+            throw new ForbiddenException(this.i18n.t('error.forbidden'));
+        }
         return this.interactionsService.getLikers(
             projectId,
             take ? parseInt(take, 10) : 20,

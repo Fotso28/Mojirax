@@ -1,28 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import Link from 'next/link';
-import { Plus, ArrowRight, Calendar, Layers, Globe, Users, Pencil, Trash2, AlertTriangle, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, ArrowRight, Calendar, Layers, Globe, Users, Pencil, Trash2, AlertTriangle, Clock, CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { DeleteBottomSheet } from '@/components/ui/delete-bottom-sheet';
 import { getSectorLabel } from '@/lib/constants/sectors';
-
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  DRAFT: { label: 'Brouillon', className: 'bg-gray-100 text-gray-600' },
-  PENDING_AI: { label: 'En verification', className: 'bg-amber-50 text-amber-600' },
-  ANALYZING: { label: 'Analyse IA...', className: 'bg-blue-50 text-blue-600' },
-  PUBLISHED: { label: 'Publie', className: 'bg-green-50 text-green-600' },
-  REJECTED: { label: 'Rejete', className: 'bg-red-50 text-red-600' },
-};
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { useUpsell } from '@/context/upsell-context';
+import { formatDateShort } from '@/lib/utils/format-date';
 
 export default function MyProjectsPage() {
   const { dbUser, loading, refreshDbUser } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
+  const locale = useLocale();
+  const { openUpsell } = useUpsell();
+  const isFreeUser = !dbUser?.plan || dbUser.plan === 'FREE';
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showNewProjectWarning, setShowNewProjectWarning] = useState(false);
+
+  const STATUS_LABELS = useMemo(() => ({
+    DRAFT: { label: t('common.status_draft'), className: 'bg-gray-100 text-gray-600' },
+    PENDING_AI: { label: t('common.status_pending_ai'), className: 'bg-amber-50 text-amber-600' },
+    ANALYZING: { label: t('common.status_analyzing'), className: 'bg-blue-50 text-blue-600' },
+    PUBLISHED: { label: t('common.status_published'), className: 'bg-green-50 text-green-600' },
+    REJECTED: { label: t('common.status_rejected'), className: 'bg-red-50 text-red-600' },
+  }), [t]);
 
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
@@ -30,11 +37,11 @@ export default function MyProjectsPage() {
     setDeletingId(confirmDeleteId);
     try {
       await AXIOS_INSTANCE.delete(`/projects/${confirmDeleteId}`);
-      showToast('Projet supprimé');
+      showToast(t('dashboard.project_deleted'));
       setConfirmDeleteId(null);
       await refreshDbUser();
     } catch {
-      showToast('Erreur lors de la suppression', 'error');
+      showToast(t('dashboard.project_delete_error'), 'error');
     } finally {
       setDeletingId(null);
     }
@@ -49,7 +56,7 @@ export default function MyProjectsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-8 p-4 sm:p-8">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
             <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
@@ -76,24 +83,32 @@ export default function MyProjectsPage() {
   }
 
   return (
-    <div className="space-y-8 p-4 sm:p-8">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-            Mes Projets
+            {t('dashboard.my_projects_title')}
           </h1>
           <p className="mt-2 text-lg text-gray-500">
-            Gérez vos projets publiés
+            {t('dashboard.my_projects_subtitle')}
           </p>
         </div>
-        {hasPublished ? (
+        {isFreeUser ? (
+          <button
+            onClick={() => openUpsell('create_project')}
+            className="inline-flex items-center justify-center gap-2 bg-kezak-primary text-white hover:bg-kezak-dark h-[52px] px-6 rounded-lg font-semibold transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-kezak-primary shrink-0"
+          >
+            <Lock className="w-4 h-4" />
+            {t('dashboard.new_project')}
+          </button>
+        ) : hasPublished ? (
           <button
             onClick={() => setShowNewProjectWarning(true)}
             className="inline-flex items-center justify-center gap-2 bg-kezak-primary text-white hover:bg-kezak-dark h-[52px] px-6 rounded-lg font-semibold transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-kezak-primary shrink-0"
           >
             <Plus className="w-5 h-5" />
-            Nouveau projet
+            {t('dashboard.new_project')}
           </button>
         ) : (
           <Link
@@ -101,7 +116,7 @@ export default function MyProjectsPage() {
             className="inline-flex items-center justify-center gap-2 bg-kezak-primary text-white hover:bg-kezak-dark h-[52px] px-6 rounded-lg font-semibold transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-kezak-primary shrink-0"
           >
             <Plus className="w-5 h-5" />
-            Nouveau projet
+            {t('dashboard.new_project')}
           </Link>
         )}
       </div>
@@ -113,29 +128,24 @@ export default function MyProjectsPage() {
             <Layers className="w-8 h-8 text-kezak-primary" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Aucun projet pour l&apos;instant
+            {t('dashboard.no_projects_title')}
           </h2>
           <p className="text-gray-500 mb-6 max-w-md mx-auto">
-            Créez votre premier projet et trouvez le co-fondateur idéal pour
-            donner vie à votre idée.
+            {t('dashboard.no_projects_description')}
           </p>
           <Link
             href="/create/project"
             className="inline-flex items-center justify-center gap-2 bg-kezak-primary text-white hover:bg-kezak-dark h-[52px] px-8 rounded-lg font-semibold transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-kezak-primary"
           >
             <Plus className="w-5 h-5" />
-            Créer un projet
+            {t('dashboard.create_project')}
           </Link>
         </div>
       ) : (
         <div className="space-y-4">
           {sortedProjects.map((project: any) => {
-            const status = STATUS_LABELS[project.status] ?? STATUS_LABELS.DRAFT;
-            const date = new Date(project.createdAt).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            });
+            const status = STATUS_LABELS[project.status as keyof typeof STATUS_LABELS] ?? STATUS_LABELS.DRAFT;
+            const date = formatDateShort(project.createdAt, locale);
 
             return (
               <div
@@ -184,7 +194,7 @@ export default function MyProjectsPage() {
                     <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                       <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                       <p className="text-sm text-amber-700">
-                        Ce projet est en cours de verification par notre IA. Vous serez notifie du resultat.
+                        {t('dashboard.project_pending_review')}
                       </p>
                     </div>
                   )}
@@ -193,11 +203,11 @@ export default function MyProjectsPage() {
                       <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-red-700">
-                          Ce projet a ete rejete par la moderation.
+                          {t('dashboard.project_rejected')}
                         </p>
                         {(project as any).moderationLogs?.[0]?.aiReason && (
                           <p className="text-sm text-red-600 mt-1">
-                            Raison : {(project as any).moderationLogs[0].aiReason}
+                            {t('dashboard.project_rejected_reason', { reason: (project as any).moderationLogs[0].aiReason })}
                           </p>
                         )}
                       </div>
@@ -210,7 +220,7 @@ export default function MyProjectsPage() {
                       className="inline-flex items-center justify-center gap-2 bg-white border-2 border-gray-200 text-gray-600 hover:bg-gray-50 h-[40px] px-4 rounded-lg font-semibold transition-all duration-200 text-sm"
                     >
                       <Users className="w-4 h-4" />
-                      Candidatures
+                      {t('common.applications')}
                       {(project._count?.applications != null && project._count.applications > 0) && (
                         <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-kezak-primary rounded-full">
                           {project._count.applications}
@@ -222,7 +232,7 @@ export default function MyProjectsPage() {
                       className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm rounded-lg px-4 h-[40px] transition-all duration-200"
                     >
                       <Pencil className="w-4 h-4" />
-                      Modifier
+                      {t('common.edit')}
                     </Link>
                     <button
                       type="button"
@@ -231,13 +241,13 @@ export default function MyProjectsPage() {
                       className="inline-flex items-center justify-center gap-2 bg-white border border-red-200 text-red-500 hover:bg-red-50 text-sm rounded-lg px-4 h-[40px] transition-all duration-200 disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
-                      {deletingId === project.id ? 'Suppression...' : 'Supprimer'}
+                      {deletingId === project.id ? t('common.deleting') : t('common.delete')}
                     </button>
                     <Link
                       href={`/projects/${project.slug ?? project.id}`}
                       className="inline-flex items-center justify-center gap-2 bg-white border-2 border-kezak-light text-kezak-dark hover:bg-kezak-light/50 h-[40px] px-4 rounded-lg font-semibold transition-all duration-200 text-sm"
                     >
-                      Voir le projet
+                      {t('dashboard.view_project')}
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -254,23 +264,23 @@ export default function MyProjectsPage() {
               <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">Projet déjà publié</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('dashboard.project_already_published_title')}</h3>
             </div>
             <p className="text-sm text-gray-600">
-              Vous avez déjà un projet publié. En créer un nouveau archivera automatiquement votre projet actuel et clôturera les candidatures en attente.
+              {t('dashboard.project_already_published_description')}
             </p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowNewProjectWarning(false)}
                 className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Annuler
+                {t('common.cancel')}
               </button>
               <Link
                 href="/create/project"
                 className="flex-1 px-4 py-2.5 bg-kezak-primary text-white rounded-lg text-sm font-semibold text-center hover:bg-kezak-dark transition-colors"
               >
-                Continuer
+                {t('common.continue')}
               </Link>
             </div>
           </div>

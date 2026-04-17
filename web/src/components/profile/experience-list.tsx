@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 export interface ExperienceItem {
     role: string;
@@ -18,6 +19,8 @@ const currentYear = new Date().getFullYear();
 const inputClass = 'w-full h-[52px] px-4 bg-white border border-gray-300 rounded-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200';
 
 export function ExperienceList({ value, onChange }: ExperienceListProps) {
+    const { t } = useTranslation();
+
     const addItem = () => {
         onChange([...value, { role: '', company: '', startYear: '', endYear: '' }]);
     };
@@ -51,29 +54,29 @@ export function ExperienceList({ value, onChange }: ExperienceListProps) {
                         <Trash2 className="w-4 h-4" />
                     </button>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pr-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pe-10">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Poste</label>
+                            <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_exp_role')}</label>
                             <input
                                 type="text"
                                 value={item.role}
                                 onChange={(e) => updateItem(index, 'role', e.target.value)}
-                                placeholder="Ex: CEO, Directeur Technique..."
+                                placeholder={t('dashboard.profile_exp_role_placeholder')}
                                 className={inputClass}
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Entreprise</label>
+                            <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_exp_company')}</label>
                             <input
                                 type="text"
                                 value={item.company}
                                 onChange={(e) => updateItem(index, 'company', e.target.value)}
-                                placeholder="Ex: Orange Cameroun"
+                                placeholder={t('dashboard.profile_exp_company_placeholder')}
                                 className={inputClass}
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Année de début</label>
+                            <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_exp_start')}</label>
                             <input
                                 type="number"
                                 value={item.startYear}
@@ -86,14 +89,14 @@ export function ExperienceList({ value, onChange }: ExperienceListProps) {
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-gray-700">
-                                Année de fin
-                                <span className="text-xs text-gray-400 ml-1">(vide = en cours)</span>
+                                {t('dashboard.profile_exp_end')}
+                                <span className="text-xs text-gray-400 ms-1">{t('dashboard.profile_exp_end_hint')}</span>
                             </label>
                             <input
                                 type="number"
                                 value={item.endYear ?? ''}
                                 onChange={(e) => updateItem(index, 'endYear', e.target.value)}
-                                placeholder="En cours"
+                                placeholder={t('dashboard.profile_exp_current')}
                                 min={1970}
                                 max={currentYear}
                                 className={inputClass}
@@ -109,7 +112,7 @@ export function ExperienceList({ value, onChange }: ExperienceListProps) {
                 className="w-full flex items-center justify-center gap-2 h-[52px] rounded-lg font-semibold border-2 border-dashed border-gray-200 text-gray-500 hover:border-kezak-primary hover:text-kezak-primary hover:bg-kezak-light/30 transition-all duration-200"
             >
                 <Plus className="w-5 h-5" />
-                Ajouter une expérience
+                {t('dashboard.profile_add_experience')}
             </button>
         </div>
     );

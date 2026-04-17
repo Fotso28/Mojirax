@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/i18n-context';
 import { Flame } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +27,7 @@ interface TopActiveCandidate {
 
 export function TopActiveCandidates() {
     const { dbUser } = useAuth();
+    const { t } = useTranslation();
     const [candidates, setCandidates] = useState<TopActiveCandidate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -52,8 +54,8 @@ export function TopActiveCandidates() {
                     <Flame className="w-4 h-4 text-orange-600" />
                 </div>
                 <div>
-                    <h3 className="font-semibold text-gray-900 text-sm">Profils les plus actifs</h3>
-                    <p className="text-xs text-gray-500">Cette semaine</p>
+                    <h3 className="font-semibold text-gray-900 text-sm">{t('dashboard.feed.top_active_title')}</h3>
+                    <p className="text-xs text-gray-500">{t('dashboard.feed.top_active_subtitle')}</p>
                 </div>
             </div>
 
@@ -61,7 +63,7 @@ export function TopActiveCandidates() {
                 {candidates.map((candidate) => {
                     const displayName = candidate.user.name
                         || `${candidate.user.firstName ?? ''} ${candidate.user.lastName ?? ''}`.trim()
-                        || 'Anonyme';
+                        || t('dashboard.feed.anonymous');
 
                     return (
                         <Link

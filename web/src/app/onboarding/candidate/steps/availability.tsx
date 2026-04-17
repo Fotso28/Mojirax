@@ -2,34 +2,36 @@
 
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
-
-const TIME_OPTIONS = [
-    { value: '2-5H', label: '2-5h (Soirs & WE)' },
-    { value: '5-10H', label: '5-10h' },
-    { value: '10-20H', label: '10-20h (Mi-temps)' },
-    { value: 'FULLTIME', label: 'Temps plein' },
-];
-
-const COMMITMENT_OPTIONS = [
-    { value: 'SIDE', label: 'Side Project' },
-    { value: 'SERIOUS', label: 'Sérieux (Obj. Full-time)' },
-    { value: 'FULLTIME', label: 'Full-time immédiat' },
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function CandidateAvailabilityStep() {
     const { data, updateData, nextStep } = useOnboarding();
+    const { t } = useTranslation();
+
+    const TIME_OPTIONS = [
+        { value: '2-5H', label: t('auth.candidate_time_2_5') },
+        { value: '5-10H', label: t('auth.candidate_time_5_10') },
+        { value: '10-20H', label: t('auth.candidate_time_10_20') },
+        { value: 'FULLTIME', label: t('auth.candidate_time_fulltime') },
+    ];
+
+    const COMMITMENT_OPTIONS = [
+        { value: 'SIDE', label: t('auth.candidate_commitment_side') },
+        { value: 'SERIOUS', label: t('auth.candidate_commitment_serious') },
+        { value: 'FULLTIME', label: t('auth.candidate_commitment_fulltime') },
+    ];
 
     return (
         <WizardStep
-            title="Disponibilité"
-            description="Combien de temps pouvez-vous investir ?"
+            title={t('auth.candidate_availability_title')}
+            description={t('auth.candidate_availability_desc')}
             onNext={nextStep}
             isValid={!!data.time_availability && !!data.commitment_type}
         >
             <div className="space-y-6">
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Temps disponible (Hebdo)
+                        {t('auth.candidate_time_label')}
                     </label>
                     <div className="flex gap-3 flex-wrap">
                         {TIME_OPTIONS.map((opt) => (
@@ -50,7 +52,7 @@ export function CandidateAvailabilityStep() {
 
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Type d'engagement visé
+                        {t('auth.candidate_commitment_label')}
                     </label>
                     <div className="flex gap-3 flex-wrap">
                         {COMMITMENT_OPTIONS.map((opt) => (

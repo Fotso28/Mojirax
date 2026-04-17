@@ -1,81 +1,93 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsArray, IsInt, IsObject, IsOptional, IsString,
-    MaxLength, Min, Max, Matches, ArrayMaxSize, IsUrl,
+    MaxLength, Min, Max, Matches, ArrayMaxSize, IsUrl, ValidateIf,
 } from 'class-validator';
 
 export class UpdateUserProfileDto {
     @ApiPropertyOptional({ description: 'First name' })
+    @IsOptional()
+    @ValidateIf(o => o.firstName !== null)
     @IsString()
     @MaxLength(100)
-    @IsOptional()
-    firstName?: string;
+    firstName?: string | null;
 
     @ApiPropertyOptional({ description: 'Last name' })
+    @IsOptional()
+    @ValidateIf(o => o.lastName !== null)
     @IsString()
     @MaxLength(100)
-    @IsOptional()
-    lastName?: string;
+    lastName?: string | null;
 
     @ApiPropertyOptional({ description: 'Phone number' })
+    @IsOptional()
+    @ValidateIf(o => o.phone !== null && o.phone !== '')
     @IsString()
     @MaxLength(25)
     @Matches(/^\+?[\d\s\-()]{6,25}$/, { message: 'Numéro de téléphone invalide' })
-    @IsOptional()
-    phone?: string;
+    phone?: string | null;
 
     @ApiPropertyOptional({ description: 'Address' })
+    @IsOptional()
+    @ValidateIf(o => o.address !== null)
     @IsString()
     @MaxLength(255)
-    @IsOptional()
-    address?: string;
+    address?: string | null;
 
     // ── Professional profile fields ──
 
     @ApiPropertyOptional({ description: 'Professional title' })
+    @IsOptional()
+    @ValidateIf(o => o.title !== null)
     @IsString()
     @MaxLength(120)
-    @IsOptional()
-    title?: string;
+    title?: string | null;
 
     @ApiPropertyOptional({ description: 'Bio' })
+    @IsOptional()
+    @ValidateIf(o => o.bio !== null)
     @IsString()
     @MaxLength(2000)
-    @IsOptional()
-    bio?: string;
+    bio?: string | null;
 
     @ApiPropertyOptional({ description: 'Country' })
+    @IsOptional()
+    @ValidateIf(o => o.country !== null)
     @IsString()
     @MaxLength(100)
-    @IsOptional()
-    country?: string;
+    country?: string | null;
 
     @ApiPropertyOptional({ description: 'City' })
+    @IsOptional()
+    @ValidateIf(o => o.city !== null)
     @IsString()
     @MaxLength(100)
-    @IsOptional()
-    city?: string;
+    city?: string | null;
 
     @ApiPropertyOptional({ description: 'LinkedIn URL' })
     @IsOptional()
+    @ValidateIf(o => o.linkedinUrl !== '')
     @IsUrl({}, { message: 'URL LinkedIn invalide' })
     @MaxLength(500)
     linkedinUrl?: string;
 
     @ApiPropertyOptional({ description: 'Website URL' })
     @IsOptional()
+    @ValidateIf(o => o.websiteUrl !== '')
     @IsUrl({}, { message: 'URL site web invalide' })
     @MaxLength(500)
     websiteUrl?: string;
 
     @ApiPropertyOptional({ description: 'GitHub URL' })
     @IsOptional()
+    @ValidateIf(o => o.githubUrl !== '')
     @IsUrl({}, { message: 'URL GitHub invalide' })
     @MaxLength(500)
     githubUrl?: string;
 
     @ApiPropertyOptional({ description: 'Portfolio URL' })
     @IsOptional()
+    @ValidateIf(o => o.portfolioUrl !== '')
     @IsUrl({}, { message: 'URL portfolio invalide' })
     @MaxLength(500)
     portfolioUrl?: string;

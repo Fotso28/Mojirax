@@ -6,17 +6,20 @@ import { CircleCheck, Loader2 } from 'lucide-react';
 import { Reveal } from './reveal';
 import { useAuth } from '@/context/auth-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { useToast } from '@/context/toast-context';
+import { localized, localizedArray } from '@/lib/utils/localized';
 
 interface PricingPlan {
   id: string;
-  name: string;
+  name: string | Record<string, string>;
   price: number;
-  period: string;
+  period: string | Record<string, string>;
   currency: string;
-  description: string | null;
-  features: string[];
+  description: string | Record<string, string> | null;
+  features: string[] | Record<string, string[]>;
   isPopular: boolean;
-  ctaLabel: string;
+  ctaLabel: string | Record<string, string>;
   planKey: string | null;
 }
 
@@ -55,6 +58,9 @@ function Skeleton() {
 
 export function PricingSection({ plans, loading }: Props) {
   const { dbUser } = useAuth();
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const locale = useLocale();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const handleSubscribe = async (planId: string) => {
@@ -63,7 +69,7 @@ export function PricingSection({ plans, loading }: Props) {
       const { data } = await AXIOS_INSTANCE.post('/payment/checkout', { planId });
       window.location.href = data.url;
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Erreur lors de la création du paiement');
+      showToast(err.response?.data?.message || t('landing.pricing_payment_error'), 'error');
       setLoadingPlanId(null);
     }
   };
@@ -81,10 +87,10 @@ export function PricingSection({ plans, loading }: Props) {
         <Reveal animation="fade-up">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Choisissez votre plan
+              {t('landing.pricing_title')}
             </h2>
             <p className="text-base text-gray-500 max-w-xl mx-auto">
-              Des options flexibles pour chaque étape de votre aventure
+              {t('landing.pricing_subtitle')}
             </p>
           </div>
         </Reveal>
@@ -104,31 +110,31 @@ export function PricingSection({ plans, loading }: Props) {
                 >
                   {plan.isPopular && (
                     <span className="absolute top-5 right-5 bg-kezak-primary text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wide">
-                      Populaire
+                      {t('landing.pricing_popular')}
                     </span>
                   )}
-                  <h3 className="text-lg font-bold mb-2">{plan.name}</h3>
+                  <h3 className="text-lg font-bold mb-2">{localized(plan.name, locale)}</h3>
                   <div className="mb-1">
                     <span className="text-3xl font-black text-gray-900">
                       {formatPrice(plan.price)}
                     </span>
-                    <span className="text-base text-gray-400 font-normal ml-1">
+                    <span className="text-base text-gray-400 font-normal ms-1">
                       €
                     </span>
                     {plan.price > 0 && (
                       <span className="text-sm text-gray-400 font-medium">
-                        /{plan.period}
+                        /{localized(plan.period, locale)}
                       </span>
                     )}
                   </div>
                   {plan.description && (
                     <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-                      {plan.description}
+                      {localized(plan.description, locale)}
                     </p>
                   )}
                   {!plan.description && <div className="mb-6" />}
                   <div className="space-y-3 mb-8 flex-grow">
-                    {plan.features.map((feature) => (
+                    {localizedArray(plan.features, locale).map((feature) => (
                       <div
                         key={feature}
                         className="flex items-start gap-2.5 text-gray-600"
@@ -147,14 +153,14 @@ export function PricingSection({ plans, loading }: Props) {
                           : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
                       }`}
                     >
-                      {plan.ctaLabel}
+                      {localized(plan.ctaLabel, locale)}
                     </Link>
                   ) : dbUser && dbUser.plan === plan.planKey ? (
                     <button
                       disabled
                       className="w-full h-11 rounded-lg font-semibold flex items-center justify-center text-sm bg-gray-100 text-gray-400 cursor-not-allowed"
                     >
-                      Plan actuel
+                      {t('landing.pricing_current_plan')}
                     </button>
                   ) : dbUser ? (
                     <button
@@ -169,7 +175,7 @@ export function PricingSection({ plans, loading }: Props) {
                       {loadingPlanId === plan.id ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        plan.ctaLabel
+                        localized(plan.ctaLabel, locale)
                       )}
                     </button>
                   ) : (
@@ -181,7 +187,7 @@ export function PricingSection({ plans, loading }: Props) {
                           : 'border-2 border-kezak-primary text-kezak-primary hover:bg-kezak-primary hover:text-white'
                       }`}
                     >
-                      {plan.ctaLabel}
+                      {localized(plan.ctaLabel, locale)}
                     </Link>
                   )}
                 </div>

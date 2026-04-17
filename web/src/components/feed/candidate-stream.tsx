@@ -5,7 +5,8 @@ import { CandidateCard } from './candidate-card';
 import { FeedFilters } from './feed-filters';
 import { TopActiveCandidates } from './top-active-candidates';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
-import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
+import { Loader2, Users2, AlertCircle } from 'lucide-react';
 
 interface CandidateFeedResponse {
     candidates: any[];
@@ -19,11 +20,13 @@ interface Filters {
 }
 
 export function CandidateStream() {
+    const { t } = useTranslation();
     const [candidates, setCandidates] = useState<any[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [filters, setFilters] = useState<Filters>({});
     const observerRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +35,7 @@ export function CandidateStream() {
             setIsLoadingMore(true);
         } else {
             setIsLoading(true);
+            setLoadError(false);
         }
 
         try {
@@ -59,7 +63,8 @@ export function CandidateStream() {
             setNextCursor(data.nextCursor);
             setHasMore(!!data.nextCursor);
         } catch {
-            // Feed load failed
+            // Initial load errored — surface in the UI
+            if (!cursor) setLoadError(true);
         } finally {
             setIsLoading(false);
             setIsLoadingMore(false);
@@ -105,20 +110,42 @@ export function CandidateStream() {
         );
     }
 
+    // Error state — network/server failed, offer retry
+    if (loadError && candidates.length === 0) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <FeedFilters onFilterChange={handleFilterChange} />
+                <div className="text-center py-20">
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-7 h-7 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.load_error_title')}</h3>
+                    <p className="text-gray-500 mb-5">{t('dashboard.feed.load_error_description')}</p>
+                    <button
+                        onClick={() => loadCandidates(null, filters)}
+                        className="inline-flex items-center justify-center h-[44px] px-6 rounded-xl bg-kezak-primary hover:bg-kezak-dark text-white font-semibold transition-colors"
+                    >
+                        {t('dashboard.feed.load_error_retry')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (candidates.length === 0) {
         return (
             <div className="max-w-2xl mx-auto">
                 <FeedFilters onFilterChange={handleFilterChange} />
                 <TopActiveCandidates />
                 <div className="text-center py-20">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">👩‍💻</span>
+                    <div className="w-16 h-16 bg-kezak-light rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users2 className="w-7 h-7 text-kezak-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun candidat disponible</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.candidates_empty_title')}</h3>
                     <p className="text-gray-500">
                         {Object.values(filters).some(Boolean)
-                            ? 'Essayez de modifier vos filtres.'
-                            : 'Revenez plus tard pour découvrir de nouveaux talents.'}
+                            ? t('dashboard.feed.candidates_empty_filtered')
+                            : t('dashboard.feed.candidates_empty_description')}
                     </p>
                 </div>
             </div>
@@ -143,7 +170,7 @@ export function CandidateStream() {
 
             {!hasMore && candidates.length > 0 && (
                 <div className="text-center py-8 text-gray-400 text-sm">
-                    Vous avez tout vu !
+                    {t('dashboard.feed.end_reached')}
                 </div>
             )}
         </div>

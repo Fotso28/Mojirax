@@ -2,16 +2,18 @@
 
 import { WizardStep } from '@/components/onboarding/wizard/wizard-layout';
 import { useOnboarding } from '@/context/onboarding-context';
-
-const PROJECT_TYPES = [
-    { value: 'TECH', label: 'Tech pure (SaaS, Mobile)' },
-    { value: 'HYBRID', label: 'Hybride (Tech + Retail/Ops)' },
-    { value: 'IMPACT', label: 'Impact Social' },
-    { value: 'ANY', label: 'Peu importe' },
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function CandidateVisionStep() {
     const { data, updateData, nextStep } = useOnboarding();
+    const { t } = useTranslation();
+
+    const PROJECT_TYPES = [
+        { value: 'TECH', label: t('auth.candidate_project_tech') },
+        { value: 'HYBRID', label: t('auth.candidate_project_hybrid') },
+        { value: 'IMPACT', label: t('auth.candidate_project_impact') },
+        { value: 'ANY', label: t('auth.candidate_project_any') },
+    ];
 
     const selectedTypes: string[] = data.project_pref || [];
 
@@ -28,15 +30,15 @@ export function CandidateVisionStep() {
 
     return (
         <WizardStep
-            title="Expérience & Vision"
-            description="Que cherchez-vous à construire ?"
+            title={t('auth.candidate_vision_title')}
+            description={t('auth.candidate_vision_desc')}
             onNext={nextStep}
             isValid={!!data.vision}
         >
             <div className="space-y-6">
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Avez-vous déjà cofondé ?
+                        {t('auth.candidate_cofounded_label')}
                     </label>
                     <div className="flex gap-4">
                         {['YES', 'NO'].map((opt) => (
@@ -48,7 +50,7 @@ export function CandidateVisionStep() {
                                         : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                                     }`}
                             >
-                                {opt === 'YES' ? 'Oui, déjà fait' : 'Non, première fois'}
+                                {opt === 'YES' ? t('auth.candidate_cofounded_yes') : t('auth.candidate_cofounded_no')}
                             </button>
                         ))}
                     </div>
@@ -56,20 +58,22 @@ export function CandidateVisionStep() {
 
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Vision personnelle à 3-5 ans
+                        {t('auth.candidate_personal_vision')}
                     </label>
                     <textarea
                         className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none min-h-[100px] bg-white"
+                        placeholder={t('auth.candidate_personal_vision_placeholder')}
                         value={data.vision || ''}
                         onChange={(e) => updateData('vision', e.target.value)}
                         maxLength={500}
                     />
+                    <p className="text-xs text-gray-400 text-right">{(data.vision || '').length}/500</p>
                 </div>
 
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Type de projet recherché
-                        <span className="text-gray-400 font-normal ml-1">(plusieurs choix possibles)</span>
+                        {t('auth.candidate_project_type')}
+                        <span className="text-gray-400 font-normal ms-1">{t('auth.candidate_project_type_hint')}</span>
                     </label>
                     <div className="flex gap-3 flex-wrap">
                         {PROJECT_TYPES.map((type) => (

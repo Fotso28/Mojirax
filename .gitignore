@@ -17,6 +17,7 @@ build
 .env.*.local
 .env.test
 .env.production
+.env_production
 
 # IDEs
 .vscode
@@ -55,3 +56,17 @@ api/uploads/
 
 # Session artifacts
 .superpowers/
+
+# Local DB exports — contain user PII (emails, phones), never commit
+db-export.sql
+db-export*.sql
+db-export*.json
+db-seed-export.sql
+backups/
+dump.rdb
+
+# Scratch / WIP markers
+asupprimer.md
+
+# Scheduled task lock
+.claude/scheduled_tasks.lock

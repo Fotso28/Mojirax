@@ -4,16 +4,21 @@ import {
     ExecutionContext,
     CallHandler,
     Logger,
+    Inject,
 } from '@nestjs/common';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import Redis from 'ioredis';
 import { PrismaService } from '../../prisma/prisma.service';
+import { REDIS_CLIENT } from '../../redis/redis.constants';
 import { UserPlan } from '@prisma/client';
 
 // Champs sensibles à masquer par type d'objet
-const USER_SENSITIVE_FIELDS = ['email', 'phone'];
-const FOUNDER_PROFILE_SENSITIVE_FIELDS = ['linkedinUrl', 'websiteUrl'];
-const CANDIDATE_SENSITIVE_FIELDS = ['linkedinUrl', 'resumeUrl', 'githubUrl', 'portfolioUrl'];
+const USER_SENSITIVE_FIELDS = ['email', 'phone', 'linkedinUrl', 'websiteUrl', 'githubUrl', 'portfolioUrl'];
+const CANDIDATE_SENSITIVE_FIELDS = ['resumeUrl'];
+
+const PLAN_CACHE_TTL_SECONDS = 60;
+const PLAN_CACHE_PREFIX = 'privacy:plan:';
 
 interface PlanInfo {
     id: string;
@@ -27,6 +32,7 @@ export class PrivacyInterceptor implements NestInterceptor {
 
     constructor(
         private readonly prisma: PrismaService,
+        @Inject(REDIS_CLIENT) private readonly redis: Redis,
     ) {}
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -43,16 +49,58 @@ export class PrivacyInterceptor implements NestInterceptor {
     }
 
     private async applyPrivacy(data: any, firebaseUid: string | null): Promise<any> {
-        let currentUser: PlanInfo | null = null;
-        if (firebaseUid) {
-            const user = await this.prisma.user.findUnique({
-                where: { firebaseUid },
-                select: { id: true, plan: true, planExpiresAt: true },
-            });
-            currentUser = user || null;
+        const currentUser = firebaseUid ? await this.resolvePlanInfo(firebaseUid) : null;
+        return this.processResponse(data, currentUser);
+    }
+
+    /**
+     * Resolve the caller's plan info with a 60s Redis cache to avoid
+     * hitting Postgres on every request.
+     * Cache miss: read DB and SETEX the result (null for unknown users
+     * is cached as the literal 'none' string to avoid thundering herd
+     * on invalid tokens).
+     */
+    private async resolvePlanInfo(firebaseUid: string): Promise<PlanInfo | null> {
+        const key = PLAN_CACHE_PREFIX + firebaseUid;
+        try {
+            const cached = await this.redis.get(key);
+            if (cached === 'none') return null;
+            if (cached) {
+                const parsed = JSON.parse(cached) as { id: string; plan: UserPlan; planExpiresAt: string | null };
+                return {
+                    id: parsed.id,
+                    plan: parsed.plan,
+                    planExpiresAt: parsed.planExpiresAt ? new Date(parsed.planExpiresAt) : null,
+                };
+            }
+        } catch (err: any) {
+            this.logger.warn(`Redis plan cache read failed: ${err.message}`);
         }
 
-        return this.processResponse(data, currentUser);
+        const user = await this.prisma.user.findUnique({
+            where: { firebaseUid },
+            select: { id: true, plan: true, planExpiresAt: true },
+        });
+
+        try {
+            if (user) {
+                await this.redis.setex(
+                    key,
+                    PLAN_CACHE_TTL_SECONDS,
+                    JSON.stringify({
+                        id: user.id,
+                        plan: user.plan,
+                        planExpiresAt: user.planExpiresAt?.toISOString() ?? null,
+                    }),
+                );
+            } else {
+                await this.redis.setex(key, PLAN_CACHE_TTL_SECONDS, 'none');
+            }
+        } catch (err: any) {
+            this.logger.warn(`Redis plan cache write failed: ${err.message}`);
+        }
+
+        return user ?? null;
     }
 
     private hasPaidAccess(user: { plan: UserPlan; planExpiresAt: Date | null } | null): boolean {
@@ -90,8 +138,7 @@ export class PrivacyInterceptor implements NestInterceptor {
                 const hasAccess = this.hasPaidAccess(currentUser);
 
                 if (!hasAccess) {
-                    result.email = null;
-                    result.phone = null;
+                    this.stripUserSensitiveFields(result);
                     result.candidateProfile = this.stripCandidateFields(result.candidateProfile);
                     result._isLocked = true;
                 } else {
@@ -102,17 +149,18 @@ export class PrivacyInterceptor implements NestInterceptor {
             }
         }
 
-        // Cas 4: Objet user direct avec founderProfile (GET /users/:id/public pour fondateur)
-        if (result.founderProfile && typeof result.founderProfile === 'object' && result.id && !result.founder) {
+        // Cas 4: Objet user direct sans candidateProfile (GET /users/:id/public pour fondateur)
+        // On utilise `role` comme signature d'un User direct plutôt qu'`email`
+        // pour éviter un faux-négatif si la query Prisma omet l'email
+        // (le masquage doit toujours poser `_isLocked` pour que le frontend sache).
+        if (!result.candidateProfile && result.id && result.role && !result.founder && !result.candidate) {
             const isOwner = currentUser?.id === result.id;
 
             if (!isOwner) {
                 const hasAccess = this.hasPaidAccess(currentUser);
 
                 if (!hasAccess) {
-                    result.email = null;
-                    result.phone = null;
-                    result.founderProfile = this.stripFounderProfileFields(result.founderProfile);
+                    this.stripUserSensitiveFields(result);
                     result._isLocked = true;
                 } else {
                     result._isLocked = false;
@@ -140,16 +188,8 @@ export class PrivacyInterceptor implements NestInterceptor {
         const hasAccess = this.hasPaidAccess(currentUser);
 
         if (!hasAccess) {
-            // Masquer les champs sensibles du User
-            for (const field of USER_SENSITIVE_FIELDS) {
-                if (field in founderCopy) {
-                    founderCopy[field] = null;
-                }
-            }
-            // Masquer les champs du founderProfile
-            if (founderCopy.founderProfile && typeof founderCopy.founderProfile === 'object') {
-                founderCopy.founderProfile = this.stripFounderProfileFields(founderCopy.founderProfile);
-            }
+            // Masquer les champs sensibles du User (linkedinUrl, websiteUrl, etc. sont maintenant sur User)
+            this.stripUserSensitiveFields(founderCopy);
             founderCopy._isLocked = true;
         } else {
             founderCopy._isLocked = false;
@@ -183,11 +223,7 @@ export class PrivacyInterceptor implements NestInterceptor {
             // Masquer les champs du User nested
             if (candidateCopy.user && typeof candidateCopy.user === 'object') {
                 candidateCopy.user = { ...candidateCopy.user };
-                for (const field of USER_SENSITIVE_FIELDS) {
-                    if (field in candidateCopy.user) {
-                        candidateCopy.user[field] = null;
-                    }
-                }
+                this.stripUserSensitiveFields(candidateCopy.user);
             }
             candidateCopy._isLocked = true;
         } else {
@@ -197,15 +233,12 @@ export class PrivacyInterceptor implements NestInterceptor {
         return candidateCopy;
     }
 
-    private stripFounderProfileFields(profile: any): any {
-        if (!profile || typeof profile !== 'object') return profile;
-        const copy = { ...profile };
-        for (const field of FOUNDER_PROFILE_SENSITIVE_FIELDS) {
-            if (field in copy) {
-                copy[field] = null;
+    private stripUserSensitiveFields(obj: any): void {
+        for (const field of USER_SENSITIVE_FIELDS) {
+            if (field in obj) {
+                obj[field] = null;
             }
         }
-        return copy;
     }
 
     private stripCandidateFields(profile: any): any {

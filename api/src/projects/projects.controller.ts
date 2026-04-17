@@ -11,14 +11,20 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSummaryDto } from './dto/update-summary.dto';
 import { RegenerateBlockDto } from './dto/regenerate-block.dto';
 import { ValidateProjectDto } from './dto/validate-project.dto';
+import { CreateFromDocumentDto } from './dto/create-from-document.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { FirebaseAuthOptionalGuard } from '../auth/firebase-auth-optional.guard';
+import { PlanGuard } from '../payment/guards/plan.guard';
+import { RequiresPlan } from '../payment/decorators/requires-plan.decorator';
+import { UserPlan } from '@prisma/client';
 import { AiService } from '../ai/ai.service';
 import { DocumentStorageService } from '../documents/document-storage.service';
 import { DocumentAnalysisService } from '../documents/document-analysis.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { I18nService } from '../i18n/i18n.service';
+import { Locale } from '../common/decorators/locale.decorator';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -31,17 +37,19 @@ export class ProjectsController {
         private readonly documentStorageService: DocumentStorageService,
         private readonly documentAnalysisService: DocumentAnalysisService,
         private readonly prisma: PrismaService,
+        private readonly i18n: I18nService,
     ) { }
 
     @ApiBearerAuth()
-    @UseGuards(FirebaseAuthGuard)
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.PLUS)
     @Post()
     @Throttle({ default: { ttl: 60000, limit: 3 } })
-    @ApiOperation({ summary: 'Create a new project' })
+    @ApiOperation({ summary: 'Create a new project (plan PLUS minimum)' })
     @ApiResponse({ status: 201, description: 'The project has been successfully created.' })
-    async create(@Request() req, @Body() dto: CreateProjectDto) {
+    async create(@Request() req, @Body() dto: CreateProjectDto, @Locale() locale: 'fr' | 'en') {
         const user = req.user;
-        return this.projectsService.create(user.uid, dto);
+        return this.projectsService.create(user.uid, dto, locale);
     }
 
     @ApiBearerAuth()
@@ -54,9 +62,10 @@ export class ProjectsController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(FirebaseAuthGuard)
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.PLUS)
     @Post('from-document')
-    @ApiOperation({ summary: 'Create project from uploaded document (PDF/DOCX) — async AI analysis' })
+    @ApiOperation({ summary: 'Create project from uploaded document (PDF/DOCX) — plan PLUS minimum, async AI analysis' })
     @ApiConsumes('multipart/form-data')
     @ApiResponse({ status: 201, description: 'Project created in ANALYZING status. AI analysis runs in background.' })
     @UseInterceptors(FileInterceptor('file', {
@@ -70,20 +79,21 @@ export class ProjectsController {
             if (allowed.includes(file.mimetype)) {
                 cb(null, true);
             } else {
-                cb(new BadRequestException('Format non supporte. Utilisez PDF ou Word.'), false);
+                cb(new BadRequestException('upload.format_document'), false);
             }
         },
     }))
     async createFromDocument(
         @Request() req,
         @UploadedFile() file: Express.Multer.File,
-        @Body() body: { name: string; pitch: string; country?: string; city?: string; location?: string; logoBase64?: string },
+        @Body() body: CreateFromDocumentDto,
+        @Locale() locale: 'fr' | 'en',
     ) {
         if (!file) {
-            throw new BadRequestException('Aucun fichier fourni.');
+            throw new BadRequestException(this.i18n.t('upload.no_file', locale));
         }
         if (!body.name || !body.pitch) {
-            throw new BadRequestException('Le nom et le pitch du projet sont obligatoires.');
+            throw new BadRequestException(this.i18n.t('project.name_pitch_required', locale));
         }
 
         // 1. Create the project in ANALYZING status with minimal data
@@ -93,7 +103,7 @@ export class ProjectsController {
             country: body.country,
             city: body.city,
             location: body.location,
-        }, 'ANALYZING');
+        }, 'ANALYZING', locale);
 
         // 2. Store the document
         const documentUrl = await this.documentStorageService.store(
@@ -155,9 +165,10 @@ export class ProjectsController {
         @Request() req,
         @Param('id') id: string,
         @Body() dto: UpdateSummaryDto,
+        @Locale() locale: 'fr' | 'en',
     ) {
         // Verify ownership
-        const project = await this.findProjectAndVerifyOwnership(id, req.user.uid);
+        const project = await this.findProjectAndVerifyOwnership(id, req.user.uid, locale);
 
         const updated = await this.prisma.project.update({
             where: { id: project.id },
@@ -177,16 +188,17 @@ export class ProjectsController {
     async publish(
         @Request() req,
         @Param('id') id: string,
+        @Locale() locale: 'fr' | 'en',
     ) {
         // Verify ownership
-        const project = await this.findProjectAndVerifyOwnership(id, req.user.uid);
+        const project = await this.findProjectAndVerifyOwnership(id, req.user.uid, locale);
 
         if (!project.aiSummary) {
-            throw new BadRequestException('Le projet doit avoir un resume IA avant publication.');
+            throw new BadRequestException(this.i18n.t('project.ai_summary_required', locale));
         }
 
         const updated = await this.prisma.$transaction(async (tx) => {
-            await this.projectsService.archivePublishedProjects(tx, project.founderId);
+            await this.projectsService.archivePublishedProjects(tx, project.founderId, locale);
 
             return tx.project.update({
                 where: { id: project.id },
@@ -203,8 +215,8 @@ export class ProjectsController {
     @Get(':id/document')
     @ApiOperation({ summary: 'Get document metadata for a project' })
     @ApiResponse({ status: 200, description: 'Document metadata returned.' })
-    async getDocument(@Request() req, @Param('id') id: string) {
-        await this.findProjectAndVerifyOwnership(id, req.user.uid);
+    async getDocument(@Request() req, @Param('id') id: string, @Locale() locale: 'fr' | 'en') {
+        await this.findProjectAndVerifyOwnership(id, req.user.uid, locale);
 
         const project = await this.prisma.project.findUnique({
             where: { id },
@@ -216,7 +228,7 @@ export class ProjectsController {
         });
 
         if (!project) {
-            throw new NotFoundException('Project not found');
+            throw new NotFoundException(this.i18n.t('project.not_found', locale));
         }
 
         return {
@@ -229,7 +241,8 @@ export class ProjectsController {
     @ApiBearerAuth()
     @UseGuards(FirebaseAuthGuard)
     @Get('feed')
-    @ApiOperation({ summary: 'Get personalized project feed' })
+    @Throttle({ default: { ttl: 60000, limit: 10 } })
+    @ApiOperation({ summary: 'Get personalized project feed (rate-limited due to vector search cost)' })
     @ApiQuery({ name: 'cursor', required: false, description: 'Last project ID for pagination' })
     @ApiQuery({ name: 'limit', required: false, description: 'Number of projects per page (default 7)' })
     @ApiQuery({ name: 'city', required: false, description: 'Filter by city' })
@@ -269,7 +282,7 @@ export class ProjectsController {
             if (/^image\/(jpeg|png|webp)$/.test(file.mimetype)) {
                 cb(null, true);
             } else {
-                cb(new BadRequestException('Format non supporte. Utilisez JPG, PNG ou WebP.'), false);
+                cb(new BadRequestException('upload.format_image'), false);
             }
         },
     }))
@@ -277,11 +290,12 @@ export class ProjectsController {
         @Request() req,
         @Param('id') id: string,
         @UploadedFile() file: Express.Multer.File,
+        @Locale() locale: 'fr' | 'en',
     ) {
         if (!file) {
-            throw new BadRequestException('Aucun fichier fourni.');
+            throw new BadRequestException(this.i18n.t('upload.no_file', locale));
         }
-        return this.projectsService.updateLogo(req.user.uid, id, file.buffer);
+        return this.projectsService.updateLogo(req.user.uid, id, file.buffer, locale);
     }
 
     @Get('trending')
@@ -298,8 +312,8 @@ export class ProjectsController {
     @ApiOperation({ summary: 'Get project by ID or slug' })
     @ApiResponse({ status: 200, description: 'Project details returned.' })
     @ApiResponse({ status: 404, description: 'Project not found.' })
-    async findOne(@Request() req, @Param('idOrSlug') idOrSlug: string) {
-        return this.projectsService.findOne(idOrSlug);
+    async findOne(@Request() req, @Param('idOrSlug') idOrSlug: string, @Locale() locale: 'fr' | 'en') {
+        return this.projectsService.findOne(idOrSlug, locale);
     }
 
     @Get()
@@ -317,9 +331,10 @@ export class ProjectsController {
         @Request() req,
         @Param('id') id: string,
         @Body() dto: UpdateProjectDto,
+        @Locale() locale: 'fr' | 'en',
     ) {
-        await this.findProjectAndVerifyOwnership(id, req.user.uid);
-        return this.projectsService.update(req.user.uid, id, dto);
+        await this.findProjectAndVerifyOwnership(id, req.user.uid, locale);
+        return this.projectsService.update(req.user.uid, id, dto, locale);
     }
 
     @ApiBearerAuth()
@@ -330,21 +345,22 @@ export class ProjectsController {
     async remove(
         @Request() req,
         @Param('id') id: string,
+        @Locale() locale: 'fr' | 'en',
     ) {
-        await this.findProjectAndVerifyOwnership(id, req.user.uid);
-        return this.projectsService.remove(req.user.uid, id);
+        await this.findProjectAndVerifyOwnership(id, req.user.uid, locale);
+        return this.projectsService.remove(req.user.uid, id, locale);
     }
 
     // ─── Private helpers ────────────────────────────────
 
-    private async findProjectAndVerifyOwnership(projectId: string, firebaseUid: string) {
+    private async findProjectAndVerifyOwnership(projectId: string, firebaseUid: string, locale: 'fr' | 'en' = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true },
         });
 
         if (!user) {
-            throw new NotFoundException('User not found');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         const project = await this.prisma.project.findUnique({
@@ -352,11 +368,11 @@ export class ProjectsController {
         });
 
         if (!project) {
-            throw new NotFoundException('Project not found');
+            throw new NotFoundException(this.i18n.t('project.not_found', locale));
         }
 
         if (project.founderId !== user.id) {
-            throw new ForbiddenException('Vous n\'etes pas le proprietaire de ce projet.');
+            throw new ForbiddenException(this.i18n.t('project.not_owner', locale));
         }
 
         return project;

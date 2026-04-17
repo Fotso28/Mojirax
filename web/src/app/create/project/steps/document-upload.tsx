@@ -8,6 +8,7 @@ import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { Upload, FileText, FileIcon, X, Loader2, CheckCircle2, Sparkles, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useTranslation } from '@/context/i18n-context';
 
 const ACCEPTED_TYPES = [
     'application/pdf',
@@ -41,17 +42,18 @@ type UploadPhase = 'idle' | 'uploading' | 'analyzing' | 'published' | 'review' |
 
 const POLL_INTERVAL = 10000; // 10 seconds
 
-const ANALYSIS_STEPS = [
-    { key: 'upload', label: 'Envoi du document' },
-    { key: 'extraction', label: 'Extraction des informations' },
-    { key: 'validation', label: 'Validation du projet' },
-    { key: 'publication', label: 'Publication' },
-] as const;
+const ANALYSIS_STEP_KEYS = ['upload', 'extraction', 'validation', 'publication'] as const;
 
 export function DocumentUploadStep() {
     const { data, submitForm } = useOnboarding();
     const router = useRouter();
     const { showToast } = useToast();
+    const { t } = useTranslation();
+
+    const ANALYSIS_STEPS = ANALYSIS_STEP_KEYS.map((key) => ({
+        key,
+        label: t(`project.document_step_${key}`),
+    }));
 
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -99,10 +101,10 @@ export function DocumentUploadStep() {
 
     const validateFile = (f: File): string | null => {
         if (!ACCEPTED_TYPES.includes(f.type)) {
-            return 'Format non supporté. Utilisez un fichier PDF ou Word (.doc, .docx).';
+            return t('project.document_format_error');
         }
         if (f.size > MAX_FILE_SIZE) {
-            return `Le fichier est trop volumineux (max ${formatFileSize(MAX_FILE_SIZE)}).`;
+            return t('project.document_size_error', { size: formatFileSize(MAX_FILE_SIZE) });
         }
         return null;
     };
@@ -177,7 +179,7 @@ export function DocumentUploadStep() {
                 // Le projet est créé côté API, on nettoie le brouillon
             });
         } catch (error: any) {
-            const message = error?.response?.data?.message || 'Erreur lors de l\'envoi du document.';
+            const message = error?.response?.data?.message || t('project.document_send_error');
             showToast(message, 'error');
             setPhase('idle');
         }
@@ -187,10 +189,10 @@ export function DocumentUploadStep() {
         <div className="space-y-8">
             <div className="space-y-2 text-center sm:text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-                    Importez votre dossier projet
+                    {t('project.document_title')}
                 </h1>
                 <p className="text-lg text-gray-500">
-                    Uploadez votre document et notre équipe extraira automatiquement les informations
+                    {t('project.document_description')}
                 </p>
             </div>
 
@@ -215,10 +217,10 @@ export function DocumentUploadStep() {
                                     <Loader2 className="w-8 h-8 text-kezak-primary animate-spin" />
                                 </motion.div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-1">
-                                    Analyse en cours
+                                    {t('project.document_analyzing_title')}
                                 </h3>
                                 <p className="text-sm text-gray-500">
-                                    Votre document est en cours de traitement
+                                    {t('project.document_analyzing_desc')}
                                 </p>
                             </div>
 
@@ -261,7 +263,7 @@ export function DocumentUploadStep() {
                             </div>
 
                             <p className="text-center text-xs text-gray-400 mt-6">
-                                Restez sur cette page — la mise à jour est automatique
+                                {t('project.document_stay_on_page')}
                             </p>
                         </motion.div>
                     ) : phase === 'published' ? (
@@ -282,10 +284,10 @@ export function DocumentUploadStep() {
                                 <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                             </motion.div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                Projet publié avec succès !
+                                {t('project.document_published_title')}
                             </h3>
                             <p className="text-gray-600 max-w-md mx-auto">
-                                Votre projet est maintenant visible sur le feed. Les co-fondateurs potentiels peuvent le découvrir.
+                                {t('project.document_published_desc')}
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
                                 {projectSlug && (
@@ -294,7 +296,7 @@ export function DocumentUploadStep() {
                                         className="inline-flex items-center gap-2 px-6 py-2.5 bg-kezak-primary text-white rounded-xl font-semibold text-sm hover:bg-kezak-dark transition-colors shadow-md"
                                     >
                                         <Eye className="w-4 h-4" />
-                                        Voir mon projet
+                                        {t('project.document_view_project')}
                                     </Link>
                                 )}
                                 <Link
@@ -302,7 +304,7 @@ export function DocumentUploadStep() {
                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    Mes projets
+                                    {t('project.document_my_projects')}
                                 </Link>
                             </div>
                         </motion.div>
@@ -324,17 +326,16 @@ export function DocumentUploadStep() {
                                 <AlertTriangle className="w-8 h-8 text-amber-600" />
                             </motion.div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                Revue en cours
+                                {t('project.document_review_title')}
                             </h3>
                             <p className="text-gray-600 max-w-md mx-auto">
-                                Votre projet nécessite une vérification complémentaire par notre équipe.
-                                Vous serez notifié dès qu'il sera validé.
+                                {t('project.document_review_desc')}
                             </p>
                             <Link
                                 href="/my-project"
                                 className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
                             >
-                                Voir mes projets
+                                {t('project.document_view_projects')}
                             </Link>
                         </motion.div>
                     ) : phase === 'failed' ? (
@@ -355,10 +356,10 @@ export function DocumentUploadStep() {
                                 <X className="w-8 h-8 text-red-600" />
                             </motion.div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                L'analyse a rencontré un problème
+                                {t('project.document_failed_title')}
                             </h3>
                             <p className="text-gray-600 max-w-md mx-auto">
-                                Nous n'avons pas pu traiter votre document. Veuillez réessayer ou soumettre un autre fichier.
+                                {t('project.document_failed_desc')}
                             </p>
                             <button
                                 onClick={() => {
@@ -370,7 +371,7 @@ export function DocumentUploadStep() {
                                 }}
                                 className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
                             >
-                                Réessayer
+                                {t('project.document_retry')}
                             </button>
                         </motion.div>
                     ) : !file ? (
@@ -410,10 +411,10 @@ export function DocumentUploadStep() {
                                 </div>
 
                                 <p className="text-base font-semibold text-gray-700 mb-1">
-                                    {isDragging ? 'Déposez votre fichier ici' : 'Glissez-déposez votre document ici'}
+                                    {isDragging ? t('project.document_drop_active') : t('project.document_drop_text')}
                                 </p>
                                 <p className="text-sm text-gray-500 mb-4">
-                                    ou <span className="text-kezak-primary font-medium">cliquez pour parcourir</span>
+                                    {t('project.document_or')} <span className="text-kezak-primary font-medium">{t('project.document_browse')}</span>
                                 </p>
 
                                 <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
@@ -470,7 +471,7 @@ export function DocumentUploadStep() {
                                     <div className="mt-5 flex items-center gap-3">
                                         <Loader2 className="w-4 h-4 animate-spin text-kezak-primary" />
                                         <span className="text-sm font-medium text-kezak-primary">
-                                            Envoi du document...
+                                            {t('project.document_uploading')}
                                         </span>
                                     </div>
                                 )}
@@ -478,7 +479,7 @@ export function DocumentUploadStep() {
                                 {phase === 'idle' && (
                                     <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
                                         <CheckCircle2 className="w-4 h-4" />
-                                        <span>Fichier prêt pour l&apos;envoi</span>
+                                        <span>{t('project.document_file_ready')}</span>
                                     </div>
                                 )}
                             </div>
@@ -498,12 +499,12 @@ export function DocumentUploadStep() {
                         {phase === 'uploading' ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                Envoi en cours...
+                                {t('project.document_submit_uploading')}
                             </>
                         ) : (
                             <>
                                 <Sparkles className="w-5 h-5" />
-                                Soumettre le document
+                                {t('project.document_submit')}
                             </>
                         )}
                     </button>

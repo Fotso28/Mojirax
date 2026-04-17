@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { CountrySelect } from '@/components/ui/country-select';
 import { ImageUploader } from '@/components/ui/image-uploader';
 import type { ProcessedImage } from '@/utils/image-processing';
+import { useTranslation } from '@/context/i18n-context';
 
 export function ProjectIdentityStep() {
     const { data, updateData, nextStep } = useOnboarding();
+    const { t } = useTranslation();
     const [logoPreview, setLogoPreview] = useState<string | null>(data._logoPreview || null);
 
     const isValid = data.name && data.pitch && data.country && data.city;
@@ -28,8 +30,8 @@ export function ProjectIdentityStep() {
 
     return (
         <WizardStep
-            title="Votre Projet"
-            description="Commençons par les bases. De quoi s'agit-il ?"
+            title={t('project.identity_title')}
+            description={t('project.identity_description')}
             onNext={nextStep}
             isValid={isValid}
         >
@@ -37,7 +39,7 @@ export function ProjectIdentityStep() {
                 {/* Logo */}
                 <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Logo du projet (optionnel)
+                        {t('project.identity_logo_label')}
                     </label>
                     <ImageUploader
                         preset="projectLogo"
@@ -48,28 +50,28 @@ export function ProjectIdentityStep() {
                         onUploadComplete={() => {}}
                         variant="logo"
                         size="md"
-                        placeholder="Ajouter un logo"
+                        placeholder={t('project.identity_logo_placeholder')}
                     />
                 </div>
 
                 <Input
-                    label="Nom du projet"
-                    placeholder="Ex: MojiraX"
+                    label={t('project.identity_name_label')}
+                    placeholder={t('project.identity_name_placeholder')}
                     value={data.name || ''}
                     onChange={(e) => updateData('name', e.target.value)}
                     autoFocus
                 />
 
                 <Input
-                    label="Slogan (Punchline)"
-                    placeholder="Ex: Le réseau premium pour entrepreneurs"
+                    label={t('project.identity_pitch_label')}
+                    placeholder={t('project.identity_pitch_placeholder')}
                     value={data.pitch || ''}
                     onChange={(e) => updateData('pitch', e.target.value)}
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <CountrySelect
-                        label="Pays"
+                        label={t('project.identity_country_label')}
                         value={data.country || ''}
                         onChange={(value) => {
                             updateData('country', value);
@@ -78,8 +80,8 @@ export function ProjectIdentityStep() {
                     />
 
                     <Input
-                        label="Ville"
-                        placeholder="Ex: Douala"
+                        label={t('project.identity_city_label')}
+                        placeholder={t('project.identity_city_placeholder')}
                         value={data.city || ''}
                         onChange={(e) => {
                             updateData('city', e.target.value);
