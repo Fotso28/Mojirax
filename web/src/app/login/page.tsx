@@ -13,6 +13,7 @@ import { COUNTRIES } from '@/lib/constants/countries';
 import { useTranslation } from '@/context/i18n-context';
 import { useToast } from '@/context/toast-context';
 import { logger } from '@/lib/logger';
+import Image from 'next/image';
 
 // Icons
 const GoogleIcon = () => (
@@ -432,7 +433,15 @@ function LoginPageContent() {
                         {/* Founder card */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-left">
                             <div className="flex items-center gap-3 mb-3.5">
-                                <div className="w-11 h-11 rounded-full bg-kezak-light flex items-center justify-center text-kezak-primary font-bold text-sm flex-shrink-0">AF</div>
+                                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-kezak-light flex-shrink-0 ring-2 ring-white shadow-sm">
+                                    <Image
+                                        src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=88&h=88&fit=crop&crop=faces&q=80"
+                                        alt={t('auth.card_founder_name')}
+                                        fill
+                                        sizes="44px"
+                                        className="object-cover"
+                                    />
+                                </div>
                                 <div>
                                     <p className="font-semibold text-slate-900 text-[14px] leading-tight">{t('auth.card_founder_name')}</p>
                                     <p className="text-[12px] text-slate-500 font-medium">{t('auth.card_founder_role')}</p>
@@ -460,7 +469,15 @@ function LoginPageContent() {
                         {/* Candidate card */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-right">
                             <div className="flex items-center gap-3 mb-3.5">
-                                <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm flex-shrink-0">KM</div>
+                                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-emerald-100 flex-shrink-0 ring-2 ring-white shadow-sm">
+                                    <Image
+                                        src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=88&h=88&fit=crop&crop=faces&q=80"
+                                        alt={t('auth.card_candidate_name')}
+                                        fill
+                                        sizes="44px"
+                                        className="object-cover"
+                                    />
+                                </div>
                                 <div>
                                     <p className="font-semibold text-slate-900 text-[14px] leading-tight">{t('auth.card_candidate_name')}</p>
                                     <p className="text-[12px] text-slate-500 font-medium">{t('auth.card_candidate_role')}</p>
