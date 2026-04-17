@@ -3,6 +3,7 @@
     "banner": "Estás sin conexión. Tus acciones se sincronizarán cuando vuelvas.",
     "reconnected": "Conexión restablecida"
   },
+  "required": "Campo obligatorio",
   "aria": {
     "search": "Buscar",
     "menu": "Abrir menú",

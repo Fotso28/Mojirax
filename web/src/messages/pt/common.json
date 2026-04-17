@@ -3,6 +3,7 @@
     "banner": "Você está offline. Suas ações serão sincronizadas quando voltar.",
     "reconnected": "Conexão restabelecida"
   },
+  "required": "Campo obrigatório",
   "aria": {
     "search": "Buscar",
     "menu": "Abrir menu",

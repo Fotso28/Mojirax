@@ -37,6 +37,12 @@ const CoFounderLogo = () => (
     </div>
 );
 
+// Required-field marker. Visible asterisk for sighted users,
+// translated hint for screen readers.
+function RequiredMark({ t }: { t: (k: string) => string }) {
+    return <span aria-label={t('common.required')} className="text-red-500 ms-0.5">*</span>;
+}
+
 
 // Next 16.2+ requires components that call useSearchParams() to be wrapped
 // in a Suspense boundary to allow CSR bailout during SSG.
@@ -254,25 +260,25 @@ function LoginPageContent() {
                                         {authMode === 'signup' && (
                                             <div className="grid grid-cols-2 gap-3.5 mb-4.5">
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.first_name')}</label>
+                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.first_name')}<RequiredMark t={t} /></label>
                                                     <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.first_name_placeholder')} required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.last_name')}</label>
+                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.last_name')}<RequiredMark t={t} /></label>
                                                     <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.last_name_placeholder')} required value={lastName} onChange={(e) => setLastName(e.target.value)} />
                                                 </div>
                                             </div>
                                         )}
 
                                         <div className="space-y-1.5 mb-4.5">
-                                            <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.email_label')}</label>
+                                            <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.email_label')}<RequiredMark t={t} /></label>
                                             <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.email_placeholder')} required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                                         </div>
 
                                         {authMode === 'signup' && (
                                             <>
                                                 <div className="space-y-1.5 mb-4.5">
-                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.country_label')}</label>
+                                                    <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.country_label')}<RequiredMark t={t} /></label>
                                                     <CountrySelect
                                                         value={country}
                                                         onChange={(val) => {
@@ -295,7 +301,7 @@ function LoginPageContent() {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3.5 mb-4.5">
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.phone_label')}</label>
+                                                        <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.phone_label')}<RequiredMark t={t} /></label>
                                                         <div className="relative flex items-center">
                                                             {dialCode && (
                                                                 <span className="absolute left-4 text-[15px] text-slate-500 font-medium pointer-events-none">{dialCode}</span>
@@ -315,7 +321,7 @@ function LoginPageContent() {
                                                         </div>
                                                     </div>
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.city_label')}</label>
+                                                        <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.city_label')}<RequiredMark t={t} /></label>
                                                         <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.city_placeholder')} required value={address} onChange={(e) => setAddress(e.target.value)} />
                                                     </div>
                                                 </div>
@@ -324,7 +330,7 @@ function LoginPageContent() {
 
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between items-center ms-1 mb-0.5">
-                                                <label className="text-[13px] font-semibold text-slate-700">{t('auth.password_label')}</label>
+                                                <label className="text-[13px] font-semibold text-slate-700">{t('auth.password_label')}<RequiredMark t={t} /></label>
                                                 {authMode === 'signin' && (
                                                     <a href="#" className="text-[13px] font-semibold text-kezak-primary hover:text-kezak-dark hover:underline transition-colors">{t('auth.forgot_password')}</a>
                                                 )}
