@@ -116,10 +116,17 @@ export function FeedStream() {
         loadFeed(null, filters);
     }, [user, loadFeed, filters, pathname]);
 
-    // Refresh feed when window regains focus (e.g. after creating a project)
+    // Refresh feed when window regains focus (e.g. after creating a project).
+    // Debounced: a user alt-tabbing across tabs would otherwise re-fetch on
+    // every focus event, burning mobile data on 3G/4G. Skip if we refreshed
+    // in the last 30s.
+    const lastFocusRefreshRef = useRef(0);
     useEffect(() => {
         if (!user) return;
         const handleFocus = () => {
+            const now = Date.now();
+            if (now - lastFocusRefreshRef.current < 30_000) return;
+            lastFocusRefreshRef.current = now;
             setProjects([]);
             setNextCursor(null);
             setHasMore(true);
