@@ -2,6 +2,7 @@
 
 import { Home, MessageSquare, User, LogOut, FolderKanban, Rocket, Send, Lock } from 'lucide-react';
 import Link from 'next/link';
+import { PlanBadge } from '@/components/ui/plan-badge';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
@@ -83,8 +84,11 @@ export function SidebarLeft({ expanded = false }: { expanded?: boolean }) {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full flex flex-col overflow-hidden">
             {/* Profile Summary (Tablet + Desktop) */}
             <div className={`${expanded ? 'block' : 'hidden md:block'} p-6 border-b border-gray-50`}>
-                <div className="flex items-center gap-3 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-bold text-gray-900 truncate">{t('dashboard.my_space')}</h3>
+                    <Link href="/settings/billing" aria-label={t('dashboard.billing_title')}>
+                        <PlanBadge plan={dbUser?.plan} showFree />
+                    </Link>
                 </div>
                 <p className="text-xs text-gray-500">{t('dashboard.manage_activity')}</p>
             </div>
