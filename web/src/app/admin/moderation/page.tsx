@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { formatDate } from '@/lib/utils/format-date';
 import { AXIOS_INSTANCE as api } from '@/api/axios-instance';
 import { Shield, Check, X, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 
@@ -36,6 +38,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminModerationPage() {
+  const { t } = useTranslation();
+  const locale = useLocale();
   const [items, setItems] = useState<ModerationItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -100,8 +104,8 @@ export default function AdminModerationPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Modération</h1>
-        <p className="text-sm text-gray-500 mt-1">{total} élément(s) en attente</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{t('admin.moderation_title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('admin.moderation_count', { count: total })}</p>
       </div>
 
       {/* Filter */}
@@ -112,9 +116,9 @@ export default function AdminModerationPage() {
           onChange={(e) => { setTypeFilter(e.target.value as any); setPage(0); }}
           className="h-[44px] px-4 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
         >
-          <option value="">Tous</option>
-          <option value="project">Projets</option>
-          <option value="candidate">Candidats</option>
+          <option value="">{t('admin.moderation_filter_all')}</option>
+          <option value="project">{t('admin.moderation_filter_projects')}</option>
+          <option value="candidate">{t('admin.moderation_filter_candidates')}</option>
         </select>
       </div>
 
@@ -132,8 +136,8 @@ export default function AdminModerationPage() {
       ) : items.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <Shield className="w-12 h-12 mx-auto mb-4 text-green-400" />
-          <p className="text-lg font-medium text-gray-900">File vide</p>
-          <p className="text-sm text-gray-500 mt-1">Aucun élément en attente de modération</p>
+          <p className="text-lg font-medium text-gray-900">{t('admin.moderation_empty')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('admin.moderation_empty_desc')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -149,16 +153,16 @@ export default function AdminModerationPage() {
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                       item.entityType === 'project' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
                     }`}>
-                      {item.entityType === 'project' ? 'Projet' : 'Candidat'}
+                      {item.entityType === 'project' ? t('admin.moderation_entity_project') : t('admin.moderation_entity_candidate')}
                     </span>
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[item.status] || STATUS_COLORS.DRAFT}`}>
                       {item.status}
                     </span>
                     {item.qualityScore > 0 && (
-                      <span className="text-xs text-gray-400">Score: {item.qualityScore.toFixed(1)}</span>
+                      <span className="text-xs text-gray-400">{t('admin.moderation_score')}: {item.qualityScore.toFixed(1)}</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString('fr-FR')}</p>
+                  <p className="text-xs text-gray-400">{formatDate(item.createdAt, locale)}</p>
                 </div>
 
                 <h3 className="text-base font-bold text-gray-900 mb-1">{displayName}</h3>
@@ -192,13 +196,13 @@ export default function AdminModerationPage() {
                 {/* Moderation Logs */}
                 {item.moderationLogs && item.moderationLogs.length > 0 && (
                   <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Historique IA :</p>
+                    <p className="text-xs font-medium text-gray-500 mb-2">{t('admin.moderation_ai_history')}</p>
                     {item.moderationLogs.map((log) => (
                       <div key={log.id} className="text-xs text-gray-600 mb-1">
                         <span className={`inline-block px-1.5 py-0.5 rounded ${STATUS_COLORS[log.status] || ''}`}>
                           {log.status}
                         </span>
-                        {' '}Score: {log.aiScore.toFixed(2)}
+                        {' '}{t('admin.moderation_score')}: {log.aiScore.toFixed(2)}
                         {log.aiReason && <span> — {log.aiReason}</span>}
                         <span className="text-gray-400 ml-2">{new Date(log.reviewedAt).toLocaleString('fr-FR')}</span>
                       </div>
@@ -218,14 +222,14 @@ export default function AdminModerationPage() {
                     ) : (
                       <Check className="w-4 h-4" />
                     )}
-                    Approuver
+                    {t('admin.moderation_approve')}
                   </button>
 
                   {rejectingId === item.id ? (
                     <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
                       <input
                         type="text"
-                        placeholder="Raison du rejet (optionnel)..."
+                        placeholder={t('admin.moderation_reject_placeholder')}
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
                         className="flex-1 h-[44px] px-4 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
@@ -236,13 +240,13 @@ export default function AdminModerationPage() {
                         disabled={actionLoading === item.id}
                         className="h-[44px] px-4 rounded-lg bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-all duration-200 disabled:opacity-50"
                       >
-                        Confirmer
+                        {t('common.confirm')}
                       </button>
                       <button
                         onClick={() => { setRejectingId(null); setRejectReason(''); }}
                         className="h-[44px] px-3 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all duration-200"
                       >
-                        Annuler
+                        {t('common.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -251,7 +255,7 @@ export default function AdminModerationPage() {
                       className="flex items-center gap-2 h-[44px] px-4 rounded-lg border border-red-200 text-red-500 font-semibold text-sm hover:bg-red-50 transition-all duration-200"
                     >
                       <X className="w-4 h-4" />
-                      Rejeter
+                      {t('admin.moderation_reject')}
                     </button>
                   )}
                 </div>
@@ -264,7 +268,7 @@ export default function AdminModerationPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500">Page {page + 1} sur {totalPages}</p>
+          <p className="text-xs text-gray-500">{t('admin.page_of', { current: page + 1, total: totalPages })}</p>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}

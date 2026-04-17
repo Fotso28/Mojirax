@@ -9,6 +9,7 @@ import { HideRightSidebar } from '@/context/sidebar-context';
 import { useTranslation, useLocale } from '@/context/i18n-context';
 import { useToast } from '@/context/toast-context';
 import { localized, localizedArray } from '@/lib/utils/localized';
+import { formatDate as formatDateI18n } from '@/lib/utils/format-date';
 import {
     ArrowLeft,
     CreditCard,
@@ -58,13 +59,8 @@ interface PricingPlan {
     planKey: string | null;
 }
 
-function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    });
-}
+// Legacy wrapper kept for minimal-diff callsites below; delegates to the
+// locale-aware helper using the current user's locale.
 
 function formatAmount(amount: number, currency: string) {
     return new Intl.NumberFormat('fr-FR', {
@@ -79,6 +75,7 @@ export default function BillingPage() {
     const { t } = useTranslation();
     const { showToast } = useToast();
     const locale = useLocale();
+    const formatDate = (iso: string) => formatDateI18n(iso, locale, { day: 'numeric', month: 'long', year: 'numeric' });
     const [billing, setBilling] = useState<BillingData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);

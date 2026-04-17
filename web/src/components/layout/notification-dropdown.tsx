@@ -16,6 +16,8 @@ import {
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
+import { useTranslation } from '@/context/i18n-context';
+import { formatDate } from '@/lib/utils/format-date';
 
 interface Notification {
     id: string;
@@ -40,22 +42,23 @@ const NOTIFICATION_ICONS: Record<Notification['type'], { icon: typeof Bell; colo
     SYSTEM: { icon: Bell, color: 'text-gray-500 bg-gray-50' },
 };
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, t: (key: string, params?: Record<string, string | number>) => string, locale: string): string {
     const now = Date.now();
     const date = new Date(dateStr).getTime();
     const diff = Math.floor((now - date) / 1000);
 
-    if (diff < 60) return 'maintenant';
-    if (diff < 3600) return `il y a ${Math.floor(diff / 60)}min`;
-    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-    if (diff < 604800) return `il y a ${Math.floor(diff / 86400)}j`;
-    return new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    if (diff < 60) return t('dashboard.notifications_now');
+    if (diff < 3600) return t('common.time_minutes_ago', { count: Math.floor(diff / 60) });
+    if (diff < 86400) return t('common.time_hours_ago', { count: Math.floor(diff / 3600) });
+    if (diff < 604800) return t('common.time_days_ago', { count: Math.floor(diff / 86400) });
+    return formatDate(dateStr, locale, { day: 'numeric', month: 'short' });
 }
 
 export function NotificationDropdown() {
     const { user } = useAuth();
     const { showToast } = useToast();
     const router = useRouter();
+    const { t, locale } = useTranslation();
 
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
@@ -108,7 +111,7 @@ export function NotificationDropdown() {
             });
             setNotifications(data.items ?? []);
         } catch {
-            showToast('Impossible de charger les notifications', 'error');
+            showToast(t('dashboard.notifications_load_error'), 'error');
         } finally {
             setLoading(false);
         }
@@ -164,9 +167,9 @@ export function NotificationDropdown() {
             await AXIOS_INSTANCE.patch('/notifications/read-all');
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
-            showToast('Toutes les notifications ont ete marquees comme lues');
+            showToast(t('dashboard.notifications_all_read_success'));
         } catch {
-            showToast('Erreur lors du marquage', 'error');
+            showToast(t('dashboard.notifications_mark_error'), 'error');
         }
     };
 
@@ -194,18 +197,18 @@ export function NotificationDropdown() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="absolute right-0 top-full mt-2 w-[360px] max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden z-50"
+                        className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-14 sm:top-full sm:mt-2 w-auto sm:w-[360px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden z-50"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                            <h3 className="text-sm font-semibold text-kezak-dark">Notifications</h3>
+                            <h3 className="text-sm font-semibold text-kezak-dark">{t('dashboard.notifications_title')}</h3>
                             {unreadCount > 0 && (
                                 <button
                                     onClick={markAllAsRead}
                                     className="flex items-center gap-1 text-xs text-kezak-primary hover:text-kezak-dark transition-colors font-medium"
                                 >
                                     <Check className="w-3.5 h-3.5" />
-                                    Tout marquer comme lu
+                                    {t('dashboard.notifications_mark_all_read')}
                                 </button>
                             )}
                         </div>
@@ -219,7 +222,7 @@ export function NotificationDropdown() {
                             ) : notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-10 text-gray-400">
                                     <Bell className="w-8 h-8 mb-2 opacity-40" />
-                                    <p className="text-sm">Aucune notification</p>
+                                    <p className="text-sm">{t('dashboard.notifications_none')}</p>
                                 </div>
                             ) : (
                                 notifications.map(notif => {
@@ -250,7 +253,7 @@ export function NotificationDropdown() {
                                                     {notif.message}
                                                 </p>
                                                 <p className="text-[11px] text-gray-400 mt-1">
-                                                    {timeAgo(notif.createdAt)}
+                                                    {timeAgo(notif.createdAt, t, locale)}
                                                 </p>
                                             </div>
                                         </button>

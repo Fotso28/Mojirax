@@ -15,7 +15,8 @@ import { logger } from '@/lib/logger';
 import { getSectorLabel } from '@/lib/constants/sectors';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { COUNTRIES } from '@/lib/constants/countries';
-import { useTranslation } from '@/context/i18n-context';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { formatDate } from '@/lib/utils/format-date';
 
 import { useToast } from '@/context/toast-context';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ export default function FounderPublicProfilePage() {
     const { showToast } = useToast();
     const { dbUser } = useAuth();
     const { t } = useTranslation();
+    const locale = useLocale();
     const { startConversation, loading: messageLoading } = useStartConversation();
     const { openUpsell } = useUpsell();
     const isFreeUser = !dbUser?.plan || dbUser.plan === 'FREE';
@@ -116,7 +118,7 @@ export default function FounderPublicProfilePage() {
         ? `${founderCountry?.dialCode || ''} ${user.phone}`.trim()
         : null;
     const memberSince = user.createdAt
-        ? new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+        ? formatDate(user.createdAt, locale, { month: 'long', year: 'numeric' })
         : null;
     const hasLinks = profile.linkedinUrl || profile.websiteUrl;
     const projects = user.projects || [];

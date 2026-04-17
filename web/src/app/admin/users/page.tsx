@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { formatDate } from '@/lib/utils/format-date';
 import { AXIOS_INSTANCE as api } from '@/api/axios-instance';
 import {
   Users, Search, ChevronLeft, ChevronRight, Shield, Eye,
@@ -78,23 +80,10 @@ interface UserDetail {
   visits: Visits;
 }
 
-const ROLES = ['', 'ADMIN', 'FOUNDER', 'CANDIDATE', 'USER'];
+const ROLES = ['', 'ADMIN', 'USER'];
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: 'bg-red-50 text-red-600',
-  FOUNDER: 'bg-blue-50 text-blue-600',
-  CANDIDATE: 'bg-purple-50 text-purple-600',
   USER: 'bg-gray-100 text-gray-600',
-};
-
-const ACTION_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  VIEW: { label: 'Vues', icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
-  CLICK: { label: 'Clics', icon: MousePointerClick, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  SAVE: { label: 'Sauvegardés', icon: Bookmark, color: 'text-amber-600', bg: 'bg-amber-50' },
-  APPLY: { label: 'Candidatures', icon: BookOpen, color: 'text-green-600', bg: 'bg-green-50' },
-  SHARE: { label: 'Partages', icon: Share2, color: 'text-purple-600', bg: 'bg-purple-50' },
-  UNLOCK: { label: 'Unlocks', icon: Unlock, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  SKIP: { label: 'Skips', icon: SkipForward, color: 'text-gray-500', bg: 'bg-gray-50' },
-  UNSAVE: { label: 'Retirés', icon: Bookmark, color: 'text-gray-400', bg: 'bg-gray-50' },
 };
 
 function formatDwell(ms: number | null): string {
@@ -105,19 +94,9 @@ function formatDwell(ms: number | null): string {
   return `${Math.floor(s / 60)}m${s % 60}s`;
 }
 
-function timeAgo(date: string): string {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'à l\'instant';
-  if (mins < 60) return `il y a ${mins}min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `il y a ${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `il y a ${days}j`;
-  return new Date(date).toLocaleDateString('fr-FR');
-}
-
 export default function AdminUsersPage() {
+  const { t } = useTranslation();
+  const locale = useLocale();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -134,6 +113,29 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [unbanningUserId, setUnbanningUserId] = useState<string | null>(null);
   const [unbanLoading, setUnbanLoading] = useState(false);
+
+  const ACTION_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+    VIEW: { label: t('admin.users_action_views'), icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
+    CLICK: { label: t('admin.users_action_clicks'), icon: MousePointerClick, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    SAVE: { label: t('admin.users_action_saves'), icon: Bookmark, color: 'text-amber-600', bg: 'bg-amber-50' },
+    APPLY: { label: t('admin.users_action_applies'), icon: BookOpen, color: 'text-green-600', bg: 'bg-green-50' },
+    SHARE: { label: t('admin.users_action_shares'), icon: Share2, color: 'text-purple-600', bg: 'bg-purple-50' },
+    UNLOCK: { label: t('admin.users_action_unlocks'), icon: Unlock, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    SKIP: { label: t('admin.users_action_skips'), icon: SkipForward, color: 'text-gray-500', bg: 'bg-gray-50' },
+    UNSAVE: { label: t('admin.users_action_unsaves'), icon: Bookmark, color: 'text-gray-400', bg: 'bg-gray-50' },
+  };
+
+  function timeAgo(date: string): string {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t('admin.users_just_now');
+    if (mins < 60) return t('admin.users_minutes_ago', { count: mins });
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t('admin.users_hours_ago', { count: hours });
+    const days = Math.floor(hours / 24);
+    if (days < 30) return t('admin.users_days_ago', { count: days });
+    return formatDate(date, locale);
+  }
 
   const PAGE_SIZE = 20;
 
@@ -221,8 +223,8 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Utilisateurs</h1>
-        <p className="text-sm text-gray-500 mt-1">{total} utilisateur(s) au total</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{t('admin.users_title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('admin.users_count', { count: total })}</p>
       </div>
 
       {/* Filters */}
@@ -231,7 +233,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher par nom ou email..."
+            placeholder={t('admin.users_search_placeholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             className="w-full h-[44px] pl-10 pr-4 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
@@ -242,7 +244,7 @@ export default function AdminUsersPage() {
           onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}
           className="w-full sm:w-auto h-[44px] px-4 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
         >
-          <option value="">Tous les rôles</option>
+          <option value="">{t('admin.users_all_roles')}</option>
           {ROLES.filter(Boolean).map((r) => (
             <option key={r} value={r}>{r}</option>
           ))}
@@ -252,9 +254,9 @@ export default function AdminUsersPage() {
               onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
               className="h-10 px-3 rounded-lg border border-gray-200 text-sm bg-white"
             >
-              <option value="">Tous les statuts</option>
-              <option value="ACTIVE">Actif</option>
-              <option value="BANNED">Banni</option>
+              <option value="">{t('admin.users_all_statuses')}</option>
+              <option value="ACTIVE">{t('admin.users_status_active')}</option>
+              <option value="BANNED">{t('admin.users_status_banned')}</option>
             </select>
       </div>
 
@@ -264,11 +266,11 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Utilisateur</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Rôle</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Projets</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Inscrit le</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-500">Actions</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.users_col_user')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.users_col_role')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.users_col_projects')}</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">{t('admin.users_col_registered')}</th>
+                <th className="text-right px-5 py-3 font-medium text-gray-500">{t('admin.users_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -286,7 +288,7 @@ export default function AdminUsersPage() {
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-gray-500">
                     <Users className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                    Aucun utilisateur trouvé
+                    {t('admin.users_no_users')}
                   </td>
                 </tr>
               ) : (
@@ -302,7 +304,7 @@ export default function AdminUsersPage() {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-gray-900">{u.name || 'Sans nom'}</p>
+                          <p className="font-medium text-gray-900">{u.name || t('admin.users_no_name')}</p>
                           <p className="text-xs text-gray-500">{u.email}</p>
                         </div>
                       </div>
@@ -313,20 +315,20 @@ export default function AdminUsersPage() {
                       </span>
                     {u.status === 'BANNED' && (
                       <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 font-medium">
-                        Banni
+                        {t('admin.users_status_banned')}
                       </span>
                     )}
                     </td>
                     <td className="px-5 py-4 text-gray-600">{u._count.projects}</td>
                     <td className="px-5 py-4 text-gray-500 text-xs">
-                      {new Date(u.createdAt).toLocaleDateString('fr-FR')}
+                      {formatDate(u.createdAt, locale)}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openDetail(u.id)}
                           className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-all duration-200"
-                          title="Voir détail"
+                          title={t('admin.users_view_detail')}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -336,14 +338,14 @@ export default function AdminUsersPage() {
                           onClick={(e) => { e.stopPropagation(); setUnbanningUserId(u.id); }}
                           className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 hover:bg-green-100"
                         >
-                          Débannir
+                          {t('admin.users_unban')}
                         </button>
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation(); setBanningUserId(u.id); }}
                           className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100"
                         >
-                          Bannir
+                          {t('admin.users_ban')}
                         </button>
                       )
                     )}
@@ -359,7 +361,7 @@ export default function AdminUsersPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
-            <p className="text-xs text-gray-500">Page {page + 1} sur {totalPages}</p>
+            <p className="text-xs text-gray-500">{t('admin.page_of', { current: page + 1, total: totalPages })}</p>
             <div className="flex gap-2">
               <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
                 <ChevronLeft className="w-4 h-4" />
@@ -372,7 +374,7 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* ─── User Detail Modal ──────────────────────────── */}
+      {/* User Detail Modal */}
       {(selectedUser || detailLoading) && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedUser(null)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-2" onClick={(e) => e.stopPropagation()}>
@@ -384,8 +386,8 @@ export default function AdminUsersPage() {
               <>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-900">Détail utilisateur</h2>
-                  <button onClick={() => setSelectedUser(null)} className="p-2 rounded-full hover:bg-gray-100 text-gray-600">✕</button>
+                  <h2 className="text-lg font-bold text-gray-900">{t('admin.users_detail_title')}</h2>
+                  <button onClick={() => setSelectedUser(null)} className="p-2 rounded-full hover:bg-gray-100 text-gray-600">&#x2715;</button>
                 </div>
 
                 <div className="flex items-center gap-4 mb-4">
@@ -397,12 +399,12 @@ export default function AdminUsersPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="font-bold text-gray-900 text-lg truncate">{selectedUser.name || 'Sans nom'}</p>
+                    <p className="font-bold text-gray-900 text-lg truncate">{selectedUser.name || t('admin.users_no_name')}</p>
                     <p className="text-sm text-gray-500 truncate">{selectedUser.email}</p>
                     {selectedUser.engagement.lastActivityAt && (
                       <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                         <Activity className="w-3 h-3" />
-                        Dernière activité : {timeAgo(selectedUser.engagement.lastActivityAt)}
+                        {t('admin.users_last_activity', { time: timeAgo(selectedUser.engagement.lastActivityAt) })}
                       </p>
                     )}
                   </div>
@@ -412,7 +414,7 @@ export default function AdminUsersPage() {
                 <div className="mb-4 p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-3">
                     <Shield className="w-4 h-4 text-gray-500" />
-                    <label className="text-sm font-medium text-gray-700">Rôle :</label>
+                    <label className="text-sm font-medium text-gray-700">{t('admin.users_role_label')}</label>
                     <select
                       value={selectedUser.role}
                       onChange={(e) => changeRole(selectedUser.id, e.target.value)}
@@ -428,10 +430,10 @@ export default function AdminUsersPage() {
                 {/* Tabs */}
                 <div className="flex gap-1 mb-4 border-b border-gray-100 overflow-x-auto">
                   {([
-                    { key: 'info' as const, label: 'Infos' },
-                    { key: 'activity' as const, label: `Activité (${selectedUser.engagement.totalInteractions})` },
-                    { key: 'searches' as const, label: `Recherches (${selectedUser.engagement.recentSearches.length})` },
-                    { key: 'visits' as const, label: `Visites (${selectedUser.visits?.totalVisits || 0})` },
+                    { key: 'info' as const, label: t('admin.users_tab_info') },
+                    { key: 'activity' as const, label: t('admin.users_tab_activity', { count: selectedUser.engagement.totalInteractions }) },
+                    { key: 'searches' as const, label: t('admin.users_tab_searches', { count: selectedUser.engagement.recentSearches.length }) },
+                    { key: 'visits' as const, label: t('admin.users_tab_visits', { count: selectedUser.visits?.totalVisits || 0 }) },
                   ]).map((tab) => (
                     <button
                       key={tab.key}
@@ -447,33 +449,31 @@ export default function AdminUsersPage() {
                   ))}
                 </div>
 
-                {/* ─── Tab: Infos ─────────────────────────── */}
+                {/* Tab: Infos */}
                 {detailTab === 'info' && (
                   <div className="space-y-4">
-                    {/* Stats cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="text-center p-3 bg-blue-50 rounded-xl">
                         <p className="text-2xl font-bold text-blue-600">{selectedUser.engagement.totalInteractions}</p>
-                        <p className="text-xs text-blue-600">Interactions</p>
+                        <p className="text-xs text-blue-600">{t('admin.users_stat_interactions')}</p>
                       </div>
                       <div className="text-center p-3 bg-green-50 rounded-xl">
                         <p className="text-2xl font-bold text-green-600">{selectedUser.projects?.length || 0}</p>
-                        <p className="text-xs text-green-600">Projets</p>
+                        <p className="text-xs text-green-600">{t('admin.users_stat_projects')}</p>
                       </div>
                       <div className="text-center p-3 bg-purple-50 rounded-xl">
                         <p className="text-2xl font-bold text-purple-600">{selectedUser._count.unlocks}</p>
-                        <p className="text-xs text-purple-600">Unlocks</p>
+                        <p className="text-xs text-purple-600">{t('admin.users_stat_unlocks')}</p>
                       </div>
                       <div className="text-center p-3 bg-amber-50 rounded-xl">
                         <p className="text-2xl font-bold text-amber-600">{selectedUser._count.transactions}</p>
-                        <p className="text-xs text-amber-600">Transactions</p>
+                        <p className="text-xs text-amber-600">{t('admin.users_stat_transactions')}</p>
                       </div>
                     </div>
 
-                    {/* Engagement breakdown */}
                     {selectedUser.engagement.totalInteractions > 0 && (
                       <div>
-                        <h3 className="text-sm font-bold text-gray-900 mb-2">Engagement par type</h3>
+                        <h3 className="text-sm font-bold text-gray-900 mb-2">{t('admin.users_engagement_by_type')}</h3>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(selectedUser.engagement.byAction)
                             .sort(([, a], [, b]) => b - a)
@@ -492,16 +492,15 @@ export default function AdminUsersPage() {
                       </div>
                     )}
 
-                    {/* Projects list */}
                     {selectedUser.projects && selectedUser.projects.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-bold text-gray-900 mb-2">Projets créés</h3>
+                        <h3 className="text-sm font-bold text-gray-900 mb-2">{t('admin.users_projects_created')}</h3>
                         <div className="space-y-2">
                           {selectedUser.projects.map((p) => (
                             <div key={p.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg">
                               <div>
                                 <p className="text-sm font-medium text-gray-900">{p.name}</p>
-                                <p className="text-xs text-gray-500">{p.sector} · Score: {p.qualityScore}/100</p>
+                                <p className="text-xs text-gray-500">{p.sector} · {t('admin.moderation_score')}: {p.qualityScore}/100</p>
                               </div>
                               <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                                 p.status === 'PUBLISHED' ? 'bg-green-50 text-green-600' :
@@ -517,18 +516,21 @@ export default function AdminUsersPage() {
                     )}
 
                     <p className="text-xs text-gray-400">
-                      Inscrit le {new Date(selectedUser.createdAt).toLocaleDateString('fr-FR')} · MAJ {new Date(selectedUser.updatedAt).toLocaleDateString('fr-FR')}
+                      {t('admin.users_registered_at', {
+                        date: formatDate(selectedUser.createdAt, locale),
+                        updated: formatDate(selectedUser.updatedAt, locale),
+                      })}
                     </p>
                   </div>
                 )}
 
-                {/* ─── Tab: Activité (projets consultés) ── */}
+                {/* Tab: Activité */}
                 {detailTab === 'activity' && (
                   <div>
                     {selectedUser.engagement.recentProjectViews.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <Eye className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-sm">Aucune activité enregistrée</p>
+                        <p className="text-sm">{t('admin.users_no_activity')}</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -568,13 +570,13 @@ export default function AdminUsersPage() {
                   </div>
                 )}
 
-                {/* ─── Tab: Recherches ────────────────────── */}
+                {/* Tab: Recherches */}
                 {detailTab === 'searches' && (
                   <div>
                     {selectedUser.engagement.recentSearches.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <SearchIcon className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-sm">Aucune recherche enregistrée</p>
+                        <p className="text-sm">{t('admin.users_no_searches')}</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -584,9 +586,9 @@ export default function AdminUsersPage() {
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-900 truncate">&quot;{s.query}&quot;</p>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <span>{s.resultsCount} résultat(s)</span>
+                                <span>{t('admin.users_results_count', { count: s.resultsCount })}</span>
                                 {s.type && <span className="px-1.5 py-0.5 rounded bg-gray-100">{s.type}</span>}
-                                {s.clickedResult && <span className="text-green-600">→ clic sur résultat</span>}
+                                {s.clickedResult && <span className="text-green-600">{t('admin.users_click_on_result')}</span>}
                               </div>
                             </div>
                             <span className="text-xs text-gray-400 flex-shrink-0">{timeAgo(s.searchedAt)}</span>
@@ -597,20 +599,20 @@ export default function AdminUsersPage() {
                   </div>
                 )}
 
-                {/* ─── Tab: Visites ─────────────────────────── */}
+                {/* Tab: Visites */}
                 {detailTab === 'visits' && (
                   <div>
                     {!selectedUser.visits || selectedUser.visits.recentVisits.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <Globe className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-sm">Aucune visite enregistrée</p>
+                        <p className="text-sm">{t('admin.users_no_visits')}</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 mb-2">
                           <Globe className="w-4 h-4 text-teal-500" />
                           <span className="text-sm font-bold text-gray-900">
-                            {selectedUser.visits.totalVisits} visite(s) au total
+                            {t('admin.users_total_visits', { count: selectedUser.visits.totalVisits })}
                           </span>
                         </div>
                         <div className="space-y-2">
@@ -621,9 +623,9 @@ export default function AdminUsersPage() {
                                 <DeviceIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-900">{v.browser || 'Inconnu'}</span>
-                                    <span className="text-xs text-gray-400">sur</span>
-                                    <span className="text-sm text-gray-700">{v.os || 'Inconnu'}</span>
+                                    <span className="text-sm font-medium text-gray-900">{v.browser || t('admin.users_unknown')}</span>
+                                    <span className="text-xs text-gray-400">{t('admin.users_on')}</span>
+                                    <span className="text-sm text-gray-700">{v.os || t('admin.users_unknown')}</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                                     <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{v.device || 'UNKNOWN'}</span>
@@ -657,14 +659,14 @@ export default function AdminUsersPage() {
         {banningUserId && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Bannir l&apos;utilisateur</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.users_ban_title')}</h3>
               <p className="text-sm text-gray-600 mb-3">
-                L&apos;utilisateur sera banni et tous ses projets publiés seront archivés.
+                {t('admin.users_ban_desc')}
               </p>
               <textarea
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
-                placeholder="Raison du bannissement (min. 5 caractères)..."
+                placeholder={t('admin.users_ban_placeholder')}
                 className="w-full h-24 px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
               <div className="flex justify-end gap-3 mt-4">
@@ -672,14 +674,14 @@ export default function AdminUsersPage() {
                   onClick={() => { setBanningUserId(null); setBanReason(''); }}
                   className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleBan}
                   disabled={banReason.length < 5 || banLoading}
                   className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
                 >
-                  {banLoading ? 'Bannissement...' : 'Confirmer le ban'}
+                  {banLoading ? t('admin.users_banning') : t('admin.users_confirm_ban')}
                 </button>
               </div>
             </div>
@@ -689,23 +691,23 @@ export default function AdminUsersPage() {
         {unbanningUserId && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Débannir l&apos;utilisateur</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.users_unban_title')}</h3>
               <p className="text-sm text-gray-600 mb-3">
-                L&apos;utilisateur pourra se reconnecter et ses projets archivés lors du ban seront restaurés.
+                {t('admin.users_unban_desc')}
               </p>
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   onClick={() => setUnbanningUserId(null)}
                   className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleUnban}
                   disabled={unbanLoading}
                   className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
                 >
-                  {unbanLoading ? 'Débannissement...' : 'Confirmer le déban'}
+                  {unbanLoading ? t('admin.users_unbanning') : t('admin.users_confirm_unban')}
                 </button>
               </div>
             </div>
