@@ -54,7 +54,7 @@ export function ExperienceList({ value, onChange }: ExperienceListProps) {
                         <Trash2 className="w-4 h-4" />
                     </button>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pr-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pe-10">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_exp_role')}</label>
                             <input

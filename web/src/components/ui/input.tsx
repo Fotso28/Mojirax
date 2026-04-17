@@ -46,8 +46,8 @@ export function Input({
                     className={`
                         w-full h-[52px] bg-white border rounded-lg text-gray-900 text-base
                         transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary
-                        ${icon ? 'pl-11' : 'pl-4'}
-                        ${isPassword ? 'pr-11' : 'pr-4'}
+                        ${icon ? 'ps-11' : 'ps-4'}
+                        ${isPassword ? 'pe-11' : 'pe-4'}
                         ${error ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'}
                         placeholder:text-gray-400
                     `}

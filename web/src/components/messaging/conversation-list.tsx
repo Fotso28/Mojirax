@@ -45,7 +45,7 @@ export function ConversationList({ conversations, currentUserId, activeId, onlin
             placeholder={t('dashboard.messaging_search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
+            className="w-full ps-9 pe-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
           />
         </div>
       </div>

@@ -59,7 +59,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                     <div className="hidden lg:flex flex-1 max-w-xl mx-8">
                         <button
                             onClick={() => setShowSearch(true)}
-                            className="relative w-full h-11 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-400 text-left hover:border-gray-300 hover:bg-gray-100/50 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all cursor-pointer group"
+                            className="relative w-full h-11 ps-10 pe-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-400 text-left hover:border-gray-300 hover:bg-gray-100/50 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all cursor-pointer group"
                         >
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-gray-500 transition-colors" />
                             <span>{t('dashboard.header_search_placeholder')}</span>
@@ -98,7 +98,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                         <NotificationDropdown />
 
                         {/* Desktop: Profile */}
-                        <div className="hidden md:flex items-center gap-3 pl-2 border-l border-gray-100">
+                        <div className="hidden md:flex items-center gap-3 ps-2 border-l border-gray-100">
                             <div
                                 onClick={() => router.push('/profile')}
                                 className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 overflow-hidden ring-2 ring-transparent hover:ring-kezak-primary/20 transition-all cursor-pointer relative"

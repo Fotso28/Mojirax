@@ -53,7 +53,7 @@ export function EducationList({ value, onChange }: EducationListProps) {
                         <Trash2 className="w-4 h-4" />
                     </button>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pr-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pe-10">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_edu_degree')}</label>
                             <input

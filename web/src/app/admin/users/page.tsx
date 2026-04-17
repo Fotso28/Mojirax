@@ -236,7 +236,7 @@ export default function AdminUsersPage() {
             placeholder={t('admin.users_search_placeholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            className="w-full h-[44px] pl-10 pr-4 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
+            className="w-full h-[44px] ps-10 pe-4 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
           />
         </div>
         <select

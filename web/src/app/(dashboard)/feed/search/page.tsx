@@ -118,7 +118,7 @@ export default function SearchPage() {
                         placeholder={t('dashboard.search_placeholder')}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="w-full h-[52px] pl-10 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all text-base"
+                        className="w-full h-[52px] ps-10 pe-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all text-base"
                     />
                     {query && (
                         <button
