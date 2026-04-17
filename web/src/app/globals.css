@@ -20,7 +20,9 @@
   --color-kezak-light: var(--kezak-brand-light);
   --color-kezak-accent: var(--kezak-brand-accent);
 
-  --font-sans: 'Inter', var(--font-geist-sans);
+  /* Inter covers latin/latin-ext glyphs, Cairo covers arabic glyphs.
+     Browser picks per-codepoint via unicode-range, so both loads well. */
+  --font-sans: var(--font-inter), var(--font-cairo), system-ui, sans-serif;
 
   --breakpoint-xs: 400px;
 }

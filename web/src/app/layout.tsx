@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Cairo } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+// Arabic-friendly font. Loaded alongside Inter so the browser can pick
+// whichever one covers the glyphs being rendered (unicode-range fallback).
+const cairo = Cairo({
+  subsets: ["arabic"],
+  variable: "--font-cairo",
+  display: "swap",
 });
 
 const SUPPORTED_LOCALES = ['fr', 'en', 'es', 'pt', 'ar'] as const;
@@ -82,7 +91,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
-        className={`${inter.variable} font-sans antialiased`}
+        className={`${inter.variable} ${cairo.variable} font-sans antialiased`}
       >
         <I18nProvider>
           <HtmlLangUpdater />
