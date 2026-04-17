@@ -79,6 +79,7 @@ import { ToastProvider } from "@/context/toast-context";
 import { I18nProvider } from "@/context/i18n-context";
 import { UpsellProvider } from "@/context/upsell-context";
 import { HtmlLangUpdater } from "@/components/layout/html-lang-updater";
+import { OfflineBanner } from "@/components/layout/offline-banner";
 
 export default async function RootLayout({
   children,
@@ -98,6 +99,7 @@ export default async function RootLayout({
           <AuthProvider>
             <ToastProvider>
               <UpsellProvider>
+                <OfflineBanner />
                 {children}
               </UpsellProvider>
             </ToastProvider>

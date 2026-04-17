@@ -1,4 +1,8 @@
 {
+  "offline": {
+    "banner": "Você está offline. Suas ações serão sincronizadas quando voltar.",
+    "reconnected": "Conexão restabelecida"
+  },
   "upsell": {
     "close": "Fechar",
     "cta_upgrade": "Passar para o plano Plus",

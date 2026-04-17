@@ -1,4 +1,8 @@
 {
+  "offline": {
+    "banner": "You're offline. Actions will sync when you're back online.",
+    "reconnected": "Connection restored"
+  },
   "upsell": {
     "close": "Close",
     "cta_upgrade": "Upgrade to Plus",
