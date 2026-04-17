@@ -36,7 +36,7 @@ export function ProfileHeader({ user, onAvatarUploaded }: ProfileHeaderProps) {
     return (
         <div className="relative bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm overflow-hidden mb-6">
             {/* Background Decoration */}
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-50 to-indigo-50 -z-10" />
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-kezak-light via-kezak-light/60 to-white -z-10" />
 
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 pt-10">
                 {/* Avatar via ImageUploader */}
