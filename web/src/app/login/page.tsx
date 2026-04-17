@@ -33,7 +33,7 @@ const LinkedInIcon = () => (
 const CoFounderLogo = () => (
     <div className="flex items-center gap-2">
         <img src="/logo/logo.svg" alt="MojiraX Logo" className="w-10 h-10 object-contain" />
-        <span className="text-xl font-bold text-slate-900">Mojira<span className="text-blue-600">X</span></span>
+        <span className="text-xl font-bold text-slate-900">Mojira<span className="text-kezak-primary">X</span></span>
     </div>
 );
 
@@ -179,13 +179,13 @@ function LoginPageContent() {
     if (loading || (user && !justSignedUp.current)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kezak-primary"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen grid lg:grid-cols-2 bg-white font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
+        <div className="min-h-screen grid lg:grid-cols-2 bg-white font-sans text-slate-900 selection:bg-kezak-light selection:text-kezak-dark overflow-hidden">
             {/* Section Gauche : Authentification */}
             <div className="flex flex-col h-full overflow-y-auto relative bg-white lg:shadow-[20px_0_40px_-15px_rgba(0,0,0,0.05)] z-20">
                 <div className="flex flex-col p-6 lg:p-14 max-w-[500px] mx-auto w-full min-h-full">
@@ -255,18 +255,18 @@ function LoginPageContent() {
                                             <div className="grid grid-cols-2 gap-3.5 mb-4.5">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.first_name')}</label>
-                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder={t('auth.first_name_placeholder')} required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.first_name_placeholder')} required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.last_name')}</label>
-                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder={t('auth.last_name_placeholder')} required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                                                    <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.last_name_placeholder')} required value={lastName} onChange={(e) => setLastName(e.target.value)} />
                                                 </div>
                                             </div>
                                         )}
 
                                         <div className="space-y-1.5 mb-4.5">
                                             <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.email_label')}</label>
-                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder={t('auth.email_placeholder')} required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.email_placeholder')} required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                                         </div>
 
                                         {authMode === 'signup' && (
@@ -301,7 +301,7 @@ function LoginPageContent() {
                                                                 <span className="absolute left-4 text-[15px] text-slate-500 font-medium pointer-events-none">{dialCode}</span>
                                                             )}
                                                             <input
-                                                                className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400"
+                                                                className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400"
                                                                 style={{ paddingLeft: dialCode ? `${dialCode.length * 10 + 20}px` : '16px', paddingRight: '16px' }}
                                                                 placeholder={dialCode ? t('auth.phone_placeholder') : t('auth.phone_placeholder_full')}
                                                                 required
@@ -316,7 +316,7 @@ function LoginPageContent() {
                                                     </div>
                                                     <div className="space-y-1.5">
                                                         <label className="text-[13px] font-semibold text-slate-700 ms-1">{t('auth.city_label')}</label>
-                                                        <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400" placeholder={t('auth.city_placeholder')} required value={address} onChange={(e) => setAddress(e.target.value)} />
+                                                        <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400" placeholder={t('auth.city_placeholder')} required value={address} onChange={(e) => setAddress(e.target.value)} />
                                                     </div>
                                                 </div>
                                             </>
@@ -326,17 +326,17 @@ function LoginPageContent() {
                                             <div className="flex justify-between items-center ms-1 mb-0.5">
                                                 <label className="text-[13px] font-semibold text-slate-700">{t('auth.password_label')}</label>
                                                 {authMode === 'signin' && (
-                                                    <a href="#" className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors">{t('auth.forgot_password')}</a>
+                                                    <a href="#" className="text-[13px] font-semibold text-kezak-primary hover:text-kezak-dark hover:underline transition-colors">{t('auth.forgot_password')}</a>
                                                 )}
                                             </div>
-                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all placeholder:text-slate-400 tracking-wider" placeholder={t('auth.password_placeholder')} required type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                                            <input className="flex h-[46px] w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all placeholder:text-slate-400 tracking-wider" placeholder={t('auth.password_placeholder')} required type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                                         </div>
 
                                         <div className="pt-5">
                                             <button
                                                 type="submit"
                                                 disabled={isSubmitting}
-                                                className="w-full h-[48px] bg-kezak-primary hover:bg-kezak-dark text-white rounded-xl font-bold transition-all disabled:opacity-70 disabled:hover:bg-kezak-primary flex items-center justify-center shadow-lg shadow-kezak-primary/20 hover:shadow-xl hover:shadow-kezak-primary/30 hover:-translate-y-px"
+                                                className="w-full h-[52px] bg-kezak-primary hover:bg-kezak-dark text-white rounded-xl font-bold transition-all disabled:opacity-70 disabled:hover:bg-kezak-primary flex items-center justify-center shadow-lg shadow-kezak-primary/20 hover:shadow-xl hover:shadow-kezak-primary/30 hover:-translate-y-px"
                                             >
                                                 {isSubmitting ? t('auth.submitting') : (authMode === 'signin' ? t('auth.submit_signin') : t('auth.submit_signup'))}
                                             </button>
@@ -346,7 +346,7 @@ function LoginPageContent() {
                                     <div className="text-center pt-3">
                                         <p className="text-slate-500 font-medium text-[14px]">
                                             {authMode === 'signup' ? t('auth.already_have_account') : t('auth.no_account')}
-                                            <button type="button" onClick={() => { setAuthMode(authMode === 'signup' ? 'signin' : 'signup'); setError(''); }} className="text-blue-600 font-bold hover:underline hover:text-blue-700 transition-colors">
+                                            <button type="button" onClick={() => { setAuthMode(authMode === 'signup' ? 'signin' : 'signup'); setError(''); }} className="text-kezak-primary font-bold hover:underline hover:text-kezak-dark transition-colors">
                                                 {authMode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup')}
                                             </button>
                                         </p>
@@ -368,9 +368,9 @@ function LoginPageContent() {
                                             key={item.id}
                                             onClick={() => setSelectedIntention(item.id)}
                                             className={`relative p-5 rounded-2xl border-[2px] cursor-pointer transition-all duration-200 group flex items-start gap-4 bg-white
-                                                ${selectedIntention === item.id ? 'border-blue-600 shadow-md outline outline-4 outline-blue-50/50 scale-[1.01]' : 'border-slate-200 hover:border-blue-200 hover:bg-slate-50'}`}
+                                                ${selectedIntention === item.id ? 'border-kezak-primary shadow-md outline outline-4 outline-kezak-light/50 scale-[1.01]' : 'border-slate-200 hover:border-kezak-light hover:bg-slate-50'}`}
                                         >
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${selectedIntention === item.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${selectedIntention === item.id ? 'bg-kezak-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                                                 <item.icon className="w-6 h-6" />
                                             </div>
                                             <div className="flex-1">
@@ -378,7 +378,7 @@ function LoginPageContent() {
                                                 <p className="text-slate-500 text-[14px] font-medium leading-relaxed">{item.description}</p>
                                             </div>
                                             {selectedIntention === item.id && (
-                                                <div className="absolute top-5 right-5 text-blue-600 animate-in zoom-in">
+                                                <div className="absolute top-5 right-5 text-kezak-primary animate-in zoom-in">
                                                     <CheckCircle className="w-5 h-5 bg-white rounded-full bg-blend-lighten" />
                                                 </div>
                                             )}
@@ -388,7 +388,7 @@ function LoginPageContent() {
                                 <button
                                     onClick={handleContinueIntention}
                                     disabled={!selectedIntention || isUpdatingProfile}
-                                    className="w-full h-[48px] bg-kezak-primary hover:bg-kezak-dark text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:hover:bg-kezak-primary flex items-center justify-center gap-2 shadow-lg shadow-kezak-primary/20 hover:shadow-xl hover:-translate-y-px"
+                                    className="w-full h-[52px] bg-kezak-primary hover:bg-kezak-dark text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:hover:bg-kezak-primary flex items-center justify-center gap-2 shadow-lg shadow-kezak-primary/20 hover:shadow-xl hover:-translate-y-px"
                                 >
                                     {isUpdatingProfile ? t('auth.configuring') : t('common.continue')}
                                     {!isUpdatingProfile && <ArrowRight className="w-5 h-5 ms-1" />}
@@ -415,7 +415,7 @@ function LoginPageContent() {
                 <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
                     {/* Title */}
                     <h2 className="text-3xl lg:text-[36px] font-bold text-center text-slate-900 mb-3 leading-tight tracking-tight">
-                        {t('auth.hero_title_start')}<span className="text-blue-600">{t('auth.hero_title_highlight')}</span>
+                        {t('auth.hero_title_start')}<span className="text-kezak-primary">{t('auth.hero_title_highlight')}</span>
                     </h2>
                     <p className="text-slate-500 text-center text-[15px] font-medium mb-12 max-w-sm leading-relaxed">
                         {t('auth.hero_subtitle')}
@@ -426,7 +426,7 @@ function LoginPageContent() {
                         {/* Founder card */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm w-[200px] animate-slide-in-left">
                             <div className="flex items-center gap-3 mb-3.5">
-                                <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">AF</div>
+                                <div className="w-11 h-11 rounded-full bg-kezak-light flex items-center justify-center text-kezak-primary font-bold text-sm flex-shrink-0">AF</div>
                                 <div>
                                     <p className="font-semibold text-slate-900 text-[14px] leading-tight">{t('auth.card_founder_name')}</p>
                                     <p className="text-[12px] text-slate-500 font-medium">{t('auth.card_founder_role')}</p>
@@ -434,7 +434,7 @@ function LoginPageContent() {
                             </div>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">FinTech</span>
+                                    <span className="text-[11px] font-semibold bg-kezak-light text-kezak-dark px-2 py-0.5 rounded-md">FinTech</span>
                                     <span className="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">Douala</span>
                                 </div>
                                 <p className="text-[12px] text-slate-500 leading-relaxed">{t('auth.card_founder_desc')}</p>
@@ -443,12 +443,12 @@ function LoginPageContent() {
 
                         {/* Handshake icon center */}
                         <div className="flex flex-col items-center gap-2 animate-pulse-slow">
-                            <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/25">
+                            <div className="w-14 h-14 rounded-full bg-kezak-primary flex items-center justify-center shadow-lg shadow-kezak-primary/25">
                                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z" />
                                 </svg>
                             </div>
-                            <span className="text-[11px] font-bold text-blue-600 tracking-wide uppercase">Match</span>
+                            <span className="text-[11px] font-bold text-kezak-primary tracking-wide uppercase">Match</span>
                         </div>
 
                         {/* Candidate card */}
@@ -473,18 +473,18 @@ function LoginPageContent() {
                     <div className="w-full max-w-xs mb-12">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-[13px] font-semibold text-slate-700">{t('auth.compatibility')}</span>
-                            <span className="text-[13px] font-bold text-blue-600">94%</span>
+                            <span className="text-[13px] font-bold text-kezak-primary">94%</span>
                         </div>
                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full animate-fill-bar" style={{ width: '94%' }}></div>
+                            <div className="h-full bg-gradient-to-r from-kezak-primary to-kezak-dark rounded-full animate-fill-bar" style={{ width: '94%' }}></div>
                         </div>
                     </div>
 
                     {/* 3 features */}
                     <div className="grid grid-cols-3 gap-6 w-full">
                         <div className="flex flex-col items-center text-center gap-2.5">
-                            <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <Zap className="w-5 h-5 text-blue-600" />
+                            <div className="w-11 h-11 rounded-xl bg-kezak-light flex items-center justify-center">
+                                <Zap className="w-5 h-5 text-kezak-primary" />
                             </div>
                             <div>
                                 <p className="text-[13px] font-bold text-slate-900 mb-0.5">{t('auth.feature_matching_title')}</p>
