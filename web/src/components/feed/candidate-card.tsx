@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { MapPin, Briefcase, Code, Star } from 'lucide-react';
 import { PlanBadge } from '@/components/ui';
 import { useTranslation } from '@/context/i18n-context';
@@ -38,10 +39,12 @@ export function CandidateCard({ candidate }: { candidate: CandidateProfile }) {
                         {displayName[0]}
                     </div>
                     {user.image && (
-                        <img
+                        <Image
                             src={user.image}
                             alt={displayName}
-                            className="absolute inset-0 w-full h-full object-cover z-10"
+                            fill
+                            sizes="56px"
+                            className="object-cover z-10"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).style.opacity = '0';
                             }}

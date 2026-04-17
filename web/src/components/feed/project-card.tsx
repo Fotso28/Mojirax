@@ -7,6 +7,7 @@ import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
 import { getSectorLabel } from '@/lib/constants/sectors';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/context/auth-context';
 import { useStartConversation } from '@/hooks/use-start-conversation';
 import { useTranslation } from '@/context/i18n-context';
@@ -158,7 +159,7 @@ export function ProjectCard({ project, position, initialSaved = false }: Project
                 <Link href={`/founders/${project.founder.id}`} className="flex items-center gap-3 group/founder" onClick={e => e.stopPropagation()}>
                     <div className="w-12 h-12 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden ring-2 ring-transparent group-hover/founder:ring-kezak-primary/20 transition-all">
                         {project.founder.image ? (
-                            <img src={project.founder.image} alt={founderName} className="w-full h-full rounded-full object-cover" />
+                            <Image src={project.founder.image} alt={founderName} width={48} height={48} className="w-full h-full rounded-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-kezak-light text-kezak-primary font-bold text-lg">
                                 {founderName.charAt(0).toUpperCase()}

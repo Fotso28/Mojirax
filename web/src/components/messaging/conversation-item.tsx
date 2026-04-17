@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { OnlineBadge } from './online-badge';
 import { useTranslation } from '@/context/i18n-context';
 
@@ -45,9 +46,11 @@ export function ConversationItem({ conversation, currentUserId, isActive, isOnli
     >
       <div className="relative flex-shrink-0">
         {other.image ? (
-          <img
+          <Image
             src={other.image}
             alt={name}
+            width={48}
+            height={48}
             className="h-12 w-12 rounded-full object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
