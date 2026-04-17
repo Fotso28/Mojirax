@@ -93,7 +93,7 @@ export function ApplyModal({ projectId, projectName, isOpen, onClose, onSuccess,
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="relative w-full max-w-lg bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden"
+                        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 pt-6 pb-2">
