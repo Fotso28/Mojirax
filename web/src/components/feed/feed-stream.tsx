@@ -8,7 +8,7 @@ import { FeedFilters } from './feed-filters';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
 import { useTranslation } from '@/context/i18n-context';
-import { Loader2, Rocket } from 'lucide-react';
+import { Loader2, Rocket, AlertCircle } from 'lucide-react';
 
 interface FeedAd {
     id: string;
@@ -39,6 +39,7 @@ export function FeedStream() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [filters, setFilters] = useState<Filters>({});
     const [feedAds, setFeedAds] = useState<FeedAd[]>([]);
     const [insertEvery, setInsertEvery] = useState(8);
@@ -72,6 +73,7 @@ export function FeedStream() {
             setIsLoadingMore(true);
         } else {
             setIsLoading(true);
+            setLoadError(false);
         }
 
         try {
@@ -99,7 +101,8 @@ export function FeedStream() {
             setNextCursor(data.nextCursor);
             setHasMore(!!data.nextCursor);
         } catch {
-            // Feed load failed
+            // Initial load errored — surface in the UI (cursor pagination stays silent)
+            if (!cursor) setLoadError(true);
         } finally {
             setIsLoading(false);
             setIsLoadingMore(false);
@@ -185,6 +188,28 @@ export function FeedStream() {
                         </div>
                     </div>
                 ))}
+            </div>
+        );
+    }
+
+    // Error state — network/server failed, offer retry
+    if (loadError && projects.length === 0) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <FeedFilters onFilterChange={handleFilterChange} />
+                <div className="text-center py-20">
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-7 h-7 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.load_error_title')}</h3>
+                    <p className="text-gray-500 mb-5">{t('dashboard.feed.load_error_description')}</p>
+                    <button
+                        onClick={() => loadFeed(null, filters)}
+                        className="inline-flex items-center justify-center h-[44px] px-6 rounded-xl bg-kezak-primary hover:bg-kezak-dark text-white font-semibold transition-colors"
+                    >
+                        {t('dashboard.feed.load_error_retry')}
+                    </button>
+                </div>
             </div>
         );
     }
