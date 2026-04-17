@@ -3,6 +3,19 @@
     "banner": "Vous êtes hors ligne. Vos actions seront synchronisées au retour.",
     "reconnected": "Connexion rétablie"
   },
+  "aria": {
+    "search": "Rechercher",
+    "menu": "Ouvrir le menu",
+    "widgets": "Ouvrir les widgets",
+    "back": "Retour",
+    "share": "Partager",
+    "save": "Enregistrer",
+    "unsave": "Retirer des favoris",
+    "close": "Fermer",
+    "attach_file": "Joindre un fichier",
+    "emoji": "Emojis",
+    "send": "Envoyer"
+  },
   "upsell": {
     "close": "Fermer",
     "cta_upgrade": "Passer au plan Plus",

@@ -192,18 +192,23 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                         {/* Top bar: back + actions */}
                         <div className="flex items-center justify-between mb-6">
                             {canGoBack ? (
-                                <button onClick={goBack} className="p-2 -ml-2 text-white/70 hover:text-white rounded-full hover:bg-white/10 transition-all duration-200">
+                                <button onClick={goBack} aria-label={t('common.aria.back')} className="p-2 -ms-2 text-white/70 hover:text-white rounded-full hover:bg-white/10 transition-all duration-200">
                                     <ArrowLeft className="w-5 h-5" />
                                 </button>
                             ) : <div />}
                             <div className="flex items-center gap-1">
-                                <button onClick={handleShare} className="p-2 text-white/70 hover:text-white rounded-full hover:bg-white/10 transition-all duration-200">
+                                <button onClick={handleShare} aria-label={t('common.aria.share')} className="p-2 text-white/70 hover:text-white rounded-full hover:bg-white/10 transition-all duration-200">
                                     <Share2 className="w-5 h-5" />
                                 </button>
-                                <button onClick={handleSave} className={cn(
-                                    "p-2 rounded-full transition-all duration-200",
-                                    isSaved ? "text-yellow-400 bg-white/15 saved-glow" : "text-white/70 hover:text-white hover:bg-white/10"
-                                )}>
+                                <button
+                                    onClick={handleSave}
+                                    aria-label={isSaved ? t('common.aria.unsave') : t('common.aria.save')}
+                                    aria-pressed={isSaved}
+                                    className={cn(
+                                        "p-2 rounded-full transition-all duration-200",
+                                        isSaved ? "text-yellow-400 bg-white/15 saved-glow" : "text-white/70 hover:text-white hover:bg-white/10"
+                                    )}
+                                >
                                     {isSaved ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
                                 </button>
                             </div>

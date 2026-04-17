@@ -75,6 +75,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                         <button
                             onClick={() => setShowSearch(true)}
                             className="lg:hidden p-2 text-gray-400 hover:text-kezak-primary hover:bg-gray-50 rounded-full transition-colors"
+                            aria-label={t('common.aria.search')}
                         >
                             <Search className="w-6 h-6" />
                         </button>
@@ -124,6 +125,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                             <button
                                 onClick={onOpenMobileWidgets}
                                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                                aria-label={t('common.aria.widgets')}
                             >
                                 <Grid className="w-6 h-6" />
                             </button>
@@ -133,6 +135,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                         <button
                             onClick={onOpenMobileNav}
                             className="md:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                            aria-label={t('common.aria.menu')}
                         >
                             <Menu className="w-6 h-6" />
                         </button>

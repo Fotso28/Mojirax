@@ -3,6 +3,19 @@
     "banner": "You're offline. Actions will sync when you're back online.",
     "reconnected": "Connection restored"
   },
+  "aria": {
+    "search": "Search",
+    "menu": "Open menu",
+    "widgets": "Open widgets",
+    "back": "Back",
+    "share": "Share",
+    "save": "Save",
+    "unsave": "Remove from favorites",
+    "close": "Close",
+    "attach_file": "Attach file",
+    "emoji": "Emojis",
+    "send": "Send"
+  },
   "upsell": {
     "close": "Close",
     "cta_upgrade": "Upgrade to Plus",

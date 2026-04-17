@@ -499,7 +499,8 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">
         <button
           onClick={onBack}
-          className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="md:hidden p-2 -ms-2 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label={t('common.aria.back')}
         >
           <ArrowLeft className="h-5 w-5 text-gray-600" />
         </button>
@@ -603,6 +604,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           <button
             onClick={() => fileInputRef.current?.click()}
             title={t('dashboard.feed.chat_attach_hint')}
+            aria-label={t('common.aria.attach_file')}
             className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Paperclip className="h-5 w-5" />
@@ -611,6 +613,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           {/* Emoji toggle */}
           <button
             onClick={() => setShowEmojiPicker((v) => !v)}
+            aria-label={t('common.aria.emoji')}
             className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
               showEmojiPicker
                 ? 'text-kezak-primary bg-kezak-primary/10'
@@ -635,6 +638,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           <button
             onClick={handleSend}
             disabled={!input.trim() || !socket}
+            aria-label={t('common.aria.send')}
             className="flex-shrink-0 h-10 w-10 rounded-xl bg-kezak-primary text-white flex items-center justify-center hover:bg-kezak-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send className="h-4 w-4" />

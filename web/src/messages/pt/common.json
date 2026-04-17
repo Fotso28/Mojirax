@@ -3,6 +3,19 @@
     "banner": "Você está offline. Suas ações serão sincronizadas quando voltar.",
     "reconnected": "Conexão restabelecida"
   },
+  "aria": {
+    "search": "Buscar",
+    "menu": "Abrir menu",
+    "widgets": "Abrir widgets",
+    "back": "Voltar",
+    "share": "Compartilhar",
+    "save": "Salvar",
+    "unsave": "Remover dos favoritos",
+    "close": "Fechar",
+    "attach_file": "Anexar arquivo",
+    "emoji": "Emojis",
+    "send": "Enviar"
+  },
   "upsell": {
     "close": "Fechar",
     "cta_upgrade": "Passar para o plano Plus",
