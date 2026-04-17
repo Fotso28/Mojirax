@@ -423,13 +423,16 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                     </button>
                                 )}
                                 {hasApplied ? (
-                                    <button
-                                        disabled
-                                        className="inline-flex items-center gap-2 bg-gray-100 text-gray-500 px-6 py-3 rounded-xl font-semibold cursor-not-allowed"
+                                    <Link
+                                        href="/applications"
+                                        className="inline-flex items-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 px-6 py-3 rounded-xl font-semibold transition-colors"
                                     >
                                         <CheckCircle2 className="w-4 h-4" />
-                                        {t('project.already_applied')}
-                                    </button>
+                                        <span>{t('project.already_applied')}</span>
+                                        <span className="text-xs font-normal text-green-600/80 hidden sm:inline">
+                                            · {t('dashboard.nav_my_applications')}
+                                        </span>
+                                    </Link>
                                 ) : (
                                     <button
                                         onClick={() => {
