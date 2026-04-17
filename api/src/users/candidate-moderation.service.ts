@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { UsersService } from './users.service';
 import { MatchingService } from '../matching/matching.service';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class CandidateModerationService {
@@ -13,6 +14,7 @@ export class CandidateModerationService {
         private aiService: AiService,
         private usersService: UsersService,
         private matchingService: MatchingService,
+        private i18n: I18nService,
     ) {}
 
     /**
@@ -50,12 +52,18 @@ export class CandidateModerationService {
      * Modère un profil candidat de manière asynchrone (fire-and-forget).
      * Met le status à PUBLISHED si valide, PENDING_AI si suspect.
      */
-    async moderateProfile(candidateProfileId: string): Promise<void> {
+    async moderateProfile(candidateProfileId: string, locale: Locale = 'fr'): Promise<void> {
         try {
             const profile = await this.prisma.candidateProfile.findUnique({
                 where: { id: candidateProfileId },
                 include: {
-                    user: { select: { id: true, firstName: true, lastName: true } },
+                    user: {
+                        select: {
+                            id: true, firstName: true, lastName: true,
+                            title: true, bio: true, skills: true,
+                            yearsOfExperience: true, city: true, country: true,
+                        },
+                    },
                 },
             });
 
@@ -64,16 +72,26 @@ export class CandidateModerationService {
                 return;
             }
 
+            // Merge user fields for completeness calculation
+            const profileForCompleteness = {
+                ...profile,
+                title: profile.user.title,
+                bio: profile.user.bio,
+                skills: profile.user.skills,
+                yearsOfExperience: profile.user.yearsOfExperience,
+            };
+
             // Calculer la complétude nous-mêmes (pas l'IA)
-            const completeness = this.calculateCompleteness(profile);
+            const completeness = this.calculateCompleteness(profileForCompleteness);
 
             // Appeler la validation IA (qualité + légitimité uniquement)
+            const location = [profile.user.city, profile.user.country].filter(Boolean).join(', ') || null;
             const result = await this.aiService.validateCandidateProfile({
-                title: profile.title,
-                bio: profile.bio,
-                skills: profile.skills,
-                yearsOfExperience: profile.yearsOfExperience,
-                location: profile.location,
+                title: profile.user.title,
+                bio: profile.user.bio,
+                skills: profile.user.skills,
+                yearsOfExperience: profile.user.yearsOfExperience,
+                location,
                 shortPitch: profile.shortPitch,
                 vision: profile.vision,
                 roleType: profile.roleType,
@@ -118,8 +136,8 @@ export class CandidateModerationService {
                     data: {
                         userId: profile.user.id,
                         type: 'PROFILE_PUBLISHED',
-                        title: 'Profil publié',
-                        message: 'Votre profil candidat est maintenant visible dans le feed.',
+                        title: this.i18n.t('notification.profile_published_title', locale),
+                        message: this.i18n.t('notification.profile_published_message', locale),
                     },
                 });
 
@@ -140,8 +158,8 @@ export class CandidateModerationService {
                     data: {
                         userId: profile.user.id,
                         type: 'PROFILE_REVIEW',
-                        title: 'Profil en cours de vérification',
-                        message: 'Votre profil est en cours de vérification par notre équipe. Vous serez notifié une fois la vérification terminée.',
+                        title: this.i18n.t('notification.profile_review_title', locale),
+                        message: this.i18n.t('notification.profile_review_message', locale),
                     },
                 });
 
@@ -167,8 +185,8 @@ export class CandidateModerationService {
                         data: {
                             userId: profile.userId,
                             type: 'PROFILE_PUBLISHED',
-                            title: 'Profil publié',
-                            message: 'Votre profil candidat est maintenant visible dans le feed.',
+                            title: this.i18n.t('notification.profile_published_title', locale),
+                            message: this.i18n.t('notification.profile_published_message', locale),
                         },
                     });
                 }

@@ -8,9 +8,10 @@ import { DocumentsModule } from '../documents/documents.module';
 import { MatchingModule } from '../matching/matching.module';
 import { ModerationModule } from '../moderation/moderation.module';
 import { FiltersModule } from '../filters/filters.module';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
-    imports: [PrismaModule, InteractionsModule, UploadModule, forwardRef(() => DocumentsModule), MatchingModule, ModerationModule, FiltersModule],
+    imports: [PrismaModule, InteractionsModule, UploadModule, forwardRef(() => DocumentsModule), MatchingModule, ModerationModule, FiltersModule, PaymentModule],
     controllers: [ProjectsController],
     providers: [ProjectsService],
     exports: [ProjectsService],

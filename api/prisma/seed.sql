@@ -723,12 +723,24 @@ INSERT INTO pricing_plans (id, name, price, period, currency, description, featu
 
 ('plan_free', 'Gratuit', 0, 'mois', 'EUR',
  'Parfait pour découvrir MoJiraX et commencer à explorer.',
- ARRAY['Profil complet', 'Explorer & matcher', 'Ajouter des profils en favoris', 'Accès aux fonctionnalités de base', 'Découverte de la plateforme pendant 30 jours'],
+ jsonb_build_object(
+   'fr', jsonb_build_array('Profil complet', 'Explorer', 'Ajouter des profils en favoris', 'Accès aux fonctionnalités de base', 'Découverte de la plateforme pendant 30 jours'),
+   'en', jsonb_build_array('Complete profile', 'Explore', 'Add profiles to favorites', 'Access to basic features', '30-day platform discovery'),
+   'es', jsonb_build_array('Perfil completo', 'Explorar', 'Añadir perfiles a favoritos', 'Acceso a funciones básicas', 'Descubrimiento de la plataforma durante 30 días'),
+   'pt', jsonb_build_array('Perfil completo', 'Explorar', 'Adicionar perfis aos favoritos', 'Acesso às funcionalidades básicas', 'Descoberta da plataforma durante 30 dias'),
+   'ar', jsonb_build_array('ملف شخصي كامل', 'استكشاف', 'إضافة ملفات شخصية إلى المفضلة', 'الوصول إلى الميزات الأساسية', 'اكتشاف المنصة لمدة 30 يومًا')
+ ),
  false, true, 0, 'Commencer gratuitement', NOW(), NOW()),
 
 ('plan_plus', 'Plus', 4.99, 'mois', 'EUR',
  'Idéal pour améliorer votre visibilité et augmenter vos chances.',
- ARRAY['Tout le plan Gratuit', 'Voir qui a consulté votre profil', 'Filtres avancés pour trouver des profils plus pertinents', 'Retour arrière sur le dernier swipe', 'Plus de visibilité dans les résultats'],
+ jsonb_build_object(
+   'fr', jsonb_build_array('Tout le plan Gratuit', 'Postuler à des projets', 'Créer et publier vos projets', 'Envoyer des messages aux fondateurs', 'Voir qui a consulté votre profil', 'Filtres avancés pour trouver des profils plus pertinents', 'Retour arrière sur le dernier swipe', 'Plus de visibilité dans les résultats'),
+   'en', jsonb_build_array('Everything in Free', 'Apply to projects', 'Create and publish your projects', 'Send messages to founders', 'See who viewed your profile', 'Advanced filters for more relevant profiles', 'Undo last swipe', 'More visibility in results'),
+   'es', jsonb_build_array('Todo el plan Gratis', 'Postular a proyectos', 'Crear y publicar tus proyectos', 'Enviar mensajes a los fundadores', 'Ver quién ha consultado tu perfil', 'Filtros avanzados para encontrar perfiles más relevantes', 'Retroceder en el último swipe', 'Mayor visibilidad en los resultados'),
+   'pt', jsonb_build_array('Tudo do plano Gratuito', 'Candidatar-se a projetos', 'Criar e publicar seus projetos', 'Enviar mensagens aos fundadores', 'Ver quem consultou seu perfil', 'Filtros avançados para encontrar perfis mais relevantes', 'Voltar atrás no último swipe', 'Mais visibilidade nos resultados'),
+   'ar', jsonb_build_array('كل مزايا الخطة المجانية', 'التقديم على المشاريع', 'إنشاء ونشر مشاريعك', 'إرسال رسائل إلى المؤسسين', 'معرفة من زار ملفك الشخصي', 'فلاتر متقدمة للعثور على ملفات شخصية أكثر صلة', 'التراجع عن آخر swipe', 'ظهور أكبر في النتائج')
+ ),
  false, true, 1, 'Passer au plan Plus', NOW(), NOW()),
 
 ('plan_pro', 'Pro', 9.99, 'mois', 'EUR',

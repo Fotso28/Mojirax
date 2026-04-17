@@ -22,6 +22,9 @@ import { UploadService } from '../upload/upload.service';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { GetConversationsQueryDto } from './dto/get-conversations-query.dto';
+import { PlanGuard } from '../payment/guards/plan.guard';
+import { RequiresPlan } from '../payment/decorators/requires-plan.decorator';
+import { UserPlan } from '@prisma/client';
 
 @ApiTags('messages')
 @ApiBearerAuth()
@@ -36,6 +39,8 @@ export class MessagingController {
   ) {}
 
   @Post('conversations')
+  @UseGuards(FirebaseAuthGuard, PlanGuard)
+  @RequiresPlan(UserPlan.PLUS)
   @Throttle({ default: { limit: 10, ttl: 3600000 } })
   async createConversation(@Req() req: any, @Body() dto: CreateConversationDto) {
     const userId = await this.messagingService.resolveUserId(req.user.uid);

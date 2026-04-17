@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationType, Prisma } from '@prisma/client';
 import { PushService } from './push.service';
 import { EmailService } from './email/email.service';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class NotificationsService {
@@ -17,7 +18,24 @@ export class NotificationsService {
         private prisma: PrismaService,
         private pushService: PushService,
         private emailService: EmailService,
+        private readonly i18n: I18nService,
     ) { }
+
+    /**
+     * Résout la locale préférée d'un utilisateur (par userId interne).
+     * Retourne 'fr' par défaut si non trouvé.
+     */
+    async getUserLocale(userId: string): Promise<Locale> {
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { preferredLang: true },
+            });
+            return (user?.preferredLang === 'en' ? 'en' : 'fr') as Locale;
+        } catch {
+            return 'fr';
+        }
+    }
 
     /**
      * Crée une notification pour un utilisateur.
@@ -124,12 +142,12 @@ export class NotificationsService {
         });
 
         if (!notification) {
-            throw new NotFoundException('Notification non trouvée');
+            throw new NotFoundException(this.i18n.t('error.not_found'));
         }
 
         if (notification.userId !== user.id) {
             this.logger.warn(`Unauthorized mark-as-read: user=${user.id} notification=${notificationId}`);
-            throw new ForbiddenException('Cette notification ne vous appartient pas');
+            throw new ForbiddenException(this.i18n.t('error.forbidden'));
         }
 
         await this.prisma.notification.update({
@@ -173,7 +191,7 @@ export class NotificationsService {
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur non trouvé');
+            throw new NotFoundException(this.i18n.t('user.not_found'));
         }
 
         return user;

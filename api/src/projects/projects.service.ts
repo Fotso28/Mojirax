@@ -9,6 +9,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { MatchingService } from '../matching/matching.service';
 import { FiltersService } from '../filters/filters.service';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 function slugify(text: string): string {
     return text
@@ -48,6 +49,7 @@ export class ProjectsService {
         private matchingService: MatchingService,
         private moderationService: ModerationService,
         private filtersService: FiltersService,
+        private i18n: I18nService,
     ) { }
 
     // =============================================
@@ -70,7 +72,9 @@ export class ProjectsService {
                 where: { firebaseUid },
                 include: { candidateProfile: true }
             });
-            candidateProfile = user?.candidateProfile;
+            candidateProfile = user?.candidateProfile
+                ? { ...user.candidateProfile, skills: user.skills, city: user.city, country: user.country }
+                : null;
 
             if (user) {
                 userSignals = await this.interactionsService.getUserSignals(user.id);
@@ -366,6 +370,7 @@ export class ProjectsService {
     async archivePublishedProjects(
         tx: Prisma.TransactionClient,
         founderId: string,
+        locale: Locale = 'fr',
     ): Promise<number> {
         const publishedProjects = await tx.project.findMany({
             where: { founderId, status: 'PUBLISHED' },
@@ -412,8 +417,8 @@ export class ProjectsService {
             const notifications = pendingApplications.map(app => ({
                 userId: app.candidate.user.id,
                 type: 'SYSTEM' as const,
-                title: 'Projet archivé',
-                message: `Le projet ${app.project.name} a été archivé par le fondateur. Votre candidature en attente a été clôturée.`,
+                title: this.i18n.t('notification.project_archived_title', locale),
+                message: this.i18n.t('notification.project_archived_message', locale, { projectName: app.project.name }),
                 data: { applicationId: app.id, projectId: app.projectId },
             }));
 
@@ -431,22 +436,22 @@ export class ProjectsService {
     // CRUD
     // =============================================
 
-    async create(founderUid: string, dto: CreateProjectDto) {
+    async create(founderUid: string, dto: CreateProjectDto, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid: founderUid }
         });
 
         if (!user) {
-            throw new NotFoundException('User not found');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         if (!dto.name || !dto.pitch) {
-            throw new BadRequestException('Le nom et le pitch du projet sont obligatoires.');
+            throw new BadRequestException(this.i18n.t('project.name_pitch_required', locale));
         }
 
         const project = await this.prisma.$transaction(async (tx) => {
             // One-project-per-founder: archive existing PUBLISHED projects
-            await this.archivePublishedProjects(tx, user.id);
+            await this.archivePublishedProjects(tx, user.id, locale);
 
             // Create the new project
             return tx.project.create({
@@ -514,20 +519,21 @@ export class ProjectsService {
         founderUid: string,
         data: { name: string; pitch: string; country?: string; city?: string; location?: string },
         status: string,
+        locale: Locale = 'fr',
     ) {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid: founderUid },
         });
 
         if (!user) {
-            throw new NotFoundException('User not found');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         const project = await this.prisma.$transaction(async (tx) => {
             // Only archive existing PUBLISHED projects if the new one will be published immediately
             // For ANALYZING status (document-based flow), archival happens later when analysis completes
             if (status === 'PUBLISHED') {
-                await this.archivePublishedProjects(tx, user.id);
+                await this.archivePublishedProjects(tx, user.id, locale);
             }
 
             return tx.project.create({
@@ -553,7 +559,7 @@ export class ProjectsService {
         return project;
     }
 
-    async findOne(idOrSlug: string) {
+    async findOne(idOrSlug: string, locale: Locale = 'fr') {
         // Try by slug first, then fall back to id
         const project = await this.prisma.project.findFirst({
             where: {
@@ -569,8 +575,6 @@ export class ProjectsService {
                         firstName: true,
                         lastName: true,
                         name: true,
-                        email: true,
-                        phone: true,
                         image: true,
                         plan: true,
                         title: true,
@@ -594,7 +598,7 @@ export class ProjectsService {
         });
 
         if (!project) {
-            throw new NotFoundException('Project not found');
+            throw new NotFoundException(this.i18n.t('project.not_found', locale));
         }
 
         return project;
@@ -639,21 +643,21 @@ export class ProjectsService {
         this.logger.log(`Embedding generated for project ${projectId}`);
     }
 
-    async updateLogo(founderUid: string, projectId: string, buffer: Buffer) {
+    async updateLogo(founderUid: string, projectId: string, buffer: Buffer, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid: founderUid },
         });
-        if (!user) throw new NotFoundException('User not found');
+        if (!user) throw new NotFoundException(this.i18n.t('user.not_found', locale));
 
         const project = await this.prisma.project.findUnique({
             where: { id: projectId },
         });
-        if (!project) throw new NotFoundException('Project not found');
-        if (project.founderId !== user.id) throw new ForbiddenException('Not your project');
+        if (!project) throw new NotFoundException(this.i18n.t('project.not_found', locale));
+        if (project.founderId !== user.id) throw new ForbiddenException(this.i18n.t('project.not_owner', locale));
 
         if (!this.uploadService.isAvailable()) {
             this.logger.warn(`Logo upload skipped for project ${projectId}: storage service unavailable`);
-            throw new ServiceUnavailableException('Le service de stockage est temporairement indisponible. Réessayez plus tard.');
+            throw new ServiceUnavailableException(this.i18n.t('upload.storage_unavailable', locale));
         }
 
         try {
@@ -664,22 +668,22 @@ export class ProjectsService {
             });
         } catch (error) {
             this.logger.warn(`Logo upload failed for project ${projectId}: ${error.message}`);
-            throw new ServiceUnavailableException('Le service de stockage est temporairement indisponible. Réessayez plus tard.');
+            throw new ServiceUnavailableException(this.i18n.t('upload.storage_unavailable', locale));
         }
     }
 
-    async update(firebaseUid: string, projectId: string, dto: UpdateProjectDto) {
+    async update(firebaseUid: string, projectId: string, dto: UpdateProjectDto, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true },
         });
-        if (!user) throw new NotFoundException('User not found');
+        if (!user) throw new NotFoundException(this.i18n.t('user.not_found', locale));
 
         const project = await this.prisma.project.findUnique({
             where: { id: projectId },
         });
-        if (!project) throw new NotFoundException('Project not found');
-        if (project.founderId !== user.id) throw new ForbiddenException('Not your project');
+        if (!project) throw new NotFoundException(this.i18n.t('project.not_found', locale));
+        if (project.founderId !== user.id) throw new ForbiddenException(this.i18n.t('project.not_owner', locale));
 
         const data: Record<string, any> = {};
 
@@ -731,18 +735,18 @@ export class ProjectsService {
         return updated;
     }
 
-    async remove(firebaseUid: string, projectId: string) {
+    async remove(firebaseUid: string, projectId: string, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true },
         });
-        if (!user) throw new NotFoundException('User not found');
+        if (!user) throw new NotFoundException(this.i18n.t('user.not_found', locale));
 
         const project = await this.prisma.project.findUnique({
             where: { id: projectId },
         });
-        if (!project) throw new NotFoundException('Project not found');
-        if (project.founderId !== user.id) throw new ForbiddenException('Not your project');
+        if (!project) throw new NotFoundException(this.i18n.t('project.not_found', locale));
+        if (project.founderId !== user.id) throw new ForbiddenException(this.i18n.t('project.not_owner', locale));
 
         // Log logo cleanup note (deleteProjectLogo not yet implemented on UploadService)
         if (project.logoUrl) {

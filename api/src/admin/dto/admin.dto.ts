@@ -18,7 +18,7 @@ export class PaginationDto {
 
 export class ListUsersDto extends PaginationDto {
   @IsOptional()
-  @IsIn(['ADMIN', 'FOUNDER', 'CANDIDATE', 'USER'])
+  @IsIn(['ADMIN', 'USER'])
   role?: string;
 
   @IsOptional()

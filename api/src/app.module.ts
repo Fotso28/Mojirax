@@ -29,6 +29,7 @@ import { MessagingModule } from './messaging/messaging.module';
 import { LandingModule } from './landing/landing.module';
 import { PaymentModule } from './payment/payment.module';
 import { BoostModule } from './boost/boost.module';
+import { I18nModule } from './i18n/i18n.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { BoostModule } from './boost/boost.module';
     MessagingModule,
     LandingModule,
     BoostModule,
+    I18nModule,
   ],
   controllers: [AppController],
   providers: [

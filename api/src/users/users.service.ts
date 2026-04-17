@@ -7,6 +7,7 @@ import { UpdateUserProfileDto } from './dto/update-user.dto';
 import { CreateCandidateProfileDto } from './dto/create-candidate-profile.dto';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../redis/redis.constants';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class UsersService {
@@ -17,14 +18,15 @@ export class UsersService {
         private uploadService: UploadService,
         private aiService: AiService,
         @Inject(REDIS_CLIENT) private readonly redis: Redis,
+        private i18n: I18nService,
     ) { }
 
-    async getUserIdAndPlan(firebaseUid: string): Promise<{ id: string; plan: UserPlan }> {
+    async getUserIdAndPlan(firebaseUid: string, locale: Locale = 'fr'): Promise<{ id: string; plan: UserPlan }> {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true, plan: true },
         });
-        if (!user) throw new NotFoundException('Utilisateur introuvable');
+        if (!user) throw new NotFoundException(this.i18n.t('user.not_found', locale));
         return user;
     }
 
@@ -102,7 +104,7 @@ export class UsersService {
      * IMPORTANT: Cette méthode retourne email/phone pour le masquage par PrivacyInterceptor.
      * Ne JAMAIS appeler depuis un endpoint sans @UseInterceptors(PrivacyInterceptor).
      */
-    async findPublicProfile(userId: string) {
+    async findPublicProfile(userId: string, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -173,7 +175,7 @@ export class UsersService {
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur introuvable');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         return user;
@@ -219,11 +221,11 @@ export class UsersService {
         });
     }
 
-    async saveOnboardingState(firebaseUid: string, state: any) {
+    async saveOnboardingState(firebaseUid: string, state: any, locale: Locale = 'fr') {
         // Protection JSON bomb (max 100KB)
         const jsonSize = JSON.stringify(state).length;
         if (jsonSize > 100_000) {
-            throw new BadRequestException('Données d\'onboarding trop volumineuses (max 100KB)');
+            throw new BadRequestException(this.i18n.t('user.onboarding_too_large', locale));
         }
 
         return this.prisma.user.update({
@@ -243,11 +245,11 @@ export class UsersService {
         return user?.onboardingState || {};
     }
 
-    async saveProjectDraft(firebaseUid: string, draft: any) {
+    async saveProjectDraft(firebaseUid: string, draft: any, locale: Locale = 'fr') {
         // Protection JSON bomb (max 100KB)
         const jsonSize = JSON.stringify(draft).length;
         if (jsonSize > 100_000) {
-            throw new BadRequestException('Brouillon de projet trop volumineux (max 100KB)');
+            throw new BadRequestException(this.i18n.t('user.project_draft_too_large', locale));
         }
 
         return this.prisma.user.update({
@@ -275,9 +277,9 @@ export class UsersService {
         });
     }
 
-    async updateAvatar(firebaseUid: string, buffer: Buffer) {
+    async updateAvatar(firebaseUid: string, buffer: Buffer, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({ where: { firebaseUid } });
-        if (!user) throw new NotFoundException('User not found');
+        if (!user) throw new NotFoundException(this.i18n.t('user.not_found', locale));
 
         // Delete old avatar from S3 if it's a MinIO URL
         if (user.image?.includes('/avatars/')) {
@@ -297,18 +299,18 @@ export class UsersService {
     /**
      * Crée un CandidateProfile à partir des données du wizard d'onboarding.
      */
-    async createCandidateProfile(firebaseUid: string, dto: CreateCandidateProfileDto) {
+    async createCandidateProfile(firebaseUid: string, dto: CreateCandidateProfileDto, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true, candidateProfile: { select: { id: true } } },
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur non trouvé');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         if (user.candidateProfile) {
-            throw new ConflictException('Vous avez déjà un profil candidat');
+            throw new ConflictException(this.i18n.t('user.candidate_profile_exists', locale));
         }
 
         const profile = await this.prisma.candidateProfile.create({
@@ -345,18 +347,18 @@ export class UsersService {
     /**
      * Met à jour un CandidateProfile existant et relance la modération.
      */
-    async updateCandidateProfile(firebaseUid: string, dto: CreateCandidateProfileDto) {
+    async updateCandidateProfile(firebaseUid: string, dto: CreateCandidateProfileDto, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
             select: { id: true, candidateProfile: { select: { id: true } } },
         });
 
         if (!user) {
-            throw new NotFoundException('Utilisateur non trouvé');
+            throw new NotFoundException(this.i18n.t('user.not_found', locale));
         }
 
         if (!user.candidateProfile) {
-            throw new NotFoundException('Profil candidat introuvable');
+            throw new NotFoundException(this.i18n.t('user.candidate_profile_not_found', locale));
         }
 
         const updateData: Record<string, any> = { status: 'ANALYZING' };

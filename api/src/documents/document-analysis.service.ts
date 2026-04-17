@@ -12,6 +12,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { DocumentStorageService } from './document-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MatchingService } from '../matching/matching.service';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class DocumentAnalysisService {
@@ -25,6 +26,7 @@ export class DocumentAnalysisService {
         @Inject(forwardRef(() => ProjectsService))
         private readonly projectsService: ProjectsService,
         private readonly matchingService: MatchingService,
+        private readonly i18n: I18nService,
     ) {}
 
     /**
@@ -150,20 +152,21 @@ export class DocumentAnalysisService {
             }
 
             // 8. Notifier le fondateur
+            const founderLocale = await this.notificationsService.getUserLocale(founderId);
             if (isProjectLegal) {
                 await this.notificationsService.notify(
                     founderId,
                     'DOCUMENT_ANALYZED',
-                    'Projet publié',
-                    `Votre projet "${project.name}" a été publié avec succès !`,
+                    this.i18n.t('notification.document_analyzed_title', founderLocale),
+                    this.i18n.t('notification.document_analyzed_body', founderLocale, { projectName: project.name }),
                     { projectId },
                 );
             } else {
                 await this.notificationsService.notify(
                     founderId,
                     'DOCUMENT_ANALYSIS_FAILED',
-                    'Vérification requise',
-                    `Votre projet "${project.name}" nécessite une vérification manuelle.`,
+                    this.i18n.t('notification.document_review_title', founderLocale),
+                    this.i18n.t('notification.document_review_body', founderLocale, { projectName: project.name }),
                     { projectId, reason: legalityCheck.reason?.substring(0, 500) },
                 );
             }
@@ -326,11 +329,12 @@ export class DocumentAnalysisService {
             data: { status: 'DRAFT' },
         });
 
+        const founderLocale = await this.notificationsService.getUserLocale(founderId);
         await this.notificationsService.notify(
             founderId,
             'DOCUMENT_ANALYSIS_FAILED',
-            'Analyse échouée',
-            'L\'analyse IA de votre document a rencontré une erreur. Veuillez réessayer ou modifier votre document.',
+            this.i18n.t('notification.document_analysis_failed_title', founderLocale),
+            this.i18n.t('notification.document_analysis_failed_body', founderLocale),
             { projectId, error: errorMessage.substring(0, 500) },
         );
 

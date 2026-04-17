@@ -1,24 +1,30 @@
 import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PLAN_LIMITS } from '../common/config/plan-limits.config';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class BoostService {
   private readonly logger = new Logger(BoostService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async activateBoost(firebaseUid: string, projectId: string) {
     const user = await this.prisma.user.findUnique({
       where: { firebaseUid },
-      select: { id: true, plan: true },
+      select: { id: true, plan: true, preferredLang: true },
     });
-    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    if (!user) throw new NotFoundException(this.i18n.t('user.not_found'));
+
+    const locale = (user.preferredLang === 'en' ? 'en' : 'fr') as Locale;
 
     // Check plan allows boosts
     const limits = PLAN_LIMITS[user.plan];
     if (limits.boostsPerMonth <= 0) {
-      throw new ForbiddenException('Les boosts nécessitent le plan Pro ou supérieur.');
+      throw new ForbiddenException(this.i18n.t('boost.plan_required', locale));
     }
 
     // Verify project belongs to user
@@ -26,7 +32,7 @@ export class BoostService {
       where: { id: projectId, founderId: user.id },
       select: { id: true },
     });
-    if (!project) throw new NotFoundException('Projet introuvable ou non autorisé');
+    if (!project) throw new NotFoundException(this.i18n.t('project.not_found', locale));
 
     // Check monthly quota
     const startOfMonth = new Date();
@@ -38,10 +44,9 @@ export class BoostService {
     });
 
     if (usedThisMonth >= limits.boostsPerMonth) {
+      const key = user.plan === 'PRO' ? 'boost.quota_reached_upgrade' : 'boost.quota_reached';
       throw new ForbiddenException(
-        `Quota de boosts atteint (${usedThisMonth}/${limits.boostsPerMonth} ce mois). ${
-          user.plan === 'PRO' ? 'Passez au plan Elite pour plus de boosts.' : ''
-        }`,
+        this.i18n.t(key, locale, { used: String(usedThisMonth), total: String(limits.boostsPerMonth) }),
       );
     }
 
@@ -50,7 +55,7 @@ export class BoostService {
       where: { projectId, expiresAt: { gt: new Date() } },
     });
     if (activeBoost) {
-      throw new ForbiddenException('Ce projet a déjà un boost actif.');
+      throw new ForbiddenException(this.i18n.t('boost.already_active', locale));
     }
 
     // Create 24h boost
@@ -71,7 +76,7 @@ export class BoostService {
       where: { firebaseUid },
       select: { id: true, plan: true },
     });
-    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    if (!user) throw new NotFoundException(this.i18n.t('user.not_found'));
 
     const limits = PLAN_LIMITS[user.plan];
     const startOfMonth = new Date();

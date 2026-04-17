@@ -17,6 +17,10 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 import { PrivacyInterceptor } from '../common/interceptors/privacy.interceptor';
+import { Locale } from '../common/decorators/locale.decorator';
+import { PlanGuard } from '../payment/guards/plan.guard';
+import { RequiresPlan } from '../payment/decorators/requires-plan.decorator';
+import { UserPlan } from '@prisma/client';
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -26,10 +30,12 @@ export class ApplicationsController {
     constructor(private readonly applicationsService: ApplicationsService) { }
 
     @Post()
+    @UseGuards(FirebaseAuthGuard, PlanGuard)
+    @RequiresPlan(UserPlan.PLUS)
     @Throttle({ default: { ttl: 60000, limit: 5 } })
-    @ApiOperation({ summary: 'Postuler à un projet' })
-    async apply(@Request() req, @Body() dto: CreateApplicationDto) {
-        return this.applicationsService.apply(req.user.uid, dto);
+    @ApiOperation({ summary: 'Postuler à un projet (plan PLUS minimum)' })
+    async apply(@Request() req, @Body() dto: CreateApplicationDto, @Locale() locale: 'fr' | 'en') {
+        return this.applicationsService.apply(req.user.uid, dto, locale);
     }
 
     @Get('mine')
@@ -58,12 +64,14 @@ export class ApplicationsController {
         @Param('projectId') projectId: string,
         @Query('take') take?: string,
         @Query('skip') skip?: string,
+        @Locale() locale?: 'fr' | 'en',
     ) {
         return this.applicationsService.findByProject(
             req.user.uid,
             projectId,
             take ? parseInt(take, 10) : undefined,
             skip ? parseInt(skip, 10) : undefined,
+            locale,
         );
     }
 
@@ -73,8 +81,9 @@ export class ApplicationsController {
         @Request() req,
         @Param('id') id: string,
         @Body() dto: UpdateApplicationStatusDto,
+        @Locale() locale: 'fr' | 'en',
     ) {
-        return this.applicationsService.updateStatus(req.user.uid, id, dto.status);
+        return this.applicationsService.updateStatus(req.user.uid, id, dto.status, locale);
     }
 
     @Get('check/:projectId')

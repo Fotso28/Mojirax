@@ -70,9 +70,9 @@ export class FiltersService implements OnModuleInit {
             select: { requiredSkills: true },
         });
 
-        // 2. Agrèger depuis les candidats publiés
-        const candidates = await this.prisma.candidateProfile.findMany({
-            where: { status: 'PUBLISHED' },
+        // 2. Agrèger depuis les utilisateurs avec un profil candidat publié
+        const candidateUsers = await this.prisma.user.findMany({
+            where: { candidateProfile: { status: 'PUBLISHED' } },
             select: { skills: true },
         });
 
@@ -84,8 +84,8 @@ export class FiltersService implements OnModuleInit {
                 if (normalized) counts.set(normalized, (counts.get(normalized) || 0) + 1);
             }
         }
-        for (const c of candidates) {
-            for (const skill of (c.skills || [])) {
+        for (const u of candidateUsers) {
+            for (const skill of (u.skills || [])) {
                 const normalized = skill.trim();
                 if (normalized) counts.set(normalized, (counts.get(normalized) || 0) + 1);
             }

@@ -3,20 +3,26 @@ import { UserPlan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInteractionDto } from './dto/create-interaction.dto';
 import { PLAN_LIMITS } from '../common/config/plan-limits.config';
+import { I18nService, Locale } from '../i18n/i18n.service';
 
 @Injectable()
 export class InteractionsService {
     private readonly logger = new Logger(InteractionsService.name);
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private readonly i18n: I18nService,
+    ) { }
 
-    async create(firebaseUid: string, dto: CreateInteractionDto) {
+    async create(firebaseUid: string, dto: CreateInteractionDto, locale: Locale = 'fr') {
         const user = await this.prisma.user.findUnique({
             where: { firebaseUid },
-            select: { id: true, plan: true }
+            select: { id: true, plan: true, preferredLang: true }
         });
 
         if (!user) return null;
+
+        const userLocale = (user.preferredLang === 'en' ? 'en' : 'fr') as Locale;
 
         // Resolve project by slug or id
         const project = await this.prisma.project.findFirst({
@@ -35,7 +41,7 @@ export class InteractionsService {
             const savedIds = await this.getSavedProjectIds(firebaseUid);
             if (savedIds.length >= PLAN_LIMITS.FREE.savesMax) {
                 throw new ForbiddenException(
-                    `Limite de ${PLAN_LIMITS.FREE.savesMax} favoris atteinte. Passez au plan supérieur pour des favoris illimités.`,
+                    this.i18n.t('interaction.save_limit', userLocale, { max: String(PLAN_LIMITS.FREE.savesMax) }),
                 );
             }
         }
@@ -229,6 +235,16 @@ export class InteractionsService {
             },
         });
         return likers;
+    }
+
+    /**
+     * Get the owner (founderId) of a project.
+     */
+    async getProjectOwner(projectId: string) {
+        return this.prisma.project.findUnique({
+            where: { id: projectId },
+            select: { founderId: true },
+        });
     }
 
     /**

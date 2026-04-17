@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MessagingGateway } from '../messaging/messaging.gateway';
+import { I18nService } from '../i18n/i18n.service';
 import {
   ListUsersDto,
   ListModerationDto,
@@ -27,6 +28,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly messagingGateway: MessagingGateway,
+    private readonly i18n: I18nService,
   ) {}
 
   // ─── KPIs ──────────────────────────────────────────────
@@ -295,9 +297,7 @@ export class AdminService {
           candidateProfile: {
             select: {
               id: true,
-              title: true,
               status: true,
-              skills: true,
               qualityScore: true,
               createdAt: true,
             },
@@ -641,14 +641,11 @@ export class AdminService {
           skip,
           select: {
             id: true,
-            title: true,
-            bio: true,
             status: true,
-            skills: true,
             qualityScore: true,
             createdAt: true,
             user: {
-              select: { id: true, name: true, email: true, image: true },
+              select: { id: true, name: true, email: true, image: true, title: true, bio: true, skills: true },
             },
             moderationLogs: {
               orderBy: { reviewedAt: 'desc' },
@@ -691,12 +688,13 @@ export class AdminService {
     }
 
     // Try candidate profile
-    const candidate = await this.prisma.candidateProfile.findUnique({
+    const candidateRaw = await this.prisma.candidateProfile.findUnique({
       where: { id: itemId },
-      select: { id: true, userId: true, title: true, status: true },
+      select: { id: true, userId: true, status: true, user: { select: { title: true } } },
     });
 
-    if (candidate) {
+    if (candidateRaw) {
+      const candidate = { id: candidateRaw.id, userId: candidateRaw.userId, title: candidateRaw.user.title ?? '', status: candidateRaw.status };
       return this.moderateCandidate(adminId, candidate, dto);
     }
 
@@ -740,11 +738,16 @@ export class AdminService {
     });
 
     // Notify founder
-    const notifTitle = dto.action === 'PUBLISHED' ? 'Projet approuvé' : 'Projet rejeté';
-    const notifMessage =
-      dto.action === 'PUBLISHED'
-        ? `Votre projet "${project.name}" a été approuvé par un administrateur.`
-        : `Votre projet "${project.name}" a été rejeté. ${dto.reason ? `Raison : ${dto.reason}` : ''}`;
+    const founderLocale = await this.notifications.getUserLocale(project.founderId);
+    const notifTitle = dto.action === 'PUBLISHED'
+      ? this.i18n.t('admin.moderate_project_approved_title', founderLocale)
+      : this.i18n.t('admin.moderate_project_rejected_title', founderLocale);
+    const notifMessage = dto.action === 'PUBLISHED'
+      ? this.i18n.t('admin.moderate_project_approved_body', founderLocale, { projectName: project.name })
+      : this.i18n.t('admin.moderate_project_rejected_body', founderLocale, {
+          projectName: project.name,
+          reason: dto.reason ? dto.reason : '',
+        });
 
     await this.notifications.notify(
       project.founderId,
@@ -796,12 +799,16 @@ export class AdminService {
     });
 
     // Notify candidate
+    const candidateLocale = await this.notifications.getUserLocale(candidate.userId);
     const notifType = dto.action === 'PUBLISHED' ? 'PROFILE_PUBLISHED' : 'PROFILE_REVIEW';
-    const notifTitle = dto.action === 'PUBLISHED' ? 'Profil approuvé' : 'Profil rejeté';
-    const notifMessage =
-      dto.action === 'PUBLISHED'
-        ? 'Votre profil candidat a été approuvé par un administrateur et est maintenant visible.'
-        : `Votre profil candidat a été rejeté. ${dto.reason ? `Raison : ${dto.reason}` : ''}`;
+    const notifTitle = dto.action === 'PUBLISHED'
+      ? this.i18n.t('admin.moderate_candidate_approved_title', candidateLocale)
+      : this.i18n.t('admin.moderate_candidate_rejected_title', candidateLocale);
+    const notifMessage = dto.action === 'PUBLISHED'
+      ? this.i18n.t('admin.moderate_candidate_approved_body', candidateLocale)
+      : this.i18n.t('admin.moderate_candidate_rejected_body', candidateLocale, {
+          reason: dto.reason ? dto.reason : '',
+        });
 
     await this.notifications.notify(candidate.userId, notifType, notifTitle, notifMessage, {
       candidateProfileId: candidate.id,
@@ -1103,13 +1110,13 @@ export class AdminService {
       data: {
         name: dto.name,
         price: dto.price,
-        period: dto.period ?? 'mois',
+        period: dto.period,
         currency: dto.currency ?? 'EUR',
-        description: dto.description,
+        description: dto.description ?? undefined,
         features: dto.features,
         isPopular: dto.isPopular ?? false,
         isActive: dto.isActive ?? true,
-        ctaLabel: dto.ctaLabel ?? 'Commencer',
+        ctaLabel: dto.ctaLabel,
         order: dto.order ?? 0,
         stripePriceId: dto.stripePriceId || null,
         planKey: dto.planKey || null,
@@ -1132,7 +1139,7 @@ export class AdminService {
       },
     });
 
-    this.logger.log(`Plan created: ${plan.name} (${plan.id})`);
+    this.logger.log(`Plan created: ${JSON.stringify(plan.name)} (${plan.id})`);
     return plan;
   }
 
@@ -1174,7 +1181,7 @@ export class AdminService {
       },
     });
 
-    this.logger.log(`Plan updated: ${plan.name} (${id})`);
+    this.logger.log(`Plan updated: ${JSON.stringify(plan.name)} (${id})`);
     return plan;
   }
 
@@ -1193,7 +1200,7 @@ export class AdminService {
       },
     });
 
-    this.logger.log(`Plan deleted: ${existing.name} (${id})`);
+    this.logger.log(`Plan deleted: ${JSON.stringify(existing.name)} (${id})`);
     return { success: true };
   }
 

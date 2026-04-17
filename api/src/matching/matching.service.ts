@@ -15,7 +15,8 @@ interface CandidateRow {
     id: string;
     skills: string[];
     yearsOfExperience: number | null;
-    location: string | null;
+    city: string | null;
+    country: string | null;
     remoteOnly: boolean;
     willingToRelocate: boolean;
     desiredSectors: string[];
@@ -129,23 +130,43 @@ export class MatchingService {
         if (!project) return 0;
 
         // Get all PUBLISHED candidates with their structured data
-        const candidates = await this.prisma.candidateProfile.findMany({
+        const rawCandidates = await this.prisma.candidateProfile.findMany({
             where: { status: 'PUBLISHED' },
             select: {
                 id: true,
-                skills: true,
-                yearsOfExperience: true,
-                location: true,
                 remoteOnly: true,
                 willingToRelocate: true,
                 desiredSectors: true,
                 desiredStage: true,
                 availability: true,
                 commitmentType: true,
+                user: {
+                    select: {
+                        skills: true,
+                        yearsOfExperience: true,
+                        city: true,
+                        country: true,
+                    },
+                },
             },
         });
 
-        if (candidates.length === 0) return 0;
+        if (rawCandidates.length === 0) return 0;
+
+        // Flatten user fields into CandidateRow
+        const candidates: CandidateRow[] = rawCandidates.map(c => ({
+            id: c.id,
+            skills: c.user.skills,
+            yearsOfExperience: c.user.yearsOfExperience,
+            city: c.user.city,
+            country: c.user.country,
+            remoteOnly: c.remoteOnly,
+            willingToRelocate: c.willingToRelocate,
+            desiredSectors: c.desiredSectors,
+            desiredStage: c.desiredStage,
+            availability: c.availability,
+            commitmentType: c.commitmentType,
+        }));
 
         // Batch vector similarities via pgvector (single query)
         const similarities = await this.getVectorSimilaritiesForProject(projectId);
@@ -200,23 +221,42 @@ export class MatchingService {
     // ─── Batch: calculate for a newly published candidate ──
 
     async calculateForCandidate(candidateProfileId: string): Promise<number> {
-        const candidate = await this.prisma.candidateProfile.findUnique({
+        const rawCandidate = await this.prisma.candidateProfile.findUnique({
             where: { id: candidateProfileId },
             select: {
                 id: true,
-                skills: true,
-                yearsOfExperience: true,
-                location: true,
                 remoteOnly: true,
                 willingToRelocate: true,
                 desiredSectors: true,
                 desiredStage: true,
                 availability: true,
                 commitmentType: true,
+                user: {
+                    select: {
+                        skills: true,
+                        yearsOfExperience: true,
+                        city: true,
+                        country: true,
+                    },
+                },
             },
         });
 
-        if (!candidate) return 0;
+        if (!rawCandidate) return 0;
+
+        const candidate: CandidateRow = {
+            id: rawCandidate.id,
+            skills: rawCandidate.user.skills,
+            yearsOfExperience: rawCandidate.user.yearsOfExperience,
+            city: rawCandidate.user.city,
+            country: rawCandidate.user.country,
+            remoteOnly: rawCandidate.remoteOnly,
+            willingToRelocate: rawCandidate.willingToRelocate,
+            desiredSectors: rawCandidate.desiredSectors,
+            desiredStage: rawCandidate.desiredStage,
+            availability: rawCandidate.availability,
+            commitmentType: rawCandidate.commitmentType,
+        };
 
         const projects = await this.prisma.project.findMany({
             where: { status: 'PUBLISHED' },
@@ -297,11 +337,7 @@ export class MatchingService {
                 candidate: {
                     select: {
                         id: true,
-                        title: true,
                         shortPitch: true,
-                        skills: true,
-                        location: true,
-                        yearsOfExperience: true,
                         availability: true,
                         roleType: true,
                         commitmentType: true,
@@ -314,6 +350,11 @@ export class MatchingService {
                                 lastName: true,
                                 name: true,
                                 image: true,
+                                title: true,
+                                skills: true,
+                                city: true,
+                                country: true,
+                                yearsOfExperience: true,
                             },
                         },
                     },
@@ -409,17 +450,17 @@ export class MatchingService {
         if (project.isRemote) return 90; // Project accepts remote
 
         // Same city
-        if (candidate.location && project.city) {
-            const candLoc = candidate.location.toLowerCase();
+        if (candidate.city && project.city) {
+            const candCity = candidate.city.toLowerCase();
             const projCity = project.city.toLowerCase();
-            if (candLoc.includes(projCity) || projCity.includes(candLoc)) return 100;
+            if (candCity.includes(projCity) || projCity.includes(candCity)) return 100;
         }
 
         // Same country
-        if (candidate.location && project.country) {
-            const candLoc = candidate.location.toLowerCase();
+        if (candidate.country && project.country) {
+            const candCountry = candidate.country.toLowerCase();
             const projCountry = project.country.toLowerCase();
-            if (candLoc.includes(projCountry)) return 70;
+            if (candCountry === projCountry) return 70;
         }
 
         // Willing to relocate
