@@ -65,12 +65,25 @@ export function UpsellModal({ feature, onClose }: UpsellModalProps) {
     };
 
     const copy = feature ? FEATURE_COPY[feature] : null;
-    const benefits = [
-        t('common.upsell.benefits.apply'),
-        t('common.upsell.benefits.create_project'),
-        t('common.upsell.benefits.send_message'),
-        t('common.upsell.benefits.visibility'),
-    ];
+
+    // Order benefits so the one the user just tried to use shows first.
+    // Visibility is always last (secondary value prop, no specific trigger).
+    const BENEFITS_BY_TRIGGER: Record<UpsellFeature, (keyof typeof BENEFIT_KEYS)[]> = {
+        apply:          ['apply', 'send_message', 'create_project', 'visibility'],
+        send_message:   ['send_message', 'apply', 'create_project', 'visibility'],
+        create_project: ['create_project', 'apply', 'send_message', 'visibility'],
+        generic:        ['apply', 'create_project', 'send_message', 'visibility'],
+    };
+    const BENEFIT_KEYS = {
+        apply: 'common.upsell.benefits.apply',
+        create_project: 'common.upsell.benefits.create_project',
+        send_message: 'common.upsell.benefits.send_message',
+        visibility: 'common.upsell.benefits.visibility',
+    } as const;
+
+    const benefits = feature
+        ? BENEFITS_BY_TRIGGER[feature].map((k) => t(BENEFIT_KEYS[k]))
+        : [];
 
     return (
         <AnimatePresence>
@@ -87,10 +100,10 @@ export function UpsellModal({ feature, onClose }: UpsellModalProps) {
                         transition={{ duration: 0.2, ease: 'easeOut' }}
                         className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
                     >
-                        {/* Close button */}
+                        {/* Close button — sits on the gradient header, needs white text */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 z-10 p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                            className="absolute top-4 end-4 z-10 p-2 rounded-full text-white/70 hover:bg-white/15 hover:text-white transition-colors"
                             aria-label={t('common.upsell.close')}
                         >
                             <X className="w-5 h-5" />
