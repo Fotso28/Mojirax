@@ -11,6 +11,7 @@ import {
     Sparkles, ArrowRight, RotateCcw, TrendingUp,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from '@/context/i18n-context';
 
 interface FieldFeedback {
     field: string;
@@ -25,27 +26,27 @@ interface ValidationResult {
     strengths: string[];
 }
 
-const FIELD_LABELS: Record<string, string> = {
-    name: 'Nom du projet',
-    pitch: 'Slogan',
-    problem: 'Problème',
-    target: 'Cible',
-    solution_current: 'Solutions existantes',
-    solution_desc: 'Solution proposée',
-    uvp: 'Proposition de valeur',
-    anti_scope: 'Anti-scope',
-    sector: 'Secteur',
-    stage: 'Stade',
-    scope: 'Portée',
-    market_type: 'Type de marché',
-    business_model: 'Modèle économique',
-    competitors: 'Concurrents',
-    founder_role: 'Rôle fondateur',
-    time_availability: 'Disponibilité',
-    traction: 'Traction',
-    looking_for_role: 'Profil recherché',
-    collab_type: 'Type de collaboration',
-    vision: 'Vision 3 ans',
+const FIELD_LABEL_KEYS: Record<string, string> = {
+    name: 'project.field_name',
+    pitch: 'project.field_pitch',
+    problem: 'project.field_problem',
+    target: 'project.field_target',
+    solution_current: 'project.field_solution_current',
+    solution_desc: 'project.field_solution_desc',
+    uvp: 'project.field_uvp',
+    anti_scope: 'project.field_anti_scope',
+    sector: 'project.field_sector',
+    stage: 'project.field_stage',
+    scope: 'project.field_scope',
+    market_type: 'project.field_market_type',
+    business_model: 'project.field_business_model',
+    competitors: 'project.field_competitors',
+    founder_role: 'project.field_founder_role',
+    time_availability: 'project.field_time_availability',
+    traction: 'project.field_traction',
+    looking_for_role: 'project.field_looking_for_role',
+    collab_type: 'project.field_collab_type',
+    vision: 'project.field_vision',
 };
 
 function getStatusIcon(status: string) {
@@ -107,6 +108,7 @@ export function AiReviewStep() {
     const isEditMode = !!editProjectId;
     const router = useRouter();
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const [validation, setValidation] = useState<ValidationResult | null>(null);
     const [isValidating, setIsValidating] = useState(true);
@@ -125,7 +127,20 @@ export function AiReviewStep() {
         setIsValidating(true);
         setError(null);
         try {
-            const { data: result } = await AXIOS_INSTANCE.post('/projects/validate', data, {
+            // Only send whitelisted fields (exclude internal _logo*, creation_method, etc.)
+            const ALLOWED_FIELDS = [
+                'name', 'pitch', 'country', 'city', 'location', 'scope', 'sector', 'stage',
+                'problem', 'target', 'solution_current', 'solution_desc', 'uvp', 'anti_scope',
+                'market_type', 'business_model', 'competitors', 'founder_role', 'time_availability',
+                'traction', 'looking_for_role', 'collab_type', 'vision', 'description', 'requiredSkills',
+            ];
+            const filteredData: Record<string, any> = {};
+            for (const key of ALLOWED_FIELDS) {
+                if (data[key] !== undefined && data[key] !== '') {
+                    filteredData[key] = data[key];
+                }
+            }
+            const { data: result } = await AXIOS_INSTANCE.post('/projects/validate', filteredData, {
                 timeout: 60000,
                 signal: controller.signal,
             });
@@ -134,7 +149,7 @@ export function AiReviewStep() {
             }
         } catch (err: any) {
             if (controller.signal.aborted) return; // Ignore cancelled requests
-            const msg = err?.response?.data?.message || 'Service d\'analyse temporairement indisponible.';
+            const msg = err?.response?.data?.message || t('project.ai_review_analysis_error');
             setError(msg);
         } finally {
             if (!controller.signal.aborted) {
@@ -178,7 +193,7 @@ export function AiReviewStep() {
                             logoForm.append('file', blob, 'logo.png');
                             await AXIOS_INSTANCE.post(`/projects/${editProjectId}/logo`, logoForm);
                         } catch {
-                            showToast('Le logo n\'a pas pu être uploadé. Vous pourrez l\'ajouter plus tard.', 'warning');
+                            showToast(t('project.ai_review_logo_error'), 'warning');
                         }
                     }
                 } else {
@@ -192,15 +207,15 @@ export function AiReviewStep() {
                             logoForm.append('file', blob, 'logo.png');
                             await AXIOS_INSTANCE.post(`/projects/${created.data.id}/logo`, logoForm);
                         } catch {
-                            showToast('Le logo n\'a pas pu être uploadé. Vous pourrez l\'ajouter plus tard.', 'warning');
+                            showToast(t('project.ai_review_logo_error'), 'warning');
                         }
                     }
                 }
             });
-            showToast(isEditMode ? 'Projet mis à jour avec succès !' : 'Projet créé avec succès !', 'success');
+            showToast(isEditMode ? t('project.ai_review_update_success') : t('project.ai_review_create_success'), 'success');
             setTimeout(() => router.push(isEditMode ? '/my-project' : '/'), 500);
         } catch {
-            showToast(isEditMode ? 'Erreur lors de la mise à jour.' : 'Erreur lors de la création du projet.', 'error');
+            showToast(isEditMode ? t('project.ai_review_update_error') : t('project.ai_review_create_error'), 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -210,16 +225,16 @@ export function AiReviewStep() {
         <div className="space-y-8">
             <div className="space-y-2 text-center sm:text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-                    {isEditMode ? 'Revue de vos modifications' : 'Revue de votre projet'}
+                    {isEditMode ? t('project.ai_review_title_edit') : t('project.ai_review_title')}
                 </h1>
                 <p className="text-lg text-gray-500">
-                    {isEditMode ? 'Vérification des modifications avant mise à jour' : 'Notre équipe analyse la qualité de votre dossier avant publication'}
+                    {isEditMode ? t('project.ai_review_description_edit') : t('project.ai_review_description')}
                 </p>
                 {hasPublished && (
                     <div className="mt-3 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                         <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-amber-700">
-                            La publication de ce projet archivera automatiquement votre projet actuel et clôturera les candidatures en attente.
+                            {t('project.ai_review_archive_warning')}
                         </p>
                     </div>
                 )}
@@ -240,8 +255,8 @@ export function AiReviewStep() {
                                 <Sparkles className="w-8 h-8 text-kezak-primary animate-pulse" />
                             </div>
                         </div>
-                        <p className="text-base font-semibold text-gray-700">Analyse en cours...</p>
-                        <p className="text-sm text-gray-400">Nos experts évaluent la qualité de votre dossier</p>
+                        <p className="text-base font-semibold text-gray-700">{t('project.ai_review_analyzing')}</p>
+                        <p className="text-sm text-gray-400">{t('project.ai_review_analyzing_desc')}</p>
                         <div className="w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <motion.div
                                 className="h-full bg-kezak-primary rounded-full"
@@ -260,7 +275,7 @@ export function AiReviewStep() {
                         className="rounded-2xl border border-red-100 bg-red-50 p-8 text-center space-y-4"
                     >
                         <XCircle className="w-10 h-10 text-red-400 mx-auto" />
-                        <p className="text-base font-semibold text-gray-900">Analyse indisponible</p>
+                        <p className="text-base font-semibold text-gray-900">{t('project.ai_review_unavailable')}</p>
                         <p className="text-sm text-gray-500">{error}</p>
                         <div className="flex justify-center gap-3 pt-2">
                             <button
@@ -268,14 +283,14 @@ export function AiReviewStep() {
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
                             >
                                 <RotateCcw className="w-4 h-4" />
-                                Réessayer
+                                {t('project.ai_review_retry')}
                             </button>
                             <button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-kezak-primary text-white text-sm font-semibold hover:bg-kezak-dark transition-all disabled:opacity-50"
                             >
-                                Publier sans revue
+                                {t('project.ai_review_publish_without')}
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
@@ -294,9 +309,9 @@ export function AiReviewStep() {
                                 <ScoreGauge score={validation.score} />
                                 <div className="flex-1 text-center sm:text-left">
                                     <h3 className="text-lg font-bold text-gray-900 mb-2">
-                                        {validation.score >= 75 ? 'Excellent dossier !' :
-                                         validation.score >= 50 ? 'Bon dossier, quelques améliorations possibles' :
-                                         'Dossier à renforcer'}
+                                        {validation.score >= 75 ? t('project.ai_review_score_excellent') :
+                                         validation.score >= 50 ? t('project.ai_review_score_good') :
+                                         t('project.ai_review_score_weak')}
                                     </h3>
                                     <p className="text-sm text-gray-500 leading-relaxed">
                                         {validation.summary}
@@ -310,7 +325,7 @@ export function AiReviewStep() {
                             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                                 <div className="flex items-center gap-2 mb-4">
                                     <TrendingUp className="w-5 h-5 text-green-500" />
-                                    <h3 className="text-base font-bold text-gray-900">Points forts</h3>
+                                    <h3 className="text-base font-bold text-gray-900">{t('project.ai_review_strengths')}</h3>
                                 </div>
                                 <ul className="space-y-2">
                                     {validation.strengths.map((strength, i) => (
@@ -328,7 +343,7 @@ export function AiReviewStep() {
                             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Sparkles className="w-5 h-5 text-kezak-primary" />
-                                    <h3 className="text-base font-bold text-gray-900">Suggestions d&apos;amélioration</h3>
+                                    <h3 className="text-base font-bold text-gray-900">{t('project.ai_review_suggestions')}</h3>
                                 </div>
                                 <div className="space-y-3">
                                     {validation.suggestions.map((suggestion, i) => (
@@ -339,7 +354,7 @@ export function AiReviewStep() {
                                             {getStatusIcon(suggestion.status)}
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    {FIELD_LABELS[suggestion.field] || suggestion.field}
+                                                    {FIELD_LABEL_KEYS[suggestion.field] ? t(FIELD_LABEL_KEYS[suggestion.field]) : suggestion.field}
                                                 </span>
                                                 <p className="text-sm text-gray-700 mt-0.5">
                                                     {suggestion.message}
@@ -367,7 +382,7 @@ export function AiReviewStep() {
                         className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
                     >
                         <RotateCcw className="w-4 h-4" />
-                        Re-analyser
+                        {t('project.ai_review_reanalyze')}
                     </button>
                     <button
                         onClick={handleSubmit}
@@ -377,18 +392,18 @@ export function AiReviewStep() {
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                {isEditMode ? 'Mise à jour...' : 'Publication...'}
+                                {isEditMode ? t('project.ai_review_updating') : t('project.ai_review_publishing')}
                             </>
                         ) : (
                             <>
-                                {isEditMode ? 'Mettre à jour le projet' : 'Publier le projet'}
+                                {isEditMode ? t('project.ai_review_update') : t('project.ai_review_publish')}
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </>
                         )}
                     </button>
                     {hasPublished && (
                         <p className="text-xs text-amber-600 text-center sm:text-right w-full">
-                            Votre projet actuel sera archivé à la publication
+                            {t('project.ai_review_archive_note')}
                         </p>
                     )}
                 </motion.div>

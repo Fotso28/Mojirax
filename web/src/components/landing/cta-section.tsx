@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { Reveal } from './reveal';
+import { useTranslation } from '@/context/i18n-context';
 
 export function CtaSection() {
+  const { t } = useTranslation();
+
   return (
     <section className="py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
       <Reveal animation="scale-up" duration={800}>
@@ -14,17 +17,16 @@ export function CtaSection() {
 
           <div className="relative z-10 max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-              Prêt à trouver votre cofondateur idéal ?
+              {t('landing.cta_title')}
             </h2>
             <p className="text-base sm:text-lg opacity-80 mb-10 max-w-lg mx-auto">
-              Rejoignez des centaines d&apos;entrepreneurs qui ont déjà trouvé
-              leur partenaire sur MoJiraX
+              {t('landing.cta_subtitle')}
             </p>
             <Link
               href="/login"
               className="inline-flex bg-white text-kezak-primary px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:shadow-2xl hover:scale-105 transition-all duration-200"
             >
-              Créer mon profil gratuitement
+              {t('landing.cta_button')}
             </Link>
           </div>
         </div>

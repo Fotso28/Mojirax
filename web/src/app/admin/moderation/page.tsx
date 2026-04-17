@@ -204,7 +204,7 @@ export default function AdminModerationPage() {
                         </span>
                         {' '}{t('admin.moderation_score')}: {log.aiScore.toFixed(2)}
                         {log.aiReason && <span> — {log.aiReason}</span>}
-                        <span className="text-gray-400 ml-2">{new Date(log.reviewedAt).toLocaleString('fr-FR')}</span>
+                        <span className="text-gray-400 ms-2">{new Date(log.reviewedAt).toLocaleString('fr-FR')}</span>
                       </div>
                     ))}
                   </div>

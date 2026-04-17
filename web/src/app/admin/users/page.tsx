@@ -281,7 +281,7 @@ export default function AdminUsersPage() {
                     <td className="px-5 py-4"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
                     <td className="px-5 py-4"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse" /></td>
                     <td className="px-5 py-4"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></td>
-                    <td className="px-5 py-4"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse ml-auto" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse ms-auto" /></td>
                   </tr>
                 ))
               ) : users.length === 0 ? (

@@ -282,7 +282,7 @@ export default function BillingPage() {
                                         <span className="text-2xl font-black text-gray-900">
                                             {plan.price === 0 ? '0' : plan.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
                                         </span>
-                                        <span className="text-sm text-gray-400 ml-1">&euro;</span>
+                                        <span className="text-sm text-gray-400 ms-1">&euro;</span>
                                         {plan.price > 0 && (
                                             <span className="text-xs text-gray-400">/{localized(plan.period, locale)}</span>
                                         )}

@@ -258,7 +258,7 @@ export default function AdminAdsPage() {
       {errorMsg && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 flex items-center justify-between">
           <span>{errorMsg}</span>
-          <button onClick={() => setErrorMsg('')} className="text-red-500 hover:text-red-700 font-bold ml-4">&#x2715;</button>
+          <button onClick={() => setErrorMsg('')} className="text-red-500 hover:text-red-700 font-bold ms-4">&#x2715;</button>
         </div>
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

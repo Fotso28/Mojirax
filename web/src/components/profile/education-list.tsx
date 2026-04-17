@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 export interface EducationItem {
     degree: string;
@@ -17,6 +18,8 @@ const currentYear = new Date().getFullYear();
 const inputClass = 'w-full h-[52px] px-4 bg-white border border-gray-300 rounded-lg text-gray-900 text-base placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all duration-200';
 
 export function EducationList({ value, onChange }: EducationListProps) {
+    const { t } = useTranslation();
+
     const addItem = () => {
         onChange([...value, { degree: '', school: '', year: '' }]);
     };
@@ -52,27 +55,27 @@ export function EducationList({ value, onChange }: EducationListProps) {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pr-10">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Diplôme</label>
+                            <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_edu_degree')}</label>
                             <input
                                 type="text"
                                 value={item.degree}
                                 onChange={(e) => updateItem(index, 'degree', e.target.value)}
-                                placeholder="Ex: Master Informatique"
+                                placeholder={t('dashboard.profile_edu_degree_placeholder')}
                                 className={inputClass}
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Établissement</label>
+                            <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_edu_school')}</label>
                             <input
                                 type="text"
                                 value={item.school}
                                 onChange={(e) => updateItem(index, 'school', e.target.value)}
-                                placeholder="Ex: Université de Douala"
+                                placeholder={t('dashboard.profile_edu_school_placeholder')}
                                 className={inputClass}
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Année</label>
+                            <label className="text-sm font-medium text-gray-700">{t('dashboard.profile_edu_year')}</label>
                             <input
                                 type="number"
                                 value={item.year}
@@ -93,7 +96,7 @@ export function EducationList({ value, onChange }: EducationListProps) {
                 className="w-full flex items-center justify-center gap-2 h-[52px] rounded-lg font-semibold border-2 border-dashed border-gray-200 text-gray-500 hover:border-kezak-primary hover:text-kezak-primary hover:bg-kezak-light/30 transition-all duration-200"
             >
                 <Plus className="w-5 h-5" />
-                Ajouter une formation
+                {t('dashboard.profile_add_education')}
             </button>
         </div>
     );

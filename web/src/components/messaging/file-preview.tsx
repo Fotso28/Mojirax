@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FileText, Download, Image as ImageIcon } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 interface FilePreviewProps {
   fileUrl: string;
@@ -13,6 +14,7 @@ interface FilePreviewProps {
 }
 
 export function FilePreview({ fileUrl, fileName, fileSize, fileMimeType, uploading = false, progress = 0 }: FilePreviewProps) {
+  const { t } = useTranslation();
   const isPdf = fileMimeType === 'application/pdf';
   const isImage = fileMimeType.startsWith('image/');
   const sizeLabel = fileSize < 1024 * 1024
@@ -36,7 +38,7 @@ export function FilePreview({ fileUrl, fileName, fileSize, fileMimeType, uploadi
         <p className="text-sm font-medium text-gray-900 truncate">{fileName}</p>
         {uploading ? (
           <>
-            <p className="text-xs text-gray-500">Envoi en cours...</p>
+            <p className="text-xs text-gray-500">{t('dashboard.messaging_uploading')}</p>
             <div className="mt-1 h-[3px] w-full rounded-full bg-gray-200 overflow-hidden">
               <div
                 className="h-full bg-kezak-primary rounded-full transition-all duration-300"
@@ -82,6 +84,7 @@ interface ImagePreviewInternalProps {
 }
 
 function ImagePreview({ fileUrl, fileName, uploading, progress }: ImagePreviewInternalProps) {
+  const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
 
   // Uploading state: placeholder with progress bar
@@ -99,7 +102,7 @@ function ImagePreview({ fileUrl, fileName, uploading, progress }: ImagePreviewIn
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-[10px] text-white/80 mt-0.5 text-center">Envoi en cours... {progress}%</p>
+          <p className="text-[10px] text-white/80 mt-0.5 text-center">{t('dashboard.messaging_uploading_percent', { percent: progress })}</p>
         </div>
       </div>
     );

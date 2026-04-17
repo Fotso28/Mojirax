@@ -3,15 +3,18 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-
-const navLinks = [
-  { label: 'Concept', href: '#for-who' },
-  { label: 'Comment ça marche', href: '#how-it-works' },
-  { label: 'Tarifs', href: '#pricing' },
-];
+import { useTranslation } from '@/context/i18n-context';
+import { LanguageToggle } from '@/components/ui/language-toggle';
 
 export function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const navLinks = [
+    { label: t('landing.nav_concept'), href: '#for-who' },
+    { label: t('landing.nav_how_it_works'), href: '#how-it-works' },
+    { label: t('landing.nav_pricing'), href: '#pricing' },
+  ];
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -41,17 +44,18 @@ export function LandingHeader() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
+          <LanguageToggle />
           <Link
             href="/login"
             className="h-10 px-5 rounded-lg text-gray-600 font-medium text-sm flex items-center hover:bg-gray-50 transition-all duration-200"
           >
-            Connexion
+            {t('landing.nav_login')}
           </Link>
           <Link
             href="/login"
             className="h-10 px-5 rounded-lg bg-kezak-primary text-white font-semibold text-sm flex items-center hover:bg-kezak-dark transition-all duration-200"
           >
-            Créer mon profil
+            {t('landing.nav_create_profile')}
           </Link>
         </div>
 
@@ -77,18 +81,21 @@ export function LandingHeader() {
               {link.label}
             </a>
           ))}
+          <div className="flex items-center justify-center py-2">
+            <LanguageToggle />
+          </div>
           <div className="flex gap-3 pt-2">
             <Link
               href="/login"
               className="flex-1 h-10 rounded-lg border border-gray-200 text-gray-600 font-medium text-sm flex items-center justify-center"
             >
-              Connexion
+              {t('landing.nav_login')}
             </Link>
             <Link
               href="/login"
               className="flex-1 h-10 rounded-lg bg-kezak-primary text-white font-semibold text-sm flex items-center justify-center"
             >
-              Créer mon profil
+              {t('landing.nav_create_profile')}
             </Link>
           </div>
         </div>

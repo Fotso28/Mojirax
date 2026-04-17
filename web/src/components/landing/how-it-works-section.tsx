@@ -2,43 +2,46 @@
 
 import { UserPlus, Search, MessageCircle, Handshake } from 'lucide-react';
 import { Reveal } from './reveal';
-
-const steps = [
-  {
-    num: '01',
-    icon: UserPlus,
-    title: 'Créez votre profil',
-    desc: 'Renseignez vos compétences, objectifs et disponibilité',
-    bg: 'bg-kezak-primary',
-    offset: false,
-  },
-  {
-    num: '02',
-    icon: Search,
-    title: 'Explorez les projets',
-    desc: 'Parcourez les projets et trouvez celui qui vous correspond',
-    bg: 'bg-kezak-accent',
-    offset: true,
-  },
-  {
-    num: '03',
-    icon: MessageCircle,
-    title: 'Discutez en privé',
-    desc: 'Échangez avec les fondateurs et alignez vos visions',
-    bg: 'bg-kezak-primary',
-    offset: false,
-  },
-  {
-    num: '04',
-    icon: Handshake,
-    title: "Lancez l'aventure",
-    desc: 'Structurez votre collaboration avec notre Plan 30 jours',
-    bg: 'bg-kezak-accent',
-    offset: true,
-  },
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function HowItWorksSection() {
+  const { t } = useTranslation();
+
+  const steps = [
+    {
+      num: '01',
+      icon: UserPlus,
+      title: t('landing.how_it_works_step_1_title'),
+      desc: t('landing.how_it_works_step_1_desc'),
+      bg: 'bg-kezak-primary',
+      offset: false,
+    },
+    {
+      num: '02',
+      icon: Search,
+      title: t('landing.how_it_works_step_2_title'),
+      desc: t('landing.how_it_works_step_2_desc'),
+      bg: 'bg-kezak-accent',
+      offset: true,
+    },
+    {
+      num: '03',
+      icon: MessageCircle,
+      title: t('landing.how_it_works_step_3_title'),
+      desc: t('landing.how_it_works_step_3_desc'),
+      bg: 'bg-kezak-primary',
+      offset: false,
+    },
+    {
+      num: '04',
+      icon: Handshake,
+      title: t('landing.how_it_works_step_4_title'),
+      desc: t('landing.how_it_works_step_4_desc'),
+      bg: 'bg-kezak-accent',
+      offset: true,
+    },
+  ];
+
   return (
     <section
       id="how-it-works"
@@ -50,10 +53,10 @@ export function HowItWorksSection() {
         <Reveal animation="fade-up">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Comment ça marche ?
+              {t('landing.how_it_works_title')}
             </h2>
             <p className="text-lg text-gray-400 mb-6">
-              4 étapes simples pour trouver votre cofondateur
+              {t('landing.how_it_works_subtitle')}
             </p>
             <div className="w-20 h-1.5 bg-kezak-primary mx-auto rounded-full" />
           </div>

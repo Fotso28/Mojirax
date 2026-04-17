@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useRouter } from 'next/navigation';
 import { getSectorLabel, SECTORS } from '@/lib/constants/sectors';
+import { useTranslation } from '@/context/i18n-context';
 
 interface UniversalResults {
     projects: { id: string; name: string; slug: string; pitch: string; sector: string; logoUrl?: string; similarity: number }[];
@@ -34,15 +35,15 @@ function clearRecentSearches() {
     localStorage.removeItem(RECENT_SEARCHES_KEY);
 }
 
-// Suggestions rapides quand le champ est vide
-const QUICK_LINKS = [
-    { label: 'Fintech', path: '/feed?sector=FINTECH', icon: TrendingUp },
-    { label: 'EdTech', path: '/feed?sector=EDTECH', icon: TrendingUp },
-    { label: 'Logistique', path: '/feed?sector=LOGISTICS', icon: TrendingUp },
-    { label: 'Voir les talents', path: '/feed/candidates', icon: User },
-];
-
 export function UniversalSearch({ onClose }: { onClose: () => void }) {
+    const { t } = useTranslation();
+
+    const QUICK_LINKS = [
+        { label: 'Fintech', path: '/feed?sector=FINTECH', icon: TrendingUp },
+        { label: 'EdTech', path: '/feed?sector=EDTECH', icon: TrendingUp },
+        { label: t('dashboard.search_logistics'), path: '/feed?sector=LOGISTICS', icon: TrendingUp },
+        { label: t('dashboard.search_see_talents'), path: '/feed/candidates', icon: User },
+    ];
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<UniversalResults | null>(null);
     const [loading, setLoading] = useState(false);
@@ -172,7 +173,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                     value={query}
                                     onChange={e => setQuery(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Rechercher un projet, une personne, une compétence..."
+                                    placeholder={t('dashboard.search_placeholder_full')}
                                     className="flex-1 text-base outline-none placeholder:text-gray-400"
                                 />
                                 {loading && <Loader2 className="w-4 h-4 text-kezak-primary animate-spin shrink-0" />}
@@ -195,7 +196,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                             <div>
                                                 <div className="flex items-center justify-between px-1 mb-3">
                                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                                        <Clock className="w-3 h-3" /> Récents
+                                                        <Clock className="w-3 h-3" /> {t('dashboard.search_recent')}
                                                     </p>
                                                     <button
                                                         onClick={() => {
@@ -204,7 +205,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                                         }}
                                                         className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
                                                     >
-                                                        Effacer
+                                                        {t('dashboard.search_clear')}
                                                     </button>
                                                 </div>
                                                 <div className="space-y-0.5">
@@ -226,7 +227,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                         {/* Suggestions rapides */}
                                         <div>
                                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-3 flex items-center gap-1.5">
-                                                <TrendingUp className="w-3 h-3" /> Suggestions
+                                                <TrendingUp className="w-3 h-3" /> {t('dashboard.search_suggestions')}
                                             </p>
                                             <div className="flex flex-wrap gap-2">
                                                 {QUICK_LINKS.map(link => (
@@ -244,7 +245,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
 
                                         {/* Hint raccourci */}
                                         <p className="text-center text-xs text-gray-300 pt-2">
-                                            Tapez au moins 2 caractères pour rechercher
+                                            {t('dashboard.search_hint')}
                                         </p>
                                     </div>
                                 )}
@@ -256,7 +257,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                         {results.projects.length > 0 && (
                                             <div className="p-3">
                                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2 flex items-center gap-1.5">
-                                                    <Briefcase className="w-3 h-3" /> Projets
+                                                    <Briefcase className="w-3 h-3" /> {t('dashboard.search_section_projects')}
                                                 </p>
                                                 {results.projects.map(p => {
                                                     const idx = getNextIndex();
@@ -295,11 +296,11 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                         {results.people.length > 0 && (
                                             <div className="p-3">
                                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2 flex items-center gap-1.5">
-                                                    <User className="w-3 h-3" /> Personnes
+                                                    <User className="w-3 h-3" /> {t('dashboard.search_section_people')}
                                                 </p>
                                                 {results.people.map(p => {
                                                     const idx = getNextIndex();
-                                                    const displayName = p.name || [p.firstName, p.lastName].filter(Boolean).join(' ') || 'Utilisateur';
+                                                    const displayName = p.name || [p.firstName, p.lastName].filter(Boolean).join(' ') || t('dashboard.trending_anonymous');
                                                     return (
                                                         <button
                                                             key={p.id}
@@ -335,7 +336,7 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                         {results.skills.length > 0 && (
                                             <div className="p-3">
                                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2 flex items-center gap-1.5">
-                                                    <Tag className="w-3 h-3" /> Compétences
+                                                    <Tag className="w-3 h-3" /> {t('dashboard.search_section_skills')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2 px-2">
                                                     {results.skills.map(s => (
@@ -359,8 +360,8 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                                         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                                             <Search className="w-5 h-5 text-gray-400" />
                                         </div>
-                                        <p className="text-sm font-medium text-gray-500">Aucun résultat pour « {query} »</p>
-                                        <p className="text-xs text-gray-400 mt-1">Essayez avec d'autres mots-clés</p>
+                                        <p className="text-sm font-medium text-gray-500">{t('dashboard.search_no_results_for', { query })}</p>
+                                        <p className="text-xs text-gray-400 mt-1">{t('dashboard.search_try_other')}</p>
                                     </div>
                                 )}
                             </div>
@@ -369,9 +370,9 @@ export function UniversalSearch({ onClose }: { onClose: () => void }) {
                             {hasResults && (
                                 <div className="hidden sm:flex items-center justify-between px-5 py-2.5 border-t border-gray-100 bg-gray-50/50 shrink-0">
                                     <div className="flex items-center gap-3 text-[11px] text-gray-400">
-                                        <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">↑↓</kbd> naviguer</span>
-                                        <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">↵</kbd> ouvrir</span>
-                                        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">esc</kbd> fermer</span>
+                                        <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">↑↓</kbd> {t('dashboard.search_navigate')}</span>
+                                        <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">↵</kbd> {t('dashboard.search_open')}</span>
+                                        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">esc</kbd> {t('dashboard.search_close')}</span>
                                     </div>
                                 </div>
                             )}

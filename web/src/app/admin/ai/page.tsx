@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from '@/context/i18n-context';
 import { AXIOS_INSTANCE as api } from '@/api/axios-instance';
 import {
   Brain, Activity, Settings, FileText, ScrollText,
@@ -72,76 +73,76 @@ interface LogEntry {
 
 // ─── Constants ──────────────────────────────────────────
 
-const TABS = [
-  { key: 'dashboard', label: 'Dashboard', icon: Activity },
-  { key: 'config', label: 'Configuration', icon: Settings },
-  { key: 'prompts', label: 'Prompts', icon: FileText },
-  { key: 'logs', label: 'Logs', icon: ScrollText },
-] as const;
-
-type TabKey = (typeof TABS)[number]['key'];
-
 const PIE_COLORS = ['#0066ff', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-const ACTIONS_META: Record<string, { label: string; desc: string }> = {
-  EXTRACTION: { label: 'Extraction', desc: 'Extraire les donnees structurees d\'un document PDF/Word (secteur, stade, probleme, etc.)' },
-  SUMMARY: { label: 'Synthese', desc: 'Generer les 6 blocs de pitch engageants a partir du dossier projet' },
-  REGENERATION: { label: 'Regeneration', desc: 'Reformuler un bloc de synthese individuel (problem, solution, market, etc.)' },
-  LEGALITY: { label: 'Legalite', desc: 'Verifier si le projet est legal et ethique avant publication' },
-  PROJECT_VALIDATION: { label: 'Validation projet', desc: 'Evaluer la qualite du dossier projet (score, suggestions, points forts)' },
-  CANDIDATE_VALIDATION: { label: 'Validation candidat', desc: 'Verifier la legitimite et la qualite d\'un profil candidat' },
-  EMBEDDING: { label: 'Embeddings', desc: 'Generer les vecteurs semantiques pour le matching projet/candidat' },
+const ACTION_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  EXTRACTION: { labelKey: 'ai_action_extraction', descKey: 'ai_action_extraction_desc' },
+  SUMMARY: { labelKey: 'ai_action_summary', descKey: 'ai_action_summary_desc' },
+  REGENERATION: { labelKey: 'ai_action_regeneration', descKey: 'ai_action_regeneration_desc' },
+  LEGALITY: { labelKey: 'ai_action_legality', descKey: 'ai_action_legality_desc' },
+  PROJECT_VALIDATION: { labelKey: 'ai_action_project_validation', descKey: 'ai_action_project_validation_desc' },
+  CANDIDATE_VALIDATION: { labelKey: 'ai_action_candidate_validation', descKey: 'ai_action_candidate_validation_desc' },
+  EMBEDDING: { labelKey: 'ai_action_embedding', descKey: 'ai_action_embedding_desc' },
 };
-
-// Raccourci pour les endroits qui n'ont besoin que du label
-const ACTION_LABELS: Record<string, string> = Object.fromEntries(
-  Object.entries(ACTIONS_META).map(([k, v]) => [k, v.label]),
-);
 
 // ─── Page ───────────────────────────────────────────────
 
 export default function AdminAiPage() {
-  const [tab, setTab] = useState<TabKey>('dashboard');
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<string>('dashboard');
+
+  const getActionLabel = (action: string) => {
+    const key = ACTION_KEYS[action];
+    return key ? t(`admin.${key.labelKey}`) : action;
+  };
+
+  const TABS = [
+    { key: 'dashboard', label: t('admin.ai_tab_dashboard'), icon: Activity },
+    { key: 'config', label: t('admin.ai_tab_config'), icon: Settings },
+    { key: 'prompts', label: t('admin.ai_tab_prompts'), icon: FileText },
+    { key: 'logs', label: t('admin.ai_tab_logs'), icon: ScrollText },
+  ];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
           <Brain className="w-7 h-7 text-kezak-primary" />
-          Intelligence Artificielle
+          {t('admin.ai_title')}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">Monitoring, configuration et prompts</p>
+        <p className="text-sm text-gray-500 mt-1">{t('admin.ai_subtitle')}</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-              tab === t.key
+              tab === tabItem.key
                 ? 'bg-white text-kezak-primary shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <t.icon className="w-4 h-4" />
-            {t.label}
+            <tabItem.icon className="w-4 h-4" />
+            {tabItem.label}
           </button>
         ))}
       </div>
 
-      {tab === 'dashboard' && <DashboardTab />}
-      {tab === 'config' && <ConfigTab />}
-      {tab === 'prompts' && <PromptsTab />}
-      {tab === 'logs' && <LogsTab />}
+      {tab === 'dashboard' && <DashboardTab getActionLabel={getActionLabel} />}
+      {tab === 'config' && <ConfigTab getActionLabel={getActionLabel} />}
+      {tab === 'prompts' && <PromptsTab getActionLabel={getActionLabel} />}
+      {tab === 'logs' && <LogsTab getActionLabel={getActionLabel} />}
     </div>
   );
 }
 
 // ─── Dashboard Tab ──────────────────────────────────────
 
-function DashboardTab() {
+function DashboardTab({ getActionLabel }: { getActionLabel: (a: string) => string }) {
+  const { t } = useTranslation();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(7);
@@ -171,15 +172,14 @@ function DashboardTab() {
   }
 
   const kpis = [
-    { label: "Appels aujourd'hui", value: analytics.callsToday, icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: `Taux de succes (${period}j)`, value: `${analytics.successRate}%`, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Duree moyenne', value: `${(analytics.avgDurationMs / 1000).toFixed(1)}s`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'Cout ce mois', value: `$${analytics.costThisMonthUsd.toFixed(4)}`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: t('admin.ai_calls_today'), value: analytics.callsToday, icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: t('admin.ai_success_rate', { days: period }), value: `${analytics.successRate}%`, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: t('admin.ai_avg_duration'), value: `${(analytics.avgDurationMs / 1000).toFixed(1)}s`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: t('admin.ai_cost_this_month'), value: `$${analytics.costThisMonthUsd.toFixed(4)}`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Period selector */}
       <div className="flex items-center gap-2 justify-end">
         {[7, 14, 30].map((d) => (
           <button
@@ -196,7 +196,6 @@ function DashboardTab() {
         ))}
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
@@ -211,14 +210,12 @@ function DashboardTab() {
         ))}
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* By Action */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Appels par action</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('admin.ai_calls_by_action')}</h3>
           {analytics.byAction.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={analytics.byAction.map((a) => ({ ...a, label: ACTION_LABELS[a.action] || a.action }))}>
+              <BarChart data={analytics.byAction.map((a) => ({ ...a, label: getActionLabel(a.action) }))}>
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
@@ -226,26 +223,17 @@ function DashboardTab() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-12">Aucune donnee</p>
+            <p className="text-sm text-gray-400 text-center py-12">{t('admin.ai_no_data')}</p>
           )}
         </div>
 
-        {/* By Provider */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Repartition par provider</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('admin.ai_by_provider')}</h3>
           {analytics.byProvider.length > 0 ? (
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <ResponsiveContainer width="100%" height={200} className="sm:!w-1/2">
                 <PieChart>
-                  <Pie
-                    data={analytics.byProvider}
-                    dataKey="count"
-                    nameKey="provider"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    innerRadius={40}
-                  >
+                  <Pie data={analytics.byProvider} dataKey="count" nameKey="provider" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
                     {analytics.byProvider.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
@@ -264,17 +252,16 @@ function DashboardTab() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-12">Aucune donnee</p>
+            <p className="text-sm text-gray-400 text-center py-12">{t('admin.ai_no_data')}</p>
           )}
         </div>
       </div>
 
-      {/* Recent Errors */}
       {analytics.recentErrors.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <XCircle className="w-4 h-4 text-red-500" />
-            Erreurs recentes
+            {t('admin.ai_recent_errors')}
           </h3>
           <div className="space-y-3">
             {analytics.recentErrors.map((err) => (
@@ -298,7 +285,8 @@ function DashboardTab() {
 
 // ─── Config Tab ─────────────────────────────────────────
 
-function ConfigTab() {
+function ConfigTab({ getActionLabel }: { getActionLabel: (a: string) => string }) {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<AiConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -341,17 +329,16 @@ function ConfigTab() {
 
   return (
     <div className="space-y-6">
-      {/* Provider per Action */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Provider par action</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('admin.ai_provider_per_action')}</h3>
         <div className="space-y-4">
           {ACTIONS.map((action) => {
-            const meta = ACTIONS_META[action];
+            const meta = ACTION_KEYS[action];
             return (
               <div key={action} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 pb-4 border-b border-gray-50 last:border-0 last:pb-0">
                 <div className="sm:w-72 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{meta?.label || action}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{meta?.desc}</p>
+                  <p className="text-sm font-medium text-gray-900">{meta ? t(`admin.${meta.labelKey}`) : action}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{meta ? t(`admin.${meta.descKey}`) : ''}</p>
                 </div>
                 <select
                   value={editedProviders[action] || 'DEEPSEEK'}
@@ -368,9 +355,8 @@ function ConfigTab() {
         </div>
       </div>
 
-      {/* Models */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Modeles</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('admin.ai_models')}</h3>
         <div className="space-y-3">
           {MODEL_KEYS.map((key) => (
             <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -386,7 +372,6 @@ function ConfigTab() {
         </div>
       </div>
 
-      {/* Save */}
       <div className="flex justify-end">
         <button
           onClick={handleSave}
@@ -394,7 +379,7 @@ function ConfigTab() {
           className="flex items-center gap-2 h-[44px] px-6 bg-kezak-primary text-white rounded-xl text-sm font-semibold hover:bg-kezak-primary/90 disabled:opacity-50 transition-all duration-200"
         >
           <Save className="w-4 h-4" />
-          {saving ? 'Enregistrement...' : 'Enregistrer'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
       </div>
     </div>
@@ -403,7 +388,8 @@ function ConfigTab() {
 
 // ─── Prompts Tab ────────────────────────────────────────
 
-function PromptsTab() {
+function PromptsTab({ getActionLabel }: { getActionLabel: (a: string) => string }) {
+  const { t } = useTranslation();
   const [prompts, setPrompts] = useState<AiPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -470,12 +456,11 @@ function PromptsTab() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Prompt list */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Actions</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('admin.ai_prompts_actions')}</h3>
         <div className="space-y-1">
           {prompts.map((p) => {
-            const meta = ACTIONS_META[p.action];
+            const meta = ACTION_KEYS[p.action];
             return (
               <button
                 key={p.action}
@@ -487,12 +472,12 @@ function PromptsTab() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{meta?.label || p.action}</span>
+                  <span className="font-medium">{meta ? t(`admin.${meta.labelKey}`) : p.action}</span>
                   <span className="text-xs text-gray-400">v{p.version}</span>
                 </div>
-                {meta?.desc && (
+                {meta && (
                   <p className={`text-xs mt-0.5 ${selectedAction === p.action ? 'text-kezak-primary/70' : 'text-gray-400'}`}>
-                    {meta.desc}
+                    {t(`admin.${meta.descKey}`)}
                   </p>
                 )}
               </button>
@@ -501,7 +486,6 @@ function PromptsTab() {
         </div>
       </div>
 
-      {/* Prompt editor */}
       <div className="lg:col-span-2 space-y-4">
         {selectedAction && selectedPrompt ? (
           <>
@@ -509,10 +493,10 @@ function PromptsTab() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900">
-                    {ACTION_LABELS[selectedAction] || selectedAction}
+                    {getActionLabel(selectedAction)}
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Version {selectedPrompt.version} — Modifie le {new Date(selectedPrompt.updatedAt).toLocaleString('fr-FR')}
+                    {t('admin.ai_prompts_version', { version: selectedPrompt.version, date: new Date(selectedPrompt.updatedAt).toLocaleString('fr-FR') })}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -521,7 +505,7 @@ function PromptsTab() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    Historique
+                    {t('admin.ai_prompts_history')}
                   </button>
                   <button
                     onClick={handleSave}
@@ -529,7 +513,7 @@ function PromptsTab() {
                     className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-kezak-primary text-white hover:bg-kezak-primary/90 disabled:opacity-50 transition-all"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    {saving ? 'Enregistrement...' : 'Sauvegarder'}
+                    {saving ? t('common.saving') : t('common.save')}
                   </button>
                 </div>
               </div>
@@ -541,10 +525,9 @@ function PromptsTab() {
               />
             </div>
 
-            {/* History */}
             {showHistory && selectedPrompt.previousVersions && selectedPrompt.previousVersions.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Historique des versions</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('admin.ai_prompts_history_title')}</h3>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {[...selectedPrompt.previousVersions].reverse().map((v) => (
                     <div key={v.version} className="border border-gray-100 rounded-lg p-3">
@@ -557,7 +540,7 @@ function PromptsTab() {
                           disabled={saving}
                           className="text-xs text-kezak-primary hover:underline disabled:opacity-50"
                         >
-                          Restaurer
+                          {t('admin.ai_prompts_restore')}
                         </button>
                       </div>
                       <pre className="text-xs text-gray-500 whitespace-pre-wrap max-h-32 overflow-y-auto">
@@ -572,7 +555,7 @@ function PromptsTab() {
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 shadow-sm text-center">
             <FileText className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm text-gray-500">Selectionnez une action pour editer son prompt</p>
+            <p className="text-sm text-gray-500">{t('admin.ai_prompts_select_action')}</p>
           </div>
         )}
       </div>
@@ -582,7 +565,8 @@ function PromptsTab() {
 
 // ─── Logs Tab ───────────────────────────────────────────
 
-function LogsTab() {
+function LogsTab({ getActionLabel }: { getActionLabel: (a: string) => string }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -616,16 +600,15 @@ function LogsTab() {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <select
           value={actionFilter}
           onChange={(e) => { setActionFilter(e.target.value); setPage(0); }}
           className="h-[40px] px-3 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
         >
-          <option value="">Toutes les actions</option>
-          {Object.entries(ACTION_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+          <option value="">{t('admin.ai_logs_all_actions')}</option>
+          {Object.entries(ACTION_KEYS).map(([k, v]) => (
+            <option key={k} value={k}>{t(`admin.${v.labelKey}`)}</option>
           ))}
         </select>
         <select
@@ -633,7 +616,7 @@ function LogsTab() {
           onChange={(e) => { setProviderFilter(e.target.value); setPage(0); }}
           className="h-[40px] px-3 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
         >
-          <option value="">Tous les providers</option>
+          <option value="">{t('admin.ai_logs_all_providers')}</option>
           <option value="DEEPSEEK">DeepSeek</option>
           <option value="CLAUDE">Claude</option>
           <option value="GPT">GPT</option>
@@ -645,33 +628,32 @@ function LogsTab() {
           onChange={(e) => { setSuccessFilter(e.target.value); setPage(0); }}
           className="h-[40px] px-3 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary"
         >
-          <option value="">Tous les statuts</option>
-          <option value="true">Succes</option>
-          <option value="false">Erreur</option>
+          <option value="">{t('admin.ai_logs_all_statuses')}</option>
+          <option value="true">{t('admin.ai_logs_success')}</option>
+          <option value="false">{t('admin.ai_logs_error')}</option>
         </select>
         <button
           onClick={fetchLogs}
           className="flex items-center gap-1.5 h-[40px] px-4 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm font-medium transition-all"
         >
           <RefreshCw className="w-4 h-4" />
-          Rafraichir
+          {t('admin.ai_logs_refresh')}
         </button>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Action</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Provider</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Modele</th>
-                <th className="text-center px-3 py-3 font-medium text-gray-500">Statut</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Duree</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Tokens</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">Cout</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_action')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_provider')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_model')}</th>
+                <th className="text-center px-3 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_status')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_duration')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_tokens')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_cost')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">{t('admin.ai_logs_col_date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -689,7 +671,7 @@ function LogsTab() {
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-gray-500">
                     <ScrollText className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                    Aucun log trouve
+                    {t('admin.ai_logs_no_logs')}
                   </td>
                 </tr>
               ) : (
@@ -697,7 +679,7 @@ function LogsTab() {
                   <tr key={log.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <span className="text-xs font-mono bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                        {ACTION_LABELS[log.action] || log.action}
+                        {getActionLabel(log.action)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{log.provider}</td>
@@ -734,11 +716,10 @@ function LogsTab() {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
             <p className="text-xs text-gray-500">
-              {total} log(s) — Page {page + 1} sur {totalPages}
+              {t('admin.ai_logs_total', { total })} — {t('admin.page_of', { current: page + 1, total: totalPages })}
             </p>
             <div className="flex gap-2">
               <button

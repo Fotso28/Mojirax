@@ -1,6 +1,7 @@
 'use client';
 
 import { OnlineBadge } from './online-badge';
+import { useTranslation } from '@/context/i18n-context';
 
 interface ConversationItemProps {
   conversation: {
@@ -19,14 +20,15 @@ interface ConversationItemProps {
 }
 
 export function ConversationItem({ conversation, currentUserId, isActive, isOnline, onClick }: ConversationItemProps) {
+  const { t } = useTranslation();
   const other = conversation.founderId === currentUserId ? conversation.candidate : conversation.founder;
-  const name = `${other.firstName || ''} ${other.lastName || ''}`.trim() || 'Utilisateur';
+  const name = `${other.firstName || ''} ${other.lastName || ''}`.trim() || t('dashboard.messaging_user_default');
 
   const getTimeAgo = (dateStr: string | null) => {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "à l'instant";
+    if (mins < 1) return t('dashboard.messaging_time_now');
     if (mins < 60) return `${mins}min`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours}h`;

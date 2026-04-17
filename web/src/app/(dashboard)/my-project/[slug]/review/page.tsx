@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
+import { useTranslation } from '@/context/i18n-context';
 import {
     AlertCircle,
     Lightbulb,
@@ -22,18 +23,18 @@ import {
 
 interface BlockConfig {
     key: string;
-    label: string;
+    labelKey: string;
     icon: React.ElementType;
     color: string;
 }
 
 const BLOCKS: BlockConfig[] = [
-    { key: 'problem', label: 'Probl\u00e8me', icon: AlertCircle, color: 'text-red-500 bg-red-50' },
-    { key: 'solution', label: 'Solution', icon: Lightbulb, color: 'text-amber-500 bg-amber-50' },
-    { key: 'market', label: 'March\u00e9', icon: TrendingUp, color: 'text-blue-500 bg-blue-50' },
-    { key: 'traction', label: 'Traction', icon: Rocket, color: 'text-emerald-500 bg-emerald-50' },
-    { key: 'team', label: '\u00c9quipe', icon: Users, color: 'text-purple-500 bg-purple-50' },
-    { key: 'cofounder', label: 'Cofondateur recherch\u00e9', icon: UserPlus, color: 'text-indigo-500 bg-indigo-50' },
+    { key: 'problem', labelKey: 'dashboard.review_block_problem', icon: AlertCircle, color: 'text-red-500 bg-red-50' },
+    { key: 'solution', labelKey: 'dashboard.review_block_solution', icon: Lightbulb, color: 'text-amber-500 bg-amber-50' },
+    { key: 'market', labelKey: 'dashboard.review_block_market', icon: TrendingUp, color: 'text-blue-500 bg-blue-50' },
+    { key: 'traction', labelKey: 'dashboard.review_block_traction', icon: Rocket, color: 'text-emerald-500 bg-emerald-50' },
+    { key: 'team', labelKey: 'dashboard.review_block_team', icon: Users, color: 'text-purple-500 bg-purple-50' },
+    { key: 'cofounder', labelKey: 'dashboard.review_block_cofounder', icon: UserPlus, color: 'text-indigo-500 bg-indigo-50' },
 ];
 
 const MAX_CHARS = 2000;
@@ -43,6 +44,7 @@ export default function ReviewPage() {
     const router = useRouter();
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const slug = params?.slug as string;
 
@@ -65,11 +67,11 @@ export default function ReviewPage() {
                 setSummaryData(initial);
             }
         } catch {
-            showToast('Impossible de charger le projet.', 'error');
+            showToast(t('dashboard.review_load_error'), 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [slug, showToast]);
+    }, [slug, showToast, t]);
 
     useEffect(() => {
         if (!user) {
@@ -94,10 +96,10 @@ export default function ReviewPage() {
             });
             if (data?.[blockKey]) {
                 setSummaryData(prev => ({ ...prev, [blockKey]: data[blockKey] }));
-                showToast('Bloc r\u00e9g\u00e9n\u00e9r\u00e9 avec succ\u00e8s.', 'success');
+                showToast(t('dashboard.review_block_regenerated'), 'success');
             }
         } catch {
-            showToast('Erreur lors de la r\u00e9g\u00e9n\u00e9ration.', 'error');
+            showToast(t('dashboard.review_regeneration_error'), 'error');
         } finally {
             setRegeneratingBlock(null);
         }
@@ -110,9 +112,9 @@ export default function ReviewPage() {
             await AXIOS_INSTANCE.patch(`/projects/${project.id}/summary`, {
                 aiSummary: summaryData,
             });
-            showToast('Modifications enregistr\u00e9es.', 'success');
+            showToast(t('dashboard.review_save_success'), 'success');
         } catch {
-            showToast('Erreur lors de la sauvegarde.', 'error');
+            showToast(t('dashboard.review_save_error'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -128,10 +130,10 @@ export default function ReviewPage() {
             });
             // Puis publier
             await AXIOS_INSTANCE.post(`/projects/${project.id}/publish`);
-            showToast('Projet publi\u00e9 avec succ\u00e8s !', 'success');
+            showToast(t('dashboard.review_publish_success'), 'success');
             router.push(`/projects/${slug}`);
         } catch {
-            showToast('Erreur lors de la publication.', 'error');
+            showToast(t('dashboard.review_publish_error'), 'error');
         } finally {
             setIsPublishing(false);
         }
@@ -149,12 +151,12 @@ export default function ReviewPage() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
                 <AlertCircle className="w-12 h-12 text-gray-300 mb-4" />
-                <p className="text-gray-500 text-lg">Projet introuvable.</p>
+                <p className="text-gray-500 text-lg">{t('dashboard.review_project_not_found')}</p>
                 <button
                     onClick={() => router.push('/my-project')}
                     className="mt-4 text-kezak-primary font-semibold hover:underline"
                 >
-                    Retour
+                    {t('common.back')}
                 </button>
             </div>
         );
@@ -176,14 +178,14 @@ export default function ReviewPage() {
                     className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Retour au projet
+                    {t('dashboard.review_back_to_project')}
                 </button>
 
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                    V\u00e9rifiez la synth\u00e8se de votre projet
+                    {t('dashboard.review_title')}
                 </h1>
                 <p className="text-gray-500">
-                    {project.name} — Relisez et ajustez chaque bloc avant de publier.
+                    {t('dashboard.review_subtitle', { name: project.name })}
                 </p>
             </motion.div>
 
@@ -196,29 +198,29 @@ export default function ReviewPage() {
                 >
                     <Loader2 className="w-10 h-10 text-amber-500 animate-spin mx-auto mb-4" />
                     <h3 className="text-lg font-bold text-amber-900 mb-2">
-                        Analyse en cours...
+                        {t('dashboard.review_analysis_in_progress')}
                     </h3>
                     <p className="text-amber-700 max-w-md mx-auto">
-                        Notre IA analyse votre document. Cette page se mettra \u00e0 jour automatiquement
-                        une fois l'analyse termin\u00e9e.
+                        {t('dashboard.review_analysis_description')}
                     </p>
                     <button
                         onClick={fetchProject}
                         className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl font-semibold text-sm hover:bg-amber-700 transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" />
-                        Actualiser
+                        {t('common.refresh')}
                     </button>
                 </motion.div>
             ) : (
                 <>
-                    {/* Blocs \u00e9ditables */}
+                    {/* Blocs editables */}
                     <div className="space-y-5">
                         {BLOCKS.map((block, index) => {
                             const Icon = block.icon;
                             const isRegenerating = regeneratingBlock === block.key;
                             const charCount = (summaryData[block.key] || '').length;
                             const [iconColor, iconBg] = block.color.split(' ');
+                            const blockLabel = t(block.labelKey);
 
                             return (
                                 <motion.div
@@ -228,14 +230,14 @@ export default function ReviewPage() {
                                     transition={{ duration: 0.3, delay: index * 0.05 }}
                                     className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden"
                                 >
-                                    {/* En-t\u00eate du bloc */}
+                                    {/* En-tete du bloc */}
                                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center`}>
                                                 <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
                                             </div>
                                             <h3 className="font-semibold text-gray-900">
-                                                {block.label}
+                                                {blockLabel}
                                             </h3>
                                         </div>
                                         <button
@@ -244,7 +246,7 @@ export default function ReviewPage() {
                                             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-kezak-primary disabled:opacity-50 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-50"
                                         >
                                             <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
-                                            <span className="hidden sm:inline">R\u00e9g\u00e9n\u00e9rer</span>
+                                            <span className="hidden sm:inline">{t('common.regenerate')}</span>
                                         </button>
                                     </div>
 
@@ -255,7 +257,7 @@ export default function ReviewPage() {
                                                 <div className="flex items-center gap-3">
                                                     <Loader2 className="w-5 h-5 text-kezak-primary animate-spin" />
                                                     <span className="text-sm font-medium text-gray-600">
-                                                        R\u00e9g\u00e9n\u00e9ration en cours...
+                                                        {t('common.regenerating')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -266,7 +268,7 @@ export default function ReviewPage() {
                                             rows={4}
                                             maxLength={MAX_CHARS}
                                             className="w-full px-5 py-4 text-gray-700 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 placeholder:text-gray-400 text-sm sm:text-base"
-                                            placeholder={`Contenu du bloc "${block.label}"...`}
+                                            placeholder={t('dashboard.review_block_placeholder', { label: blockLabel })}
                                         />
                                         <div className="px-5 pb-3 flex justify-end">
                                             <span className={`text-xs ${charCount > MAX_CHARS * 0.9 ? 'text-amber-500' : 'text-gray-400'}`}>
@@ -296,7 +298,7 @@ export default function ReviewPage() {
                             ) : (
                                 <Save className="w-4 h-4" />
                             )}
-                            Enregistrer les modifications
+                            {t('dashboard.review_save_changes')}
                         </button>
                         <button
                             onClick={handlePublish}
@@ -308,7 +310,7 @@ export default function ReviewPage() {
                             ) : (
                                 <Send className="w-4 h-4" />
                             )}
-                            Publier le projet
+                            {t('dashboard.review_publish_project')}
                         </button>
                     </motion.div>
                 </>

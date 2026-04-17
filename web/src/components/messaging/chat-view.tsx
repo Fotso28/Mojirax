@@ -569,7 +569,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
       {uploadError && (
         <div className="mx-4 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center justify-between">
           <span>{uploadError}</span>
-          <button onClick={() => setUploadError(null)} className="ml-2 text-red-400 hover:text-red-600">
+          <button onClick={() => setUploadError(null)} className="ms-2 text-red-400 hover:text-red-600">
             <X className="h-4 w-4" />
           </button>
         </div>

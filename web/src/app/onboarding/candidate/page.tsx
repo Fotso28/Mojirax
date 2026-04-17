@@ -11,9 +11,11 @@ import { CandidateVisionStep } from './steps/vision';
 import { CandidateAvailabilityStep } from './steps/availability';
 import { CandidateConditionsStep } from './steps/conditions';
 import { CandidatePitchStep } from './steps/pitch';
+import { useTranslation } from '@/context/i18n-context';
 
 function CandidateWizardContent() {
     const { currentStep, setTotalSteps } = useOnboarding();
+    const { t } = useTranslation();
 
     const steps = [
         CandidateExpertiseStep,
@@ -30,7 +32,7 @@ function CandidateWizardContent() {
     const CurrentStepComponent = steps[currentStep] || steps[0];
 
     return (
-        <WizardLayout title="Profil Candidat">
+        <WizardLayout title={t('auth.onboarding_candidate_title')}>
             <CurrentStepComponent />
         </WizardLayout>
     );

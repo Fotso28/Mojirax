@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Reveal } from './reveal';
+import { useTranslation, useLocale } from '@/context/i18n-context';
+import { localized } from '@/lib/utils/localized';
 
 interface FaqItem {
   id: string;
-  question: string;
-  answer: string;
+  question: string | Record<string, string>;
+  answer: string | Record<string, string>;
 }
 
 interface Props {
@@ -32,6 +34,7 @@ function Skeleton() {
 
 function FaqAccordionItem({ item }: { item: FaqItem }) {
   const [open, setOpen] = useState(false);
+  const locale = useLocale();
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden transition-shadow hover:shadow-sm">
@@ -39,7 +42,7 @@ function FaqAccordionItem({ item }: { item: FaqItem }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between p-5 text-left"
       >
-        <span className="font-bold text-gray-900 pr-4">{item.question}</span>
+        <span className="font-bold text-gray-900 pr-4">{localized(item.question, locale)}</span>
         <ChevronDown
           className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
@@ -47,23 +50,25 @@ function FaqAccordionItem({ item }: { item: FaqItem }) {
       <div
         className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-96 pb-5 px-5' : 'max-h-0'}`}
       >
-        <p className="text-gray-600 leading-relaxed text-sm">{item.answer}</p>
+        <p className="text-gray-600 leading-relaxed text-sm">{localized(item.answer, locale)}</p>
       </div>
     </div>
   );
 }
 
 export function FaqSection({ faqs, loading }: Props) {
+  const { t } = useTranslation();
+
   return (
     <section id="faq" className="py-20 lg:py-28 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal animation="fade-up">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              FAQ
+              {t('landing.faq_title')}
             </h2>
             <p className="text-base text-gray-500 max-w-xl mx-auto">
-              Tout ce que vous devez savoir avant de vous lancer
+              {t('landing.faq_subtitle')}
             </p>
           </div>
         </Reveal>

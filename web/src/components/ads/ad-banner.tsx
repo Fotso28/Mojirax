@@ -41,7 +41,7 @@ function BannerContent({ ad, onDismiss }: { ad: BannerAd; onDismiss: () => void 
           <span className="hidden sm:inline text-white/80">— {ad.description}</span>
         )}
         {ad.ctaText && (
-          <span className="font-bold underline ml-1">{ad.ctaText}</span>
+          <span className="font-bold underline ms-1">{ad.ctaText}</span>
         )}
       </div>
       <button

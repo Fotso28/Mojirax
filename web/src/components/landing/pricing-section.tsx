@@ -118,7 +118,7 @@ export function PricingSection({ plans, loading }: Props) {
                     <span className="text-3xl font-black text-gray-900">
                       {formatPrice(plan.price)}
                     </span>
-                    <span className="text-base text-gray-400 font-normal ml-1">
+                    <span className="text-base text-gray-400 font-normal ms-1">
                       €
                     </span>
                     {plan.price > 0 && (

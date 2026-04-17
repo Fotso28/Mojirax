@@ -12,10 +12,12 @@ import { PricingSection } from './pricing-section';
 import { FaqSection } from './faq-section';
 import { CtaSection } from './cta-section';
 import { LandingFooter } from './landing-footer';
+import { useLocale } from '@/context/i18n-context';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export function LandingPage() {
+  const locale = useLocale();
   const [plans, setPlans] = useState([]);
   const [faqs, setFaqs] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
@@ -23,11 +25,13 @@ export function LandingPage() {
 
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
       try {
+        const headers = { 'Accept-Language': locale };
         const [plansRes, faqsRes, testimonialsRes] = await Promise.allSettled([
-          axios.get(`${API_URL}/landing/plans`),
-          axios.get(`${API_URL}/landing/faq`),
-          axios.get(`${API_URL}/landing/testimonials`),
+          axios.get(`${API_URL}/landing/plans`, { headers }),
+          axios.get(`${API_URL}/landing/faq`, { headers }),
+          axios.get(`${API_URL}/landing/testimonials`, { headers }),
         ]);
 
         if (plansRes.status === 'fulfilled') setPlans(plansRes.value.data);
@@ -40,7 +44,7 @@ export function LandingPage() {
     }
 
     fetchData();
-  }, []);
+  }, [locale]);
 
   return (
     <div className="min-h-screen bg-white">

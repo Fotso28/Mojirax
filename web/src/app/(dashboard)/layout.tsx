@@ -14,14 +14,25 @@ export default function DashboardLayout({
     children: React.ReactNode;
     modal: React.ReactNode;
 }) {
-    const { user, loading } = useAuth();
+    const { user, dbUser, loading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!loading && !user) {
             router.replace('/login');
         }
-    }, [loading, user, router]);
+        // Rediriger vers l'onboarding seulement si :
+        // - pas de title ET pas de bio
+        // - ET pas de projets existants (user migré)
+        // - ET pas de candidateProfile existant
+        if (!loading && user && dbUser
+            && !dbUser.title && !dbUser.bio
+            && !(dbUser.projects?.length > 0)
+            && !dbUser.candidateProfile
+        ) {
+            router.replace('/onboarding/start');
+        }
+    }, [loading, user, dbUser, router]);
 
     if (loading) {
         return (

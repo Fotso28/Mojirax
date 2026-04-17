@@ -5,6 +5,7 @@ import Cropper, { Area } from 'react-easy-crop';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getCroppedImage } from '@/utils/crop-image';
 import { X, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 interface AvatarCropModalProps {
     open: boolean;
@@ -15,6 +16,7 @@ interface AvatarCropModalProps {
 }
 
 export function AvatarCropModal({ open, imageSrc, onClose, onConfirm, isUploading }: AvatarCropModalProps) {
+    const { t } = useTranslation();
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -63,7 +65,7 @@ export function AvatarCropModal({ open, imageSrc, onClose, onConfirm, isUploadin
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-lg font-bold text-gray-900">Recadrer la photo</h2>
+                            <h2 className="text-lg font-bold text-gray-900">{t('dashboard.crop_title')}</h2>
                             <button
                                 onClick={onClose}
                                 disabled={isUploading}
@@ -109,7 +111,7 @@ export function AvatarCropModal({ open, imageSrc, onClose, onConfirm, isUploadin
                                 disabled={isUploading}
                                 className="flex-1 h-[52px] rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 disabled:opacity-50"
                             >
-                                Annuler
+                                {t('dashboard.crop_cancel')}
                             </button>
                             <button
                                 onClick={handleConfirm}
@@ -119,10 +121,10 @@ export function AvatarCropModal({ open, imageSrc, onClose, onConfirm, isUploadin
                                 {isUploading ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        Envoi...
+                                        {t('dashboard.crop_uploading')}
                                     </>
                                 ) : (
-                                    'Valider'
+                                    t('dashboard.crop_confirm')
                                 )}
                             </button>
                         </div>

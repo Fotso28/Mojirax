@@ -2,6 +2,7 @@
 
 import { useAdTracker } from '@/hooks/use-ad-tracker';
 import { Megaphone, ExternalLink } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 interface AdSearchCardProps {
   ad: {
@@ -16,6 +17,7 @@ interface AdSearchCardProps {
 }
 
 export function AdSearchCard({ ad, position }: AdSearchCardProps) {
+  const { t } = useTranslation();
   const { ref, onClick } = useAdTracker({
     adId: ad.id,
     placement: 'SEARCH',
@@ -39,7 +41,7 @@ export function AdSearchCard({ ad, position }: AdSearchCardProps) {
       {/* Sponsored label */}
       <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
         <Megaphone className="w-3.5 h-3.5 text-gray-400" />
-        <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Sponsorisé</span>
+        <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.ad_sponsored')}</span>
       </div>
 
       {/* Image — ratio 1.91:1 comme Facebook */}

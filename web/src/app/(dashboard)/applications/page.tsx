@@ -1,36 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Rocket, Briefcase, MapPin, Clock, ChevronRight, Inbox } from 'lucide-react';
 import { getSectorLabel } from '@/lib/constants/sectors';
-
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-    PENDING: { label: 'En attente', className: 'bg-amber-100 text-amber-700' },
-    ACCEPTED: { label: 'Acceptee', className: 'bg-emerald-100 text-emerald-700' },
-    REJECTED: { label: 'Refusee', className: 'bg-red-100 text-red-700' },
-};
-
-function timeAgo(dateStr: string): string {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return "A l'instant";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Il y a ${minutes}min`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `Il y a ${days}j`;
-    return `Il y a ${Math.floor(days / 30)} mois`;
-}
+import { useTranslation } from '@/context/i18n-context';
 
 export default function ApplicationsPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
     const [applications, setApplications] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const STATUS_CONFIG = useMemo(() => ({
+        PENDING: { label: t('common.status_pending'), className: 'bg-amber-100 text-amber-700' },
+        ACCEPTED: { label: t('common.status_accepted'), className: 'bg-emerald-100 text-emerald-700' },
+        REJECTED: { label: t('common.status_rejected'), className: 'bg-red-100 text-red-700' },
+    }), [t]);
+
+    const timeAgo = (dateStr: string): string => {
+        const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+        if (seconds < 60) return t('common.time_just_now');
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return t('common.time_minutes_ago', { count: minutes });
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return t('common.time_hours_ago', { count: hours });
+        const days = Math.floor(hours / 24);
+        if (days < 30) return t('common.time_days_ago', { count: days });
+        return t('common.time_months_ago', { count: Math.floor(days / 30) });
+    };
 
     useEffect(() => {
         if (authLoading) return;
@@ -56,7 +58,7 @@ export default function ApplicationsPage() {
 
     if (authLoading || isLoading) {
         return (
-            <div className="space-y-8 p-4 sm:p-8">
+            <div className="space-y-8">
                 <div>
                     <div className="h-8 w-56 bg-gray-200 rounded-lg animate-pulse" />
                     <div className="h-5 w-72 bg-gray-100 rounded-lg animate-pulse mt-2" />
@@ -87,15 +89,15 @@ export default function ApplicationsPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-8 p-4 sm:p-8"
+            className="space-y-8"
         >
             {/* Header */}
             <div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-                    Mes Candidatures
+                    {t('dashboard.my_applications_title')}
                 </h1>
                 <p className="mt-2 text-lg text-gray-500">
-                    Suivez l&apos;etat de vos candidatures
+                    {t('dashboard.my_applications_subtitle')}
                 </p>
             </div>
 
@@ -106,23 +108,23 @@ export default function ApplicationsPage() {
                         <Inbox className="w-8 h-8 text-kezak-primary" />
                     </div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">
-                        Aucune candidature
+                        {t('dashboard.no_applications_title')}
                     </h2>
                     <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        Vous n&apos;avez pas encore postule a un projet. Explorez le feed pour trouver des projets qui vous correspondent.
+                        {t('dashboard.no_applications_description')}
                     </p>
                     <button
                         onClick={() => router.push('/feed')}
                         className="inline-flex items-center justify-center gap-2 bg-kezak-primary text-white hover:bg-kezak-dark h-[52px] px-8 rounded-lg font-semibold transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-kezak-primary"
                     >
                         <Rocket className="w-5 h-5" />
-                        Explorer les projets
+                        {t('dashboard.explore_projects')}
                     </button>
                 </div>
             ) : (
                 <div className="space-y-4">
                     {applications.map((app: any) => {
-                        const status = STATUS_CONFIG[app.status] ?? STATUS_CONFIG.PENDING;
+                        const status = STATUS_CONFIG[app.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.PENDING;
                         const project = app.project;
 
                         return (
@@ -147,7 +149,7 @@ export default function ApplicationsPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 flex-wrap">
                                             <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-kezak-primary transition-colors">
-                                                {project?.name ?? 'Projet'}
+                                                {project?.name ?? t('common.project')}
                                             </h3>
                                             <span className={`text-xs font-medium px-3 py-1 rounded-full ${status.className}`}>
                                                 {status.label}

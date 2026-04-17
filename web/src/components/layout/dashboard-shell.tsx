@@ -37,7 +37,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             <div className={cn(
                 "flex-1 max-w-[1600px] w-full mx-auto",
                 isMessagesPage
-                    ? "px-0 md:px-4 md:sm:px-6 lg:px-8 pt-16 md:pt-24 pb-0 md:pb-8"
+                    ? "px-0 md:px-4 sm:px-6 lg:px-8 pt-16 md:pt-24 pb-0 md:pb-8"
                     : "px-4 sm:px-6 lg:px-8 pt-20 md:pt-24 pb-8"
             )}>
                 <div className={cn(

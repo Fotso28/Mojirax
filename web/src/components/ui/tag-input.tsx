@@ -56,7 +56,7 @@ export function TagInput({
                         <button
                             type="button"
                             onClick={() => removeTag(index)}
-                            className="ml-0.5 rounded-full p-0.5 hover:bg-blue-100 transition-colors"
+                            className="ms-0.5 rounded-full p-0.5 hover:bg-blue-100 transition-colors"
                         >
                             <X className="w-3 h-3" />
                         </button>

@@ -5,6 +5,7 @@ import { ImageUploader } from '@/components/ui/image-uploader';
 import { PlanBadge } from '@/components/ui/plan-badge';
 import { useToast } from '@/context/toast-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useTranslation } from '@/context/i18n-context';
 
 export interface ProfileHeaderProps {
     user: {
@@ -20,18 +21,17 @@ export interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ user, onAvatarUploaded }: ProfileHeaderProps) {
+    const { t } = useTranslation();
     const { showToast } = useToast();
 
     const displayName = user.firstName && user.lastName
         ? `${user.firstName} ${user.lastName}`
-        : user.email?.split('@')[0] || 'Utilisateur';
+        : user.email?.split('@')[0] || t('dashboard.profile_header_user');
 
     const roleLabel = {
-        FOUNDER: 'Fondateur',
-        CANDIDATE: 'Candidat',
-        ADMIN: 'Admin',
-        USER: 'Utilisateur',
-    }[user.role as string] || 'Membre';
+        ADMIN: t('dashboard.profile_header_role_admin'),
+        USER: t('dashboard.profile_header_role_user'),
+    }[user.role as string] || t('dashboard.profile_header_role_member');
 
     return (
         <div className="relative bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm overflow-hidden mb-6">
@@ -45,12 +45,10 @@ export function ProfileHeader({ user, onAvatarUploaded }: ProfileHeaderProps) {
                     uploadEndpoint="/users/avatar"
                     currentImageUrl={user.image}
                     onUploadComplete={async (url) => {
-                        // L'API retourne l'objet user complet, on le fetch
                         try {
                             const { data } = await AXIOS_INSTANCE.get('/users/profile');
                             onAvatarUploaded?.(data);
                         } catch {
-                            // Fallback: on passe juste l'URL
                             onAvatarUploaded?.({ ...user, image: url });
                         }
                     }}

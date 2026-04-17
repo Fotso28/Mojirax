@@ -7,9 +7,11 @@ import { useAuth } from '@/context/auth-context';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useToast } from '@/context/toast-context';
 import { getPlanIntent, triggerCheckoutByPlanKey } from '@/lib/utils/plan-intent';
+import { useTranslation } from '@/context/i18n-context';
 
 export function CandidatePitchStep() {
     const { data, updateData, submitForm } = useOnboarding();
+    const { t } = useTranslation();
     const { refreshDbUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
@@ -46,7 +48,7 @@ export function CandidatePitchStep() {
                 hasCofounded: formData.has_cofounded,
             });
 
-            showToast('Profil créé ! Vérification en cours...', 'success');
+            showToast(t('auth.candidate_toast_success'), 'success');
             await refreshDbUser();
             if (planIntent) {
                 const ok = await triggerCheckoutByPlanKey(planIntent);
@@ -59,20 +61,20 @@ export function CandidatePitchStep() {
 
     return (
         <WizardStep
-            title="Pitch Final"
-            description="Le mot de la fin pour convaincre."
+            title={t('auth.candidate_pitch_title')}
+            description={t('auth.candidate_pitch_desc')}
             onNext={handleSubmit}
             isValid={!!data.short_pitch}
-            nextLabel="Publier mon profil"
+            nextLabel={t('auth.candidate_submit')}
         >
             <div className="space-y-6">
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Pitch Court (Carte de profil)
+                        {t('auth.candidate_short_pitch')}
                     </label>
                     <textarea
                         className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none min-h-[80px] bg-white"
-                        placeholder="Expert React cherchant CTO ambitieux sur projet Fintech..."
+                        placeholder={t('auth.candidate_short_pitch_placeholder')}
                         value={data.short_pitch || ''}
                         onChange={(e) => updateData('short_pitch', e.target.value)}
                         maxLength={280}
@@ -82,11 +84,11 @@ export function CandidatePitchStep() {
 
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-700">
-                        Message libre (Ce qui n'est pas dans le CV)
+                        {t('auth.candidate_long_pitch')}
                     </label>
                     <textarea
                         className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary focus:outline-none min-h-[120px] bg-white"
-                        placeholder="Je suis passionné par..."
+                        placeholder={t('auth.candidate_long_pitch_placeholder')}
                         value={data.long_pitch || ''}
                         onChange={(e) => updateData('long_pitch', e.target.value)}
                         maxLength={2000}

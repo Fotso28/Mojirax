@@ -4,6 +4,10 @@ import { OnboardingProvider, useOnboarding } from '@/context/onboarding-context'
 import { WizardLayout } from '@/components/onboarding/wizard/wizard-layout';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/context/i18n-context';
+import { useAuth } from '@/context/auth-context';
+import { useUpsell } from '@/context/upsell-context';
 
 // Steps
 import { ProjectIdentityStep } from './steps/identity';
@@ -19,6 +23,7 @@ import { AiReviewStep } from './steps/ai-review';
 
 function ProjectWizardContent() {
     const { currentStep, setTotalSteps, data } = useOnboarding();
+    const { t } = useTranslation();
 
     // Déterminer les steps selon la méthode choisie
     const steps = useMemo(() => {
@@ -52,13 +57,29 @@ function ProjectWizardContent() {
     const CurrentStepComponent = steps[currentStep] || steps[0];
 
     return (
-        <WizardLayout title="Création de Projet">
+        <WizardLayout title={t('project.wizard_title')}>
             <CurrentStepComponent />
         </WizardLayout>
     );
 }
 
 export default function ProjectOnboardingPage() {
+    const { dbUser, loading } = useAuth();
+    const { openUpsell } = useUpsell();
+    const router = useRouter();
+    const isFreeUser = !dbUser?.plan || dbUser.plan === 'FREE';
+
+    useEffect(() => {
+        if (!loading && dbUser && isFreeUser) {
+            openUpsell('create_project');
+            router.replace('/my-project');
+        }
+    }, [loading, dbUser, isFreeUser, openUpsell, router]);
+
+    if (loading || isFreeUser) {
+        return <DashboardShell><div /></DashboardShell>;
+    }
+
     return (
         <OnboardingProvider storageKey="onboarding_project_draft">
             <DashboardShell>

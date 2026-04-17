@@ -3,9 +3,11 @@
 import { useOnboarding } from '@/context/onboarding-context';
 import { FileText, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from '@/context/i18n-context';
 
 export function ProjectMethodChoiceStep() {
     const { data, updateData, nextStep } = useOnboarding();
+    const { t } = useTranslation();
 
     const handleChoice = (method: 'form' | 'document') => {
         updateData('creation_method', method);
@@ -16,10 +18,10 @@ export function ProjectMethodChoiceStep() {
         <div className="space-y-8">
             <div className="space-y-2 text-center sm:text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-                    Comment créer votre projet ?
+                    {t('project.method_title')}
                 </h1>
                 <p className="text-lg text-gray-500">
-                    Choisissez la méthode qui vous convient le mieux
+                    {t('project.method_description')}
                 </p>
             </div>
 
@@ -42,9 +44,9 @@ export function ProjectMethodChoiceStep() {
                     }`}>
                         <FileText className="w-8 h-8" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Remplir le formulaire</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('project.method_form_title')}</h3>
                     <p className="text-sm text-gray-500 leading-relaxed">
-                        Suivez les étapes guidées pour décrire votre projet pas à pas
+                        {t('project.method_form_desc')}
                     </p>
                 </motion.button>
 
@@ -66,9 +68,9 @@ export function ProjectMethodChoiceStep() {
                     }`}>
                         <Upload className="w-8 h-8" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Uploader un document</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('project.method_document_title')}</h3>
                     <p className="text-sm text-gray-500 leading-relaxed">
-                        Importez votre dossier projet (PDF ou Word) et laissez l&apos;IA faire le reste
+                        {t('project.method_document_desc')}
                     </p>
                 </motion.button>
             </div>

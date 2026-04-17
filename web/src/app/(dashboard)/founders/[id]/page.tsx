@@ -391,7 +391,7 @@ export default function FounderPublicProfilePage() {
                         <h2 className="text-lg font-bold text-gray-900">
                             {t('dashboard.founder_projects', { name: user.firstName || displayName })}
                         </h2>
-                        <span className="text-sm text-gray-400 ml-1">({projects.length})</span>
+                        <span className="text-sm text-gray-400 ms-1">({projects.length})</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {projects.map((project: any) => (
@@ -446,7 +446,7 @@ export default function FounderPublicProfilePage() {
                                     )}
                                     {project.location && (
                                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100">
-                                            <MapPin className="w-3 h-3 inline mr-0.5" />
+                                            <MapPin className="w-3 h-3 inline me-0.5" />
                                             {project.location}
                                         </span>
                                     )}

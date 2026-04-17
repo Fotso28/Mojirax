@@ -5,6 +5,7 @@ import { Filter, X, ChevronDown, MapPin, Briefcase, Code, Lock } from 'lucide-re
 import { SECTORS } from '@/lib/constants/sectors';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/i18n-context';
 import Link from 'next/link';
 
 interface FeedFiltersProps {
@@ -19,6 +20,7 @@ interface PopularSkill {
 
 export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
     const { dbUser } = useAuth();
+    const { t } = useTranslation();
     const isFree = !dbUser?.plan || dbUser.plan === 'FREE';
     const [isOpen, setIsOpen] = useState(false);
     const [city, setCity] = useState('');
@@ -67,7 +69,7 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                     }`}
             >
                 <Filter size={18} />
-                <span className="text-sm font-medium">Filtres</span>
+                <span className="text-sm font-medium">{t('dashboard.filter_label')}</span>
                 {(city || sector || selectedSkills.length > 0) && (
                     <span className="w-2 h-2 bg-kezak-primary rounded-full" />
                 )}
@@ -82,7 +84,7 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                     />
                     <div className="absolute top-full left-0 mt-2 w-full md:w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 z-50">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-bold text-gray-900">Filtrer par</h3>
+                            <h3 className="font-bold text-gray-900">{t('dashboard.filter_by')}</h3>
                             <button onClick={() => setIsOpen(false)} className="text-gray-400">
                                 <X size={20} />
                             </button>
@@ -92,11 +94,11 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                             {/* City */}
                             <div>
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block flex items-center gap-2">
-                                    <MapPin size={14} /> Ville
+                                    <MapPin size={14} /> {t('dashboard.filter_city')}
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Ex: Douala, Paris..."
+                                    placeholder={t('dashboard.filter_city_placeholder')}
                                     value={city}
                                     onChange={(e) => setCity(e.target.value)}
                                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kezak-primary/20"
@@ -106,14 +108,14 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                             {/* Sector */}
                             <div>
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block flex items-center gap-2">
-                                    <Briefcase size={14} /> Secteur
+                                    <Briefcase size={14} /> {t('dashboard.filter_sector')}
                                 </label>
                                 <select
                                     value={sector}
                                     onChange={(e) => setSector(e.target.value)}
                                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kezak-primary/20"
                                 >
-                                    <option value="">Tous les secteurs</option>
+                                    <option value="">{t('dashboard.filter_all_sectors')}</option>
                                     {SECTORS.map(s => (
                                         <option key={s.value} value={s.value}>{s.label}</option>
                                     ))}
@@ -123,16 +125,16 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                             {/* Skills — réservé aux abonnés Plus+ */}
                             <div>
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block flex items-center gap-2">
-                                    <Code size={14} /> Skills recherchés
+                                    <Code size={14} /> {t('dashboard.filter_skills')}
                                 </label>
                                 {isFree ? (
                                     <Link
-                                        href="/#pricing"
+                                        href="/settings/billing"
                                         className="flex items-center gap-2 p-3 bg-kezak-light/60 border border-kezak-primary/20 rounded-xl text-sm text-kezak-dark hover:bg-kezak-light transition-colors"
                                     >
                                         <Lock size={16} className="text-kezak-primary shrink-0" />
                                         <span>
-                                            <span className="font-semibold">Passez au Plus</span> pour les filtres avancés
+                                            <span className="font-semibold">{t('dashboard.filter_upgrade_plus')}</span> {t('dashboard.filter_upgrade_plus_desc')}
                                         </span>
                                     </Link>
                                 ) : (
@@ -149,7 +151,7 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                                                 {skill.label}
                                             </button>
                                         )) : (
-                                            <span className="text-xs text-gray-400">Chargement...</span>
+                                            <span className="text-xs text-gray-400">{t('dashboard.filter_loading')}</span>
                                         )}
                                     </div>
                                 )}
@@ -161,13 +163,13 @@ export function FeedFilters({ onFilterChange }: FeedFiltersProps) {
                                 onClick={handleReset}
                                 className="flex-1 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
                             >
-                                Réinitialiser
+                                {t('dashboard.filter_reset')}
                             </button>
                             <button
                                 onClick={handleApply}
                                 className="flex-1 py-2 bg-kezak-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-kezak-primary/20 active:scale-95 transition-all"
                             >
-                                Appliquer
+                                {t('dashboard.filter_apply')}
                             </button>
                         </div>
                     </div>

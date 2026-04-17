@@ -5,6 +5,7 @@ import { AXIOS_INSTANCE as api } from '@/api/axios-instance';
 import { TrendingUp, Eye, Star, Briefcase, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { AdSidebar } from '@/components/ads/ad-sidebar';
+import { useTranslation } from '@/context/i18n-context';
 
 interface TrendingProject {
     id: string;
@@ -32,6 +33,7 @@ export function SidebarRight() {
     const [projects, setProjects] = useState<TrendingProject[]>([]);
     const [candidates, setCandidates] = useState<TrendingCandidate[]>([]);
     const [loading, setLoading] = useState(true);
+    const { t } = useTranslation();
 
     useEffect(() => {
         Promise.all([
@@ -49,7 +51,7 @@ export function SidebarRight() {
             {/* Projets tendance */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 text-sm">Projets tendance</h3>
+                    <h3 className="font-bold text-gray-900 text-sm">{t('dashboard.trending_projects')}</h3>
                     <Briefcase className="w-4 h-4 text-kezak-primary" />
                 </div>
                 {loading ? (
@@ -65,7 +67,7 @@ export function SidebarRight() {
                         ))}
                     </div>
                 ) : projects.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-4">Aucun projet pour le moment</p>
+                    <p className="text-xs text-gray-400 text-center py-4">{t('dashboard.trending_no_projects')}</p>
                 ) : (
                     <div className="space-y-3">
                         {projects.map((p, i) => (
@@ -109,7 +111,7 @@ export function SidebarRight() {
             {/* Candidats à suivre */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 text-sm">Profils à suivre</h3>
+                    <h3 className="font-bold text-gray-900 text-sm">{t('dashboard.trending_profiles')}</h3>
                     <TrendingUp className="w-4 h-4 text-kezak-primary" />
                 </div>
                 {loading ? (
@@ -125,7 +127,7 @@ export function SidebarRight() {
                         ))}
                     </div>
                 ) : candidates.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-4">Aucun profil pour le moment</p>
+                    <p className="text-xs text-gray-400 text-center py-4">{t('dashboard.trending_no_profiles')}</p>
                 ) : (
                     <div className="space-y-3">
                         {candidates.map((c) => (
@@ -145,9 +147,9 @@ export function SidebarRight() {
                                 )}
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-kezak-primary transition-colors">
-                                        {c.name || 'Anonyme'}
+                                        {c.name || t('dashboard.trending_anonymous')}
                                     </p>
-                                    <p className="text-xs text-gray-500 truncate">{c.title || 'Candidat'}</p>
+                                    <p className="text-xs text-gray-500 truncate">{c.title || t('dashboard.trending_candidate')}</p>
                                     {c.skills.length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-1.5">
                                             {c.skills.map((s) => (
@@ -169,12 +171,18 @@ export function SidebarRight() {
 
             {/* Footer Links */}
             <div className="flex flex-wrap gap-x-4 gap-y-2 px-2">
-                {['À propos', 'Aide', 'Confidentialité', 'CGU', 'Publicité'].map((link) => (
-                    <a key={link} href="#" className="text-xs text-gray-400 hover:text-gray-600">
-                        {link}
+                {[
+                    { key: 'dashboard.footer_about', label: t('dashboard.footer_about') },
+                    { key: 'dashboard.footer_help', label: t('dashboard.footer_help') },
+                    { key: 'dashboard.footer_privacy', label: t('dashboard.footer_privacy') },
+                    { key: 'dashboard.footer_terms', label: t('dashboard.footer_terms') },
+                    { key: 'dashboard.footer_ads', label: t('dashboard.footer_ads') },
+                ].map((link) => (
+                    <a key={link.key} href="#" className="text-xs text-gray-400 hover:text-gray-600">
+                        {link.label}
                     </a>
                 ))}
-                <p className="text-xs text-gray-300 w-full mt-2">© 2026 MojiraX Inc.</p>
+                <p className="text-xs text-gray-300 w-full mt-2">© {new Date().getFullYear()} MojiraX Inc.</p>
             </div>
         </div>
     );
