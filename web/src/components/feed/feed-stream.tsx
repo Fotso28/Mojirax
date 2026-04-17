@@ -7,6 +7,7 @@ import { AdFeedCard } from '@/components/ads/ad-feed-card';
 import { FeedFilters } from './feed-filters';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/i18n-context';
 import { Loader2, Rocket } from 'lucide-react';
 
 interface FeedAd {
@@ -32,6 +33,7 @@ interface Filters {
 
 export function FeedStream() {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [projects, setProjects] = useState<any[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -189,11 +191,11 @@ export function FeedStream() {
                     <div className="w-16 h-16 bg-kezak-light rounded-full flex items-center justify-center mx-auto mb-4">
                         <Rocket className="w-7 h-7 text-kezak-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun projet pour le moment</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.projects_empty_title')}</h3>
                     <p className="text-gray-500">
                         {Object.values(filters).some(Boolean)
-                            ? 'Essayez de modifier vos filtres.'
-                            : 'Les projets apparaîtront ici dès qu\'ils seront publiés.'}
+                            ? t('dashboard.feed.projects_empty_filtered')
+                            : t('dashboard.feed.projects_empty_description')}
                     </p>
                 </div>
             </div>
@@ -233,7 +235,7 @@ export function FeedStream() {
 
             {!hasMore && projects.length > 0 && (
                 <div className="text-center py-8 text-gray-400 text-sm">
-                    Vous avez tout vu !
+                    {t('dashboard.feed.end_reached')}
                 </div>
             )}
         </div>

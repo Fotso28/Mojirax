@@ -9,41 +9,33 @@ import { DocumentView } from './document-view';
 import { FounderSidebar } from './founder-sidebar';
 import { ApplyModal } from '@/components/applications/apply-modal';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
-import { Loader2, ArrowLeft, Share2, Bookmark, BookmarkCheck, MapPin, Briefcase, Users, CheckCircle2, AlertCircle, Pencil, Clock, XCircle, FileEdit, MessageCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Share2, Bookmark, BookmarkCheck, MapPin, Briefcase, Users, CheckCircle2, AlertCircle, Pencil, Clock, XCircle, FileEdit, MessageCircle, Lock } from 'lucide-react';
 import { useStartConversation } from '@/hooks/use-start-conversation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
+import { useUpsell } from '@/context/upsell-context';
 import { useToast } from '@/context/toast-context';
 import { HideRightSidebar } from '@/context/sidebar-context';
 import { cn } from '@/lib/utils';
 import { getSectorLabel } from '@/lib/constants/sectors';
+import { useTranslation } from '@/context/i18n-context';
 
-const BASE_TABS = [
-    { id: 'vision', label: 'Vision' },
-    { id: 'expertise', label: 'Expertise' },
-    { id: 'conditions', label: 'Conditions' },
-];
+function formatRoleLabels(lookingForRole: string, t: (key: string) => string): string {
+    return lookingForRole.split(',').filter(Boolean)
+        .map((r) => t(`project.role.${r}`) !== `project.role.${r}` ? t(`project.role.${r}`) : r).join(', ');
+}
 
-const STAGE_LABELS: Record<string, string> = {
-    IDEA: 'Idée', PROTOTYPE: 'Prototype', MVP_BUILD: 'MVP en cours',
-    MVP_LIVE: 'MVP lancé', TRACTION: 'Traction', SCALE: 'Scale',
-};
-const ROLE_LABELS: Record<string, string> = {
-    TECH: 'Profil Tech (CTO/Dev)', BIZ: 'Business (Sales/Marketing)',
-    PRODUCT: 'Produit', FINANCE: 'Finance',
-};
-
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, t: (key: string, params?: Record<string, string | number>) => string): string {
     const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return "À l'instant";
+    if (seconds < 60) return t('project.timeAgo.just_now');
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Il y a ${minutes}min`;
+    if (minutes < 60) return t('project.timeAgo.minutes', { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
+    if (hours < 24) return t('project.timeAgo.hours', { count: hours });
     const days = Math.floor(hours / 24);
-    if (days < 30) return `Il y a ${days}j`;
-    return `Il y a ${Math.floor(days / 30)} mois`;
+    if (days < 30) return t('project.timeAgo.days', { count: days });
+    return t('project.timeAgo.months', { count: Math.floor(days / 30) });
 }
 
 function trackInteraction(projectId: string, action: string, extra?: Record<string, any>) {
@@ -53,6 +45,7 @@ function trackInteraction(projectId: string, action: string, extra?: Record<stri
 }
 
 export default function ProjectDeck({ projectId }: { projectId: string }) {
+    const { t } = useTranslation();
     const [project, setProject] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('vision');
@@ -62,10 +55,18 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
     const [profileWarning, setProfileWarning] = useState<string[] | null>(null);
     const router = useRouter();
     const { user, dbUser } = useAuth();
+    const { openUpsell } = useUpsell();
+    const isFreeUser = !dbUser?.plan || dbUser.plan === 'FREE';
     const { showToast } = useToast();
     const { startConversation, loading: messageLoading } = useStartConversation();
     const viewStartRef = useRef(Date.now());
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const BASE_TABS = [
+        { id: 'vision', label: t('project.tabs.vision') },
+        { id: 'expertise', label: t('project.tabs.expertise') },
+        { id: 'conditions', label: t('project.tabs.conditions') },
+    ];
 
     useEffect(() => {
         const fetchProject = async () => {
@@ -74,7 +75,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                 setProject(data);
                 trackInteraction(projectId, 'CLICK');
             } catch {
-                // Project load failed — UI shows "Projet introuvable"
+                // Project load failed
             } finally {
                 setIsLoading(false);
             }
@@ -128,13 +129,13 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
         const next = !isSaved;
         setIsSaved(next);
         trackInteraction(projectId, next ? 'SAVE' : 'UNSAVE');
-        showToast(next ? 'Projet sauvegardé' : 'Projet retiré', 'success');
+        showToast(next ? t('project.saved') : t('project.unsaved'), 'success');
     };
 
     const handleShare = () => {
         navigator.clipboard?.writeText(window.location.href);
         trackInteraction(projectId, 'SHARE');
-        showToast('Lien copié !', 'success');
+        showToast(t('project.link_copied'), 'success');
     };
 
     if (isLoading) {
@@ -155,10 +156,10 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
             <>
                 <HideRightSidebar />
                 <div className="flex flex-col h-full bg-white rounded-2xl items-center justify-center p-12">
-                    <p className="text-gray-500 mb-4">Projet introuvable.</p>
+                    <p className="text-gray-500 mb-4">{t('project.not_found')}</p>
                     {canGoBack && (
                         <button onClick={goBack} className="text-kezak-primary font-semibold hover:underline">
-                            Retour
+                            {t('project.back')}
                         </button>
                     )}
                 </div>
@@ -168,13 +169,15 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
 
     const founderName = project.founder?.name
         || [project.founder?.firstName, project.founder?.lastName].filter(Boolean).join(' ')
-        || 'Fondateur';
+        || t('project.founder_default');
 
     const tabs = (project.aiSummary || project.documentUrl)
-        ? [...BASE_TABS, { id: 'document', label: 'Synthèse' }]
+        ? [...BASE_TABS, { id: 'document', label: t('project.tabs.document') }]
         : BASE_TABS;
 
     const ActiveView = activeTab === 'vision' ? VisionView : activeTab === 'expertise' ? ExpertiseView : activeTab === 'conditions' ? ConditionsView : activeTab === 'document' ? DocumentView : VisionView;
+
+    const appCount = project._count?.applications || 0;
 
     return (
         <>
@@ -236,7 +239,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-white group-hover/founder:underline">{founderName}</p>
-                                <p className="text-xs text-white/60">{project.founderRole || 'Fondateur'} · {timeAgo(project.createdAt)}</p>
+                                <p className="text-xs text-white/60">{project.founderRole || t('project.founder_default')} · {timeAgo(project.createdAt, t)}</p>
                             </div>
                         </Link>
 
@@ -249,7 +252,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                             )}
                             {project.stage && (
                                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white/90 bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-                                    {STAGE_LABELS[project.stage] || project.stage}
+                                    {t(`project.stage.${project.stage}`) !== `project.stage.${project.stage}` ? t(`project.stage.${project.stage}`) : project.stage}
                                 </span>
                             )}
                             {project.location && (
@@ -259,7 +262,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                             )}
                             {project.lookingForRole && (
                                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/15 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                                    <Users className="w-3 h-3" /> Cherche: {ROLE_LABELS[project.lookingForRole] || project.lookingForRole}
+                                    <Users className="w-3 h-3" /> {t('project.looking_for')} {formatRoleLabels(project.lookingForRole, t)}
                                 </span>
                             )}
                         </div>
@@ -271,7 +274,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                             <div className="flex items-center gap-3">
                                 <FileEdit className="w-5 h-5 text-gray-500 shrink-0" />
                                 <p className="text-sm text-gray-600">
-                                    Ce projet n&apos;est pas encore publie. Completez-le et soumettez-le pour verification.
+                                    {t('project.status_banner.DRAFT')}
                                 </p>
                             </div>
                         </div>
@@ -281,7 +284,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                             <div className="flex items-center gap-3">
                                 <Clock className="w-5 h-5 text-amber-600 shrink-0" />
                                 <p className="text-sm text-amber-700">
-                                    Ce projet est en cours de verification par notre IA. Vous serez notifie du resultat.
+                                    {t('project.status_banner.PENDING_AI')}
                                 </p>
                             </div>
                         </div>
@@ -292,11 +295,11 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                 <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-red-700">
-                                        Ce projet a ete rejete par la moderation.
+                                        {t('project.status_banner.REJECTED')}
                                     </p>
                                     {project.moderationReason && (
                                         <p className="text-sm text-red-600 mt-1">
-                                            Raison : {project.moderationReason}
+                                            {t('project.status_banner.REJECTED_reason', { reason: project.moderationReason })}
                                         </p>
                                     )}
                                 </div>
@@ -308,7 +311,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                             <div className="flex items-center gap-3">
                                 <Loader2 className="w-5 h-5 text-blue-600 shrink-0 animate-spin" />
                                 <p className="text-sm text-blue-700">
-                                    Ce projet est en cours d&apos;analyse par notre IA. Cela peut prendre quelques minutes.
+                                    {t('project.status_banner.ANALYZING')}
                                 </p>
                             </div>
                         </div>
@@ -356,10 +359,10 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold text-amber-800">
-                                        Profil incomplet
+                                        {t('project.profile_incomplete')}
                                     </p>
                                     <p className="text-sm text-amber-700 mt-1">
-                                        Pour postuler, veuillez renseigner les informations suivantes :
+                                        {t('project.profile_incomplete_hint')}
                                     </p>
                                     <ul className="mt-2 space-y-1">
                                         {profileWarning.map((field) => (
@@ -373,14 +376,14 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                         onClick={() => router.push('/profile')}
                                         className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 transition-colors"
                                     >
-                                        Compléter mon profil
+                                        {t('project.complete_profile')}
                                     </button>
                                 </div>
                                 <button
                                     onClick={() => setProfileWarning(null)}
                                     className="text-amber-400 hover:text-amber-600 transition-colors"
                                 >
-                                    <span className="sr-only">Fermer</span>
+                                    <span className="sr-only">{t('project.close')}</span>
                                     &times;
                                 </button>
                             </div>
@@ -390,15 +393,17 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                     {/* Footer CTA */}
                     <div className="p-5 border-t border-gray-100 bg-white flex justify-between items-center">
                         <div className="text-sm text-gray-500">
-                            {project._count?.applications || 0} candidature{(project._count?.applications || 0) !== 1 ? 's' : ''}
+                            {appCount !== 1
+                                ? t('project.applications_count_plural', { count: appCount })
+                                : t('project.applications_count', { count: appCount })}
                         </div>
                         {dbUser?.id === project.founderId ? (
                             <Link
                                 href={`/modify/project?projectId=${project.id}`}
-                                className="inline-flex items-center gap-2 bg-kezak-dark text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-kezak-dark/20 hover:bg-kezak-dark/80 hover:-translate-y-0.5 transition-all active:scale-95"
+                                className="inline-flex items-center gap-2 bg-kezak-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-kezak-primary/20 hover:bg-kezak-dark hover:-translate-y-0.5 transition-all active:scale-95"
                             >
                                 <Pencil className="w-4 h-4" />
-                                Modifier le projet
+                                {t('project.edit_project')}
                             </Link>
                         ) : (
                             <div className="flex items-center gap-2">
@@ -409,7 +414,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                         className="flex items-center gap-2 px-5 h-[44px] rounded-xl text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
                                     >
                                         <MessageCircle className="w-4 h-4" />
-                                        Message
+                                        {t('dashboard.feed.message_button')}
                                     </button>
                                 )}
                                 {hasApplied ? (
@@ -418,7 +423,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                         className="inline-flex items-center gap-2 bg-gray-100 text-gray-500 px-6 py-3 rounded-xl font-semibold cursor-not-allowed"
                                     >
                                         <CheckCircle2 className="w-4 h-4" />
-                                        Déjà postulé
+                                        {t('project.already_applied')}
                                     </button>
                                 ) : (
                                     <button
@@ -427,14 +432,17 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                                 router.push('/login');
                                                 return;
                                             }
+                                            if (isFreeUser) {
+                                                openUpsell('apply');
+                                                return;
+                                            }
                                             // Check profile completeness before opening modal
-                                            const fp = (dbUser?.founderProfile ?? {}) as any;
                                             const missing: string[] = [];
-                                            if (!dbUser?.firstName) missing.push('Prénom');
-                                            if (!dbUser?.lastName) missing.push('Nom');
-                                            if (!fp.title) missing.push('Titre professionnel');
-                                            if (!fp.bio) missing.push('Bio');
-                                            if (!fp.skills || fp.skills.length === 0) missing.push('Compétences');
+                                            if (!dbUser?.firstName) missing.push(t('project.missing_firstName'));
+                                            if (!dbUser?.lastName) missing.push(t('project.missing_lastName'));
+                                            if (!dbUser?.title) missing.push(t('project.missing_title'));
+                                            if (!dbUser?.bio) missing.push(t('project.missing_bio'));
+                                            if (!dbUser?.skills || dbUser.skills.length === 0) missing.push(t('project.missing_skills'));
 
                                             if (missing.length > 0) {
                                                 setProfileWarning(missing);
@@ -443,9 +451,10 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
                                             setProfileWarning(null);
                                             setShowApplyModal(true);
                                         }}
-                                        className="bg-kezak-dark text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-kezak-dark/20 hover:bg-kezak-dark/80 hover:-translate-y-0.5 transition-all active:scale-95"
+                                        className="inline-flex items-center gap-2 bg-kezak-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-kezak-primary/20 hover:bg-kezak-dark hover:-translate-y-0.5 transition-all active:scale-95"
                                     >
-                                        Postuler
+                                        {isFreeUser && <Lock className="w-4 h-4" />}
+                                        {t('project.apply')}
                                     </button>
                                 )}
                             </div>
@@ -464,7 +473,7 @@ export default function ProjectDeck({ projectId }: { projectId: string }) {
             {/* Apply Modal */}
             <ApplyModal
                 projectId={project.id}
-                projectName={project.name ?? 'Projet'}
+                projectName={project.name ?? t('dashboard.feed.default_project_name')}
                 isOpen={showApplyModal}
                 onClose={() => setShowApplyModal(false)}
                 onSuccess={() => setHasApplied(true)}

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { MapPin, Briefcase, Code, Star } from 'lucide-react';
 import { PlanBadge } from '@/components/ui';
+import { useTranslation } from '@/context/i18n-context';
 
 interface CandidateProfile {
     id: string;
@@ -22,8 +23,9 @@ interface CandidateProfile {
 
 export function CandidateCard({ candidate }: { candidate: CandidateProfile }) {
     const router = useRouter();
+    const { t } = useTranslation();
     const { user } = candidate;
-    const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Candidat';
+    const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || t('dashboard.feed.default_name');
 
     return (
         <div
@@ -69,11 +71,11 @@ export function CandidateCard({ candidate }: { candidate: CandidateProfile }) {
                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
                         <div className="flex items-center gap-1">
                             <MapPin size={12} />
-                            <span>{candidate.location || 'Remote'}</span>
+                            <span>{candidate.location || t('dashboard.feed.remote')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <Briefcase size={12} />
-                            <span>Disponible</span>
+                            <span>{t('dashboard.feed.available')}</span>
                         </div>
                     </div>
                 </div>
@@ -99,7 +101,7 @@ export function CandidateCard({ candidate }: { candidate: CandidateProfile }) {
                         ))}
                         {candidate.skills.length > 4 && (
                             <span className="text-[10px] text-gray-400 self-center">
-                                +{candidate.skills.length - 4} plus
+                                {t('dashboard.feed.skills_more', { count: candidate.skills.length - 4 })}
                             </span>
                         )}
                     </div>
@@ -113,7 +115,7 @@ export function CandidateCard({ candidate }: { candidate: CandidateProfile }) {
                 }}
                 className="mt-5 w-full py-2.5 bg-gray-50 hover:bg-kezak-primary hover:text-white rounded-xl text-sm font-bold text-gray-900 transition-all active:scale-[0.98]"
             >
-                Voir le profil
+                {t('dashboard.feed.view_profile')}
             </button>
         </div>
     );

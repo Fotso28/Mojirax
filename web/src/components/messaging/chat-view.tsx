@@ -8,6 +8,7 @@ import { MessageBubble } from './message-bubble';
 import { TypingIndicator } from './typing-indicator';
 import { EmojiPicker } from './emoji-picker';
 import { OnlineBadge } from './online-badge';
+import { useTranslation } from '@/context/i18n-context';
 
 interface Message {
   id: string;
@@ -51,6 +52,7 @@ const ALLOWED_FILE_TYPES = [
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export function ChatView({ conversationId, currentUserId, otherUser, isOnline, onBack }: ChatViewProps) {
+  const { t } = useTranslation();
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -71,7 +73,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
   const abortRef = useRef<AbortController | null>(null);
   const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const otherName = `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || 'Utilisateur';
+  const otherName = `${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || t('dashboard.messaging_user_default');
 
   // Load messages with AbortController
   const loadMessages = useCallback(async (convId: string, cursorParam?: string, signal?: AbortSignal) => {
@@ -451,7 +453,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
 
     // Client-side validation: MIME type (toast for validation errors only)
     if (!ALLOWED_FILE_TYPES.includes(file.type as (typeof ALLOWED_FILE_TYPES)[number])) {
-      setUploadError('Type de fichier non autorisé. Formats acceptés : PDF, DOCX, JPEG, PNG, WebP.');
+      setUploadError(t('dashboard.messaging_file_type_error'));
       setTimeout(() => setUploadError(null), 5000);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -459,7 +461,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
 
     // Client-side validation: file size (max 5 MB)
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError('Le fichier est trop volumineux. Taille maximale : 5 Mo.');
+      setUploadError(t('dashboard.messaging_file_size_error'));
       setTimeout(() => setUploadError(null), 5000);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -520,7 +522,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
         </div>
         <div>
           <p className="font-semibold text-gray-900">{otherName}</p>
-          <p className="text-xs text-gray-400">{isOnline ? 'En ligne' : 'Hors ligne'}</p>
+          <p className="text-xs text-gray-400">{isOnline ? t('dashboard.messaging_online') : t('dashboard.messaging_offline')}</p>
         </div>
       </div>
 
@@ -533,7 +535,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
               disabled={loadingMore}
               className="text-sm text-kezak-primary hover:underline disabled:opacity-50"
             >
-              {loadingMore ? 'Chargement...' : 'Voir les messages précédents'}
+              {loadingMore ? t('dashboard.messaging_loading') : t('dashboard.messaging_load_more')}
             </button>
           </div>
         )}
@@ -544,7 +546,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-            Commencez la conversation !
+            {t('dashboard.messaging_start_conversation')}
           </div>
         ) : (
           messages.map((msg) => (
@@ -582,7 +584,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           <button
             className="fixed inset-0 z-10"
             onClick={() => setShowEmojiPicker(false)}
-            aria-label="Fermer le picker"
+            aria-label={t('dashboard.messaging_close_emoji')}
           />
         </div>
       )}
@@ -600,7 +602,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            title="PDF, DOCX, JPEG, PNG, WebP · 5 Mo max"
+            title={t('dashboard.feed.chat_attach_hint')}
             className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Paperclip className="h-5 w-5" />
@@ -623,7 +625,7 @@ export function ChatView({ conversationId, currentUserId, otherUser, isOnline, o
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Votre message..."
+            placeholder={t('dashboard.messaging_placeholder')}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary max-h-32 overflow-y-auto"
             style={{ lineHeight: '1.5' }}

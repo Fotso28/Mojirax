@@ -5,6 +5,21 @@ export const AXIOS_INSTANCE = Axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 });
 
+// Localized fallback messages used outside React (axios interceptor).
+// Must stay in sync with common/dashboard namespaces.
+const BANNED_MESSAGE: Record<string, string> = {
+    fr: 'Votre compte a été désactivé, contactez le support',
+    en: 'Your account has been disabled, please contact support',
+    es: 'Su cuenta ha sido desactivada, contacte con soporte',
+    pt: 'Sua conta foi desativada, entre em contato com o suporte',
+    ar: 'تم تعطيل حسابك، يرجى التواصل مع الدعم',
+};
+
+function currentLocale(): string {
+    if (typeof window === 'undefined') return 'fr';
+    return localStorage.getItem('mojirax-lang') || 'fr';
+}
+
 // Request interceptor — fresh token + Accept-Language on every request
 AXIOS_INSTANCE.interceptors.request.use(
     async (config) => {
@@ -59,10 +74,11 @@ AXIOS_INSTANCE.interceptors.response.use(
                 const { auth } = await import('@/lib/firebase');
                 const { signOut } = await import('firebase/auth');
                 await signOut(auth).catch(() => {});
+                const locale = currentLocale();
                 window.dispatchEvent(
                     new CustomEvent('app:toast', {
                         detail: {
-                            message: 'Votre compte a été désactivé, contactez le support',
+                            message: BANNED_MESSAGE[locale] ?? BANNED_MESSAGE.fr,
                             type: 'error',
                         },
                     }),

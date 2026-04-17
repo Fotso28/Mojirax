@@ -5,6 +5,7 @@ import { CandidateCard } from './candidate-card';
 import { FeedFilters } from './feed-filters';
 import { TopActiveCandidates } from './top-active-candidates';
 import { AXIOS_INSTANCE } from '@/api/axios-instance';
+import { useTranslation } from '@/context/i18n-context';
 import { Loader2, Users2 } from 'lucide-react';
 
 interface CandidateFeedResponse {
@@ -19,6 +20,7 @@ interface Filters {
 }
 
 export function CandidateStream() {
+    const { t } = useTranslation();
     const [candidates, setCandidates] = useState<any[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -114,11 +116,11 @@ export function CandidateStream() {
                     <div className="w-16 h-16 bg-kezak-light rounded-full flex items-center justify-center mx-auto mb-4">
                         <Users2 className="w-7 h-7 text-kezak-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun candidat disponible</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('dashboard.feed.candidates_empty_title')}</h3>
                     <p className="text-gray-500">
                         {Object.values(filters).some(Boolean)
-                            ? 'Essayez de modifier vos filtres.'
-                            : 'Revenez plus tard pour découvrir de nouveaux talents.'}
+                            ? t('dashboard.feed.candidates_empty_filtered')
+                            : t('dashboard.feed.candidates_empty_description')}
                     </p>
                 </div>
             </div>
@@ -143,7 +145,7 @@ export function CandidateStream() {
 
             {!hasMore && candidates.length > 0 && (
                 <div className="text-center py-8 text-gray-400 text-sm">
-                    Vous avez tout vu !
+                    {t('dashboard.feed.end_reached')}
                 </div>
             )}
         </div>

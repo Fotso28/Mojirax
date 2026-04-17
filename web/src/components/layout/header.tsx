@@ -8,6 +8,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useSidebar } from '@/context/sidebar-context';
 import { NotificationDropdown } from '@/components/layout/notification-dropdown';
+import { LanguageToggle } from '@/components/ui/language-toggle';
+import { useTranslation } from '@/context/i18n-context';
 
 const UniversalSearch = dynamic(() =>
     import('@/components/search/universal-search').then(m => ({ default: m.UniversalSearch })),
@@ -24,6 +26,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
     const router = useRouter();
     const { hidden: isSidebarHidden } = useSidebar();
     const [showSearch, setShowSearch] = useState(false);
+    const { t } = useTranslation();
 
     // Raccourci clavier Ctrl+K / Cmd+K
     useEffect(() => {
@@ -59,7 +62,7 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                             className="relative w-full h-11 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-400 text-left hover:border-gray-300 hover:bg-gray-100/50 focus:outline-none focus:ring-2 focus:ring-kezak-primary/20 focus:border-kezak-primary transition-all cursor-pointer group"
                         >
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-gray-500 transition-colors" />
-                            <span>Rechercher un projet, un talent, une idée...</span>
+                            <span>{t('dashboard.header_search_placeholder')}</span>
                             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-medium text-gray-400 bg-white/80 rounded border border-gray-200">
                                 Ctrl K
                             </kbd>
@@ -81,11 +84,15 @@ export function Header({ onOpenMobileNav, onOpenMobileWidgets }: HeaderProps) {
                             <button
                                 onClick={() => router.push('/admin')}
                                 className="p-2 text-gray-400 hover:text-kezak-primary hover:bg-gray-50 rounded-full transition-colors"
-                                title="Administration"
+                                title={t('dashboard.feed.header_admin')}
+                                aria-label={t('dashboard.feed.header_admin')}
                             >
                                 <ShieldCheck className="w-5 h-5" />
                             </button>
                         )}
+
+                        {/* Language Toggle */}
+                        <LanguageToggle />
 
                         {/* Notifications (Mobile + Desktop) */}
                         <NotificationDropdown />
